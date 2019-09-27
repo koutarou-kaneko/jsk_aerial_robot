@@ -1,0 +1,41 @@
+<launch>
+  <arg name="device_id" default ="0" doc="The id of vidoe (e.g., /dev/video0)"/>
+  <arg name="h_limit_max" default="30" doc="The maximum allowed field value Hue" />
+  <arg name="h_limit_min" default="330" doc="The minimum allowed field value Hue" />
+  <arg name="s_limit_max" default="255" doc="The maximum allowed field value Saturation" />
+  <arg name="s_limit_min" default="80" doc="The minimum allowed field value Saturation" />
+  <arg name="v_limit_max" default="255" doc="The maximum allowed field value Value" />
+  <arg name="v_limit_min" default="30" doc="The minimum allowed field value Value" />
+  <arg name="debug" default="false" />
+  <arg name="image_transport" default="raw" />
+  <arg name="offline" default="false" />
+
+  <group ns="camera">
+    <node pkg="nodelet" type="nodelet" name="usb_cam_nodelet" args="manager" output="screen" >
+      <param name="image_transport" value="$(arg image_transport)" />
+    </node>
+
+    <node pkg="nodelet" type="nodelet" name="usb_cam"
+          args="load cv_camera/CvCameraNodelet usb_cam_nodelet" output="screen" unless="$(arg offline)">
+      <param name="device_id" value ="$(arg device_id)"/>
+      <param name="frame_id" value ="usb_cam"/>
+      <param name="image_width" value = "640" />
+      <param name="image_height" value = "480" />
+    </node>
+
+    <node pkg="nodelet" type="nodelet" name="hsv_color_filter"
+          args="load opencv_apps/hsv_color_filter usb_cam_nodelet" output="screen">
+      <remap from="image" to="usb_cam/image_raw"/>
+      <remap from="image/compressed" to="usb_cam/image_raw/compressed"/>
+      <param name="debug_view" value="$(arg debug)"/>
+      <param name="use_camera_info" value="false" />
+      <param name="h_limit_max" value="$(arg h_limit_max)"/>
+      <param name="h_limit_min" value="$(arg h_limit_min)"/>
+      <param name="s_limit_max" value="$(arg s_limit_max)"/>
+      <param name="s_limit_min" value="$(arg s_limit_min)"/>
+      <param name="v_limit_max" value="$(arg v_limit_max)"/>
+      <param name="v_limit_min" value="$(arg v_limit_min)"/>
+    </node>
+  </group>
+
+</launch>

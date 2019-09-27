@@ -61,3 +61,9 @@ $ roslaunch hydrus bringup.launch real_machine:=true simulation:=true headless:=
    
    - quad:  ``` $  rosrun hydrus hydrusx_demo.py _link_num:=4 _duration:=6 _joint_control_topic_name:=/hydrusx/joints_ctrl ```
    - hex:  ``` $  rosrun hydrus hydrusx_demo.py _link_num:=6 _duration:=8 _joint_control_topic_name:=/hydrusx/joints_ctrl ```
+
+
+## usb_cam with color filter
+```
+$ roslaunch hydrus usb_cam.launch device_id:=2 debug:=false image_transport:=compressed
+```
