@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<robot
+    xmlns:xacro="http://www.ros.org/wiki/xacro" name="dragon" >
+
+  <!-- basic kinematics model -->
+  <xacro:include filename="$(find dragon)/urdf/dragon_common.xacro" />
+  <xacro:include filename="$(find dragon)/urdf/dragon_link.urdf.xacro" />
+
+  <xacro:dragon_module self="1" child="2" baselink="false" />
+  <xacro:dragon_module self="2" child="3" baselink="true" />
+  <xacro:dragon_module self="3" child="4" baselink="false" />
+  <xacro:dragon_module self="4" child="4" baselink="false" />
+
+  <!-- onboard -->
+  <!-- 1.  processor -->
+  <!-- 1.1 flight controller -->
+  <xacro:extra_module name = "fc" parent = "link2" visible = "1"
+                      model_url = "package://dragon/urdf/mesh/flight_controller/spinal.dae">
+    <origin rpy="0 0 0" xyz="0.316 -0.004 0.043"/>
+    <inertial>
+      <mass value = "0.056" />
+      <origin xyz="${-3.42*0.001} 0 ${-16*0.001}" rpy="0 0 0"/>
+      <inertia
+          ixx="0.000007" iyy="0.000029" izz="0.000013"
+          ixy="0.000015" ixz="0.000014" iyz="0.000000"/>
+    </inertial>
+  </xacro:extra_module>
+  <!-- end: flight controller -->
+
+  <!-- 1.2 processor: jetson tx2 -->
+  <xacro:extra_module name = "pc" parent = "link2" visible = "1"
+                      model_url = "package://dragon/urdf/mesh/processor/intel_euclid.dae" >
+    <origin rpy="0 0 0" xyz="0.3438 0 -0.0125"/>
+    <inertial>
+      <mass value = "0.152" />
+      <origin xyz="0 0  ${-12.5 * 0.001}" rpy="0 0 0"/>
+      <inertia
+          ixx="0.000152" iyy="0.000013" izz="0.000161"
+          ixy="0.000000" ixz="0.000000" iyz="0.000000"/>
+    </inertial>
+  </xacro:extra_module>
+  <!-- end: processor: jetson tx2 -->
+
+</robot>
