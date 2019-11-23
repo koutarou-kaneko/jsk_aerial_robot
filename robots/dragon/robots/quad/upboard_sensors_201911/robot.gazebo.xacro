@@ -3,10 +3,9 @@
     xmlns:xacro="http://www.ros.org/wiki/xacro" name="dragon" >
 
   <!-- robot urdf -->
-  <xacro:include filename="$(find dragon)/robots/quad/euclid_201709.urdf.xacro" />
+  <xacro:include filename="$(find dragon)/robots/quad/upboard_sensors_201911/robot.urdf.xacro" />
 
   <!-- gazebo plugin for sensors -->
-  <!-- temporary -->
   <xacro:include filename="$(find dragon)/robots/default.gazebo.xacro" />
 
 </robot>
