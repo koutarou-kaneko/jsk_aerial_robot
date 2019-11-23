@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<robot
+    xmlns:xacro="http://www.ros.org/wiki/xacro" name="dragon" >
+
+  <!-- basic kinematics model -->
+  <xacro:include filename="$(find dragon)/urdf/dragon_common.xacro" />
+  <xacro:include filename="$(find dragon)/urdf/dragon_link.urdf.xacro" />
+
+  <xacro:dragon_module self="1" child="2" baselink="false" />
+  <xacro:dragon_module self="2" child="3" baselink="true" />
+  <xacro:dragon_module self="3" child="4" baselink="false" />
+  <xacro:dragon_module self="4" child="4" baselink="false" />
+
+  <!-- onboard -->
+  <!-- 1.  processor -->
+  <!-- 1.1 flight controller -->
+  <xacro:extra_module name = "fc" parent = "link2" visible = "1"
+                      model_url = "package://dragon/urdf/mesh/flight_controller/spinal.dae">
+    <origin rpy="0 0 0" xyz="0.316 -0.004 0.043"/>
+    <inertial>
+      <mass value = "0.056" />
+      <origin xyz="${-3.42*0.001} 0 ${-16*0.001}" rpy="0 0 0"/>
+      <inertia
+          ixx="0.000007" iyy="0.000029" izz="0.000013"
+          ixy="0.000015" ixz="0.000014" iyz="0.000000"/>
+    </inertial>
+  </xacro:extra_module>
+  <xacro:extra_module name = "fc_usb_cable" parent = "link3" visible = "0" >
+    <origin rpy="0 0 0" xyz="0 0 0.03"/>
+    <inertial>
+      <mass value = "0.0135" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia
+          ixx="0" iyy="0" izz="0"
+          ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </xacro:extra_module>
+  <!-- end: flight controller -->
+
+  <!-- 1.2 processor: upboard -->
+  <xacro:extra_module name = "pc" parent = "link3" visible = "1"
+                      model_url = "package://dragon/urdf/mesh/processor/upboard_unit.dae" >
+    <origin rpy="0 0 ${pi/2}" xyz="0.0925 0.01 0.0255"/>
+    <inertial>
+      <origin xyz="0.010690 0.000630 0.002300" rpy="0 0 0"/>
+      <mass value="0.110"/>
+      <inertia
+          ixx="0.000044" iyy="0.000081" izz="0.000096"
+          ixy="0.000001" ixz="0.000019" iyz="0.000000"/>
+    </inertial>
+  </xacro:extra_module>
+  <xacro:extra_module name = "pc_wifi" parent = "link3" visible = "1"
+                      model_url = "package://dragon/urdf/mesh/processor/upboard_WiFi_unit.dae" >
+    <origin rpy="0 0 ${pi/2}" xyz="0.06925 0 0.05025"/>
+    <inertial>
+      <mass value = "0.023" />
+      <origin xyz="0 0 ${-12.5 * 0.001}" rpy="0 0 0"/>
+      <inertia
+          ixx="0.000027" iyy="0.000027" izz="0.000000"
+          ixy="0.000000" ixz="0.000000" iyz="0.000000"/>
+    </inertial>
+  </xacro:extra_module>
+  <!-- end: processor: upboard -->
+
+</robot>

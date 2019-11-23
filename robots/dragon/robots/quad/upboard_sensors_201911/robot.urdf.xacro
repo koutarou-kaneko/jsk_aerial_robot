@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<robot
+    xmlns:xacro="http://www.ros.org/wiki/xacro" name="dragon" >
+
+  <!-- onboard -->
+  <xacro:include filename="$(find dragon)/robots/quad/upboard_201911/robot.urdf.xacro" />
+
+  <!-- 2.  sensor -->
+  <!-- 2.1 leddar one -->
+  <xacro:extra_module name = "leddarone" parent = "link2" visible = "1"
+                      model_url = "package://dragon/urdf/mesh/sensor/leddar_one.dae">
+    <origin rpy="${pi} 0 0" xyz="0.387 -0.069 -0.02325"/>
+    <inertial>
+      <mass value = "0.018" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia
+          ixx="0.0" iyy="0.0" izz="0.0"
+          ixy="0.0" ixz="0.0" iyz="0.0"/>
+    </inertial>
+  </xacro:extra_module>
+  <!-- end: leddar one -->
+
+  <!-- 2.2 gps -->
+  <xacro:extra_module name = "gps" parent = "link2" visible = "1"
+                      model_url = "package://dragon/urdf/mesh/sensor/gps_magnetometer_ublox_m8n.dae" >
+    <origin rpy="0 0 0" xyz="0.387 -0.06852 0.12075"/>
+    <inertial>
+      <origin xyz="0.000000 0.000000 -0.033650" rpy="0 0 0"/>
+      <mass value="0.042000"/>
+      <inertia
+          ixx="0.000329" iyy="0.000329" izz="0.000005"
+          ixy="0.000000" ixz="0.000000" iyz="0.000000"/>
+    </inertial>
+  </xacro:extra_module>
+  <xacro:extra_module name = "magnet" parent = "gps">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <inertial>
+      <mass value = "0.0" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia
+          ixx="0.0" ixy="0.0" ixz="0.0"
+          iyy="0.0" iyz="0.0"
+          izz="0.0"/>
+    </inertial>
+    </xacro:extra_module>
+  <!-- end: processor: gps -->
+
+  <!-- 2.3 side view realsense -->
+  <xacro:extra_module name = "realsense_t265_unit" parent = "link2" visible = "1"
+                      model_url = "package://dragon/urdf/mesh/sensor/horizontal_realsense_t265_unit.dae" >
+    <origin rpy="0 0 0" xyz="0.37925 -0.0917 0"/>
+    <inertial>
+      <origin xyz="0.008440 0.010870 0.001400" rpy="0 0 0"/>
+      <mass value="0.078000"/>
+      <inertia
+          ixx="0.000007" iyy="0.000040" izz="0.000033"
+          ixy="0.000012" ixz="0.000001" iyz="0.000001"/>
+    </inertial>
+  </xacro:extra_module>
+  <xacro:extra_module name = "realsense1_pose_frame" parent = "realsense_t265_unit" visible = "0" >
+    <origin xyz="0 ${6.5 * 0.001} 0 " rpy="0 0 ${-pi/2}"/>
+    <inertial>
+      <mass value = "0.0" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia
+          ixx="0.0" ixy="0.0" ixz="0.0"
+          iyy="0.0" iyz="0.0"
+          izz="0.0"/>
+    </inertial>
+  </xacro:extra_module>
+  <!-- end: processor: side-view realsense -->
+
+</robot>
