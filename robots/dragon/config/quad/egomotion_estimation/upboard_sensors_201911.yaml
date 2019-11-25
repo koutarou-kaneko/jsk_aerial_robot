@@ -58,6 +58,8 @@ estimator:
         vo1:
                 vo_sub_topic_name: /realsense1/odom/throttle
                 sensor_frame: realsense1_pose_frame
+                z_vel_mode: false
+                fusion_mode: 0 # ONLY_POS_MODE = 0, ONLY_VEL_MODE = 1, POS_VEL_MODE = 2
         vo2:  #downward
                 vo_sub_topic_name: /realsense2/odom/throttle
                 sensor_frame: realsense2_pose_frame
