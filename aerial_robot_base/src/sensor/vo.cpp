@@ -158,7 +158,7 @@ namespace sensor_plugin
         if(!alt_initialized && estimator_->getAltHandlers().size() > 0)
           {
             ROS_WARN_THROTTLE(1, "vo: no altimeter is initialized, wait");
-            z_vel_mode_ = true;
+            // z_vel_mode_ = true; // can not understand this logic
             return;
           }
 
