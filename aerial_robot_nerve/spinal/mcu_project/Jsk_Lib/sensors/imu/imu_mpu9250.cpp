@@ -19,6 +19,12 @@ void IMUOnboard::init(SPI_HandleTypeDef* hspi, I2C_HandleTypeDef* hi2c, ros::Nod
   nh_ = nh;
   IMU::init();
 
+  for (int i = 0; i < 3; i++) {
+    FlashMemory::addValue(&(acc_bias_[i]), sizeof(float));
+    FlashMemory::addValue(&(mag_bias_[i]), sizeof(float));
+    FlashMemory::addValue(&(mag_scale_[i]), sizeof(float));
+  }
+
   use_external_mag_flag_ = false;
 
   for(int i =0; i < SENSOR_DATA_LENGTH; i++)
@@ -251,5 +257,16 @@ void IMUOnboard::updateRawData()
       else i++;
     }
   setUpdate(true); //no need?
+}
 
+
+void IMUOnboard::readCalibData()
+{
+  FlashMemory::read();
+}
+
+void IMUOnboard::writeCalibData()
+{
+  FlashMemory::erase();
+  FlashMemory::write();
 }

@@ -23,6 +23,15 @@ void CANIMU::updateRawData()
 	raw_mag_adc_[2] = -r_mag_data[2] * MAG_SCALE;
 }
 
+void CANIMU::readCalibData()
+{
+  // TODO: request IMU calibration data from neuron
+}
+void CANIMU::writeCalibData(void)
+{
+  // TODO: write IMU calibration data from neuron
+}
+
 void CANIMU::sendData()
 {
 	return;

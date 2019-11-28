@@ -14,6 +14,9 @@
 class CANIMU : public CANDevice, public IMU {
 private:
 	void updateRawData() override;
+	void readCalibData() override;
+	void writeCalibData() override;
+
 	int16_t r_gyro_data[3], r_acc_data[3], r_mag_data[3];
 	bool send_data_flag_;
 public:

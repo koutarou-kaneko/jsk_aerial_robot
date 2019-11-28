@@ -69,6 +69,9 @@ private:
 
   void ledOutput(void)  override;
   void updateRawData (void) override;
+  void readCalibData(void) override;
+  void writeCalibData(void) override;
+
   void mpuWrite(uint8_t address, uint8_t value);
   uint8_t mpuRead(uint8_t address);
   uint8_t dummy_[SENSOR_DATA_LENGTH];

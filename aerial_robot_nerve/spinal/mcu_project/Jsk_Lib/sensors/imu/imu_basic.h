@@ -14,6 +14,7 @@
 #include <std_msgs/UInt8.h>
 #include "config.h"
 #include "math/definitions.h"
+#include "flashmemory/flashmemory.h"
 
 class IMU
 {
@@ -34,24 +35,24 @@ private:
   uint32_t gyro_calib_duration_, acc_calib_duration_, mag_calib_duration_; // ms
   uint32_t gyro_calib_time_, acc_calib_time_, mag_calib_time_; // ms
   uint32_t gyro_calib_cnt_, acc_calib_cnt_, mag_calib_cnt_;
-  Vector3f acc_bias_, gyro_bias_, mag_bias_, mag_scale_;
-
 
   static constexpr uint32_t GYRO_DEFAULT_CALIB_DURATION = 5000; // 5s
   static constexpr uint32_t ACC_DEFAULT_CALIB_DURATION = 5000; // 5s
   static constexpr uint32_t MAG_DEFAULT_CALIB_DURATION = 60000; // 60s
   static constexpr float MAG_GENERAL_THRESH = 20.0f;
-  void readCalibData(void);
-  void writeCalibData(void);
   void process (void);
 
 protected:
+
+  virtual void readCalibData() = 0;
+  virtual void writeCalibData() = 0;
 
   virtual void ledOutput() {}
   virtual void updateRawData() = 0;
   Vector3f raw_gyro_adc_, raw_acc_adc_, raw_mag_adc_;
 
   bool calib_acc_, calib_gyro_, calib_mag_;
+  Vector3f acc_bias_, gyro_bias_, mag_bias_, mag_scale_;
 
 public:
   IMU();

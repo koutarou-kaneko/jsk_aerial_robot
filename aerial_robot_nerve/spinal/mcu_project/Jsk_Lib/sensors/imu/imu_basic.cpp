@@ -6,7 +6,6 @@
  */
 
 #include "imu_basic.h"
-#include "flashmemory/flashmemory.h"
 
 IMU::IMU()
 {
@@ -22,7 +21,8 @@ void IMU::init()
   gyro_v_.zero();
   mag_v_.zero();
   mag_outlier_counter_ = 0;
-  gyro_bias_.zero();
+
+  resetCalib();
   calib_gyro_ = true;
   calib_acc_ = false;
   calib_mag_ = false;
@@ -42,22 +42,7 @@ void IMU::init()
   virtual_frame_ = false;
   raw_gyro_p_.zero();
   raw_acc_p_.zero();
-  for (int i = 0; i < 3; i++) {
-    FlashMemory::addValue(&(acc_bias_[i]), sizeof(float));
-    FlashMemory::addValue(&(mag_bias_[i]), sizeof(float));
-    FlashMemory::addValue(&(mag_scale_[i]), sizeof(float));
-  }
-}
 
-void IMU::readCalibData()
-{
-  FlashMemory::read();
-}
-
-void IMU::writeCalibData()
-{
-  FlashMemory::erase();
-  FlashMemory::write();
 }
 
 void IMU::update()
