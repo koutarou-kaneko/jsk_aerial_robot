@@ -199,6 +199,7 @@ namespace sensor_plugin
         {
           ROS_WARN("imu: touch to ground");
           estimator_->setLandedFlag(true);
+          estimator_->setUnDescendMode(false); //since we can not descend more
         }
 
       /* base link */
@@ -370,8 +371,11 @@ namespace sensor_plugin
                               axis = State::Z_BASE;
 
                               /* considering the undescend mode, such as the phase of takeoff, the velocity should not below than 0 */
-                              if(estimator_->getUnDescendMode() && (kf->getEstimateState())(1) < 0)
-                                kf->resetState();
+                              if(mode == StateEstimator::EGOMOTION_ESTIMATE &&
+                                 estimator_->getUnDescendMode() && (kf->getEstimateState())(1) < 0)
+                                {
+                                  input_val(0) = 0;
+                                }
 
                               /* get the estiamted offset(bias) */
                               if(z_acc_bias_noise_sigma_ > 0) acc_bias_b_.setZ((kf->getEstimateState())(2));
