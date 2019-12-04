@@ -497,6 +497,27 @@ namespace control_plugin
       }
   }
 
+  void DragonGimbal::halt()
+  {
+    ros::ServiceClient client = nh_.serviceClient<std_srvs::SetBool>(joints_torque_control_srv_name_);
+    std_srvs::SetBool srv;
+    srv.request.data = false;
+    if (client.call(srv))
+      ROS_INFO("dragon control: disable the joint torque");
+    else
+      ROS_ERROR("Failed to call service %s", joints_torque_control_srv_name_.c_str());
+
+    client = nh_.serviceClient<std_srvs::SetBool>(gimbals_torque_control_srv_name_);
+
+    srv.request.data = false;
+    if (client.call(srv))
+      ROS_INFO("dragon control: disable the gimbal torque");
+    else
+      ROS_ERROR("Failed to call service %s", gimbals_torque_control_srv_name_.c_str());
+
+  }
+     
+  
   void DragonGimbal::cfgPitchRollPidCallback(aerial_robot_base::XYPidControlConfig &config, uint32_t level)
   {
     if(config.xy_pid_control_flag)
@@ -595,7 +616,8 @@ namespace control_plugin
     nhp_.param("real_machine", real_machine_, true);
     if(param_verbose_) cout << ns << ": real_machine is " << real_machine_ << endl;
     nhp_.param("joints_torque_control_srv_name", joints_torque_control_srv_name_, std::string("/joints_controller/torque_enable"));
-
+    nhp_.param("gimbals_torque_control_srv_name", gimbals_torque_control_srv_name_, std::string("/gimbals_controller/torque_enable"));
+    
     /* height threshold to disable the joint servo when landing */
     nhp_.param("height_thresh", height_thresh_, 0.1);
     if(param_verbose_) cout << ns << ": height_thresh is " << height_thresh_ << endl;

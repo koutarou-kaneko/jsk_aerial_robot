@@ -6,6 +6,8 @@ controller/only_three_axis_mode: true
 controller/verbose: true
 controller/real_machine: false
 controller/control_verbose: false
+controller/joints_torque_control_srv_name: /dragon/joints/torque_enable
+controller/gimbals_torque_control_srv_name: /dragon/gimbals/torque_enable
 
 # alt [N]
 controller/alt/offset: 0

@@ -68,6 +68,9 @@ namespace control_plugin
       landing_flag_ = false;
     }
     void sendCmd();
+
+    void halt() override;
+
   private:
     std::unique_ptr<DragonRobotModel> kinematics_;
     ros::Publisher gimbal_control_pub_;
@@ -120,7 +123,7 @@ namespace control_plugin
 
     /* rosparam */
     double height_thresh_;
-    string joints_torque_control_srv_name_;
+    string joints_torque_control_srv_name_, gimbals_torque_control_srv_name_;
     double tilt_thresh_;
     double tilt_pub_interval_;
 
