@@ -135,7 +135,11 @@ namespace control_plugin
     virtual bool update()
     {
       if(motor_num_ == 0) return false;
-
+      
+      if(navigator_->getNaviState() == Navigator::STOP_STATE && navigator_->getForceLandingFlag())
+        {
+          halt();
+        }
       if(navigator_->getNaviState() == Navigator::START_STATE) activate();
       if(navigator_->getNaviState() == Navigator::ARM_OFF_STATE && control_timestamp_ > 0)
         {
@@ -191,6 +195,10 @@ namespace control_plugin
       control_timestamp_ = -1;
     }
 
+    virtual void halt()
+    {
+    }
+    
   protected:
     ros::NodeHandle nh_;
     ros::NodeHandle nhp_;
