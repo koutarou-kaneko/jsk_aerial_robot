@@ -162,6 +162,11 @@ namespace sensor_plugin
             return;
           }
 
+        if(estimator_->getUnDescendMode())
+          {
+            return;
+          }
+        
         /* to get the correction rotation and omega of baselink with the consideration of time delay, along with the yaw problem */
         bool imu_initialized = false;
         for(const auto& handler: estimator_->getImuHandlers())
