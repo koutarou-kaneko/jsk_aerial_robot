@@ -45,7 +45,19 @@
     </xacro:extra_module>
   <!-- end: processor: gps -->
 
+  <xacro:extra_module name = "sensors_mount" parent = "link2" visible = "0" >
+    <origin rpy="0 0 0" xyz="0.387 -0.069 0"/>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.007"/>
+      <inertia
+          ixx="0" iyy="0" izz="0"
+          ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </xacro:extra_module>
+
   <!-- 2.3 side view realsense -->
+  <!--
   <xacro:extra_module name = "realsense_t265_unit" parent = "link2" visible = "1"
                       model_url = "package://dragon/urdf/mesh/sensor/horizontal_realsense_t265_unit.dae" >
     <origin rpy="0 0 0" xyz="0.37925 -0.0917 0"/>
@@ -67,7 +79,8 @@
           iyy="0.0" iyz="0.0"
           izz="0.0"/>
     </inertial>
-  </xacro:extra_module>
+    </xacro:extra_module>
+  -->
   <!-- end: processor: side-view realsense -->
 
 </robot>
