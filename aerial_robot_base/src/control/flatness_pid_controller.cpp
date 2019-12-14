@@ -246,6 +246,9 @@ namespace control_plugin
 
     if(navigator_->getNaviState() == Navigator::LAND_STATE) alt_pos_err += alt_landing_const_i_ctrl_thresh_;
 
+    std::vector<double> target_throttle_tmp(target_throttle_.size(), 0);
+    double max_target_throttle = 0;
+
     for(int j = 0; j < motor_num_; j++)
       {
         //**** P Term
@@ -260,14 +263,26 @@ namespace control_plugin
         double alt_d_term = clamp(-alt_gains_[j][2] * alt_vel_err, -alt_terms_limit_[2], alt_terms_limit_[2]);
 
         //*** each motor command value for log
-        target_throttle_[j] = clamp(alt_p_term + alt_i_term + alt_d_term + alt_offset_, -alt_limit_, alt_limit_);
-        pid_msg.throttle.total.push_back(target_throttle_[j]);
+
+        target_throttle_tmp[j] = alt_p_term + alt_i_term + alt_d_term + alt_offset_;
+
+        pid_msg.throttle.total.push_back(target_throttle_tmp[j]);
         pid_msg.throttle.p_term.push_back(alt_p_term);
         pid_msg.throttle.i_term.push_back(alt_i_term);
         pid_msg.throttle.d_term.push_back(alt_d_term);
 
-        if(alt_gains_.size() == 1) break;
+        if(alt_gains_.size() == 1)
+          {
+            target_throttle_[j] = clamp(target_throttle_tmp[j], 0, alt_limit_);
+            break;
+          }
+
+        if(target_throttle_tmp[j] > max_target_throttle)
+          max_target_throttle = target_throttle_tmp[j];
       }
+
+    if(max_target_throttle <= alt_limit_)
+      std::copy(target_throttle_tmp.begin(), target_throttle_tmp.end(), target_throttle_.begin());
 
     pid_msg.throttle.target_pos = target_pos_.z();
     pid_msg.throttle.pos_err = alt_pos_err;

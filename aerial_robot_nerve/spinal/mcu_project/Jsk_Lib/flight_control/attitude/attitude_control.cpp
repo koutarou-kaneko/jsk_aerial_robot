@@ -89,6 +89,7 @@ void AttitudeController::baseInit()
   // base param for uav model
   motor_number_ = 0;
   uav_model_ = -1;
+  rotor_devider_ = 1;
 
   start_control_flag_ = false;
   pwm_test_flag_ = false;
@@ -103,9 +104,21 @@ void AttitudeController::baseInit()
   max_duty_ = min_duty_; //should assign right value from PC(ros)
   force_landing_thrust_ = 0;
   // voltage
+  motor_info_.resize(0);
   v_factor_ = 1;
   motor_ref_index_ = 0;
   voltage_update_last_time_ = 0;
+
+  // control
+  for(int i = 0; i < MAX_MOTOR_NUMBER; i++)
+    {
+      for(int j = 0; j < 3; j++)
+        {
+          p_lqi_gain_[i][j] = 0;
+          i_lqi_gain_[i][j] = 0;
+          d_lqi_gain_[i][j] = 0;
+        }
+    }
 
   reset();
 }
@@ -114,26 +127,8 @@ void AttitudeController::pwmsControl(void)
 {
   static uint32_t ros_pub_last_time = HAL_GetTick();
 
-  for(int i = 0; i < motor_number_; i++)
-    {
-      float target_thrust = target_thrust_[i];
-      /* for dragon, we use dual rotor, so devide into two */
-      if(uav_model_ == spinal::UavInfo::DRAGON) target_thrust /= 2;
-
-      if(start_control_flag_)
-        {
-          target_pwm_[i] = pwmConversion(target_thrust);
-
-          /* constraint */
-          if(target_pwm_[i] < min_duty_) target_pwm_[i]  = min_duty_;
-          else if(target_pwm_[i]  > max_duty_) target_pwm_[i]  = max_duty_;
-
-          /* motor pwm test */
-          if(pwm_test_flag_) target_pwm_[i] = pwm_test_value_;
-        }
-      /* for ros */
-      pwms_msg_.motor_value[i] = (target_pwm_[i] * 2000);
-    }
+  /* target thrust -> target pwm */
+  pwmConversion();
 
 #ifdef SIMULATION
   /* control result publish */
@@ -381,7 +376,7 @@ void AttitudeController::update(void)
           inversionMapping();
         }
     }
-  /* force -> pwm */
+  /* target thrust -> target pwm -> HAL */
   pwmsControl();
 }
 
@@ -557,7 +552,6 @@ void AttitudeController::pwmInfoCallback( const spinal::PwmInfo &info_msg)
   max_duty_ = info_msg.max_pwm;
   pwm_conversion_mode_ = info_msg.pwm_conversion_mode;
 
-  motor_info_.resize(0);
 #ifdef SIMULATION
   for(int i = 0; i < info_msg.motor_info.size(); i++)
 #else
@@ -727,6 +721,11 @@ void  AttitudeController::setUavModel(int8_t uav_model)
       if(uav_model_ == spinal::UavInfo::HYDRUS ||
          uav_model_ == spinal::UavInfo::DRAGON)
         lqi_mode_ = true;
+
+      if(uav_model_ == spinal::UavInfo::DRAGON)
+        {
+          rotor_devider_ = 2; // dual-rotor
+        }
     }
 }
 
@@ -778,20 +777,19 @@ bool AttitudeController::activated()
   else return false;
 }
 
-float AttitudeController::pwmConversion(float thrust)
+void AttitudeController::pwmConversion()
 {
+  /* update the factor regarding the robot voltage */
   if(HAL_GetTick() - voltage_update_last_time_ > 500) //[500ms = 0.5s]
     {
 #ifdef SIMULATION
+      if(motor_info_.size() == 0) return;
       float voltage = motor_info_[0].voltage;
 #else
       float voltage = bat_->getVoltage();
 #endif
-#ifdef SIMULATION
-      //voltage = 25.2; //test
-#endif
 
-      /* find the best reference */
+      /* find the best reference voltage */
       float min_voltage_diff = 1e6;
       for(int i = 0; i < motor_info_.size(); i++)
         {
@@ -822,38 +820,73 @@ float AttitudeController::pwmConversion(float thrust)
             break;
           }
         }
-
       voltage_update_last_time_ = HAL_GetTick();
     }
 
-  float target_pwm = IDLE_DUTY;
-  switch(pwm_conversion_mode_)
+  /* find max target thrust */
+  float max_thrust = 0;
+  int max_thrust_index = 0;
+  for(int i = 0; i < motor_number_; i++)
     {
-    case spinal::MotorInfo::SQRT_MODE:
-      {
-        /* pwm = F_inv[(V_ref / V)^2 f] */
-        float sqrt_tmp = motor_info_[motor_ref_index_].polynominal[1] * motor_info_[motor_ref_index_].polynominal[1] - 4 * 10 * motor_info_[motor_ref_index_].polynominal[2] * (motor_info_[motor_ref_index_].polynominal[0] - v_factor_ * thrust); //special decimal order shift (x10)
-        target_pwm = (-motor_info_[motor_ref_index_].polynominal[1] + sqrt_tmp * inv_sqrt(sqrt_tmp)) / (2 * motor_info_[motor_ref_index_].polynominal[2]);
-        break;
-      }
-    case spinal::MotorInfo::POLYNOMINAL_MODE:
-      {
-        /* pwm = F_inv[(V_ref / V)^1.5 f] */
-        float v_factor_thrust = v_factor_ * thrust > motor_info_[motor_ref_index_].max_thrust?motor_info_[motor_ref_index_].max_thrust: v_factor_ * thrust;
-        float v_factor_thrust_decimal = v_factor_thrust * 0.1f; //special decimal order shift (x0.1)
-        /* hardcode: 4 dimensional */
-        int max_dimenstional = 4;
-        target_pwm = motor_info_[motor_ref_index_].polynominal[max_dimenstional];
-        for (int j = max_dimenstional - 1; j >= 0; j--)
-          {
-            target_pwm = target_pwm * v_factor_thrust_decimal + motor_info_[motor_ref_index_].polynominal[j];
-          }
-        break;
-      }
-    default:
-      {
-        break;
-      }
+      if(max_thrust < target_thrust_[i])
+        {
+          max_thrust = target_thrust_[i];
+          max_thrust_index = i;
+        }
     }
-  return target_pwm / 100; // target_pwm is [%] -> decimal
+
+  /* get the decreasing rate for the thrust to avoid the devergence because of the pwm saturation */
+  float decreasing_rate = 0;
+  if(start_control_flag_)
+    {
+      float residual_term =  max_thrust / rotor_devider_ - motor_info_[motor_ref_index_].max_thrust / v_factor_;
+      if(residual_term > 0) decreasing_rate =  residual_term / (base_throttle_term_[max_thrust_index] / rotor_devider_);
+    }
+
+  /* convert to target pwm */
+  for(int i = 0; i < motor_number_; i++)
+    {
+      if(start_control_flag_)
+        {
+          float scaled_thrust = v_factor_ * (target_thrust_[i] - decreasing_rate * base_throttle_term_[i]) / rotor_devider_;
+          if (scaled_thrust < 0) scaled_thrust = 0;
+
+          switch(pwm_conversion_mode_)
+            {
+            case spinal::MotorInfo::SQRT_MODE:
+              {
+                /* pwm = F_inv[(V_ref / V)^2 f] */
+                float sqrt_tmp = motor_info_[motor_ref_index_].polynominal[1] * motor_info_[motor_ref_index_].polynominal[1] - 4 * 10 * motor_info_[motor_ref_index_].polynominal[2] * (motor_info_[motor_ref_index_].polynominal[0] - scaled_thrust); //special decimal order shift (x10)
+                target_pwm_[i] = (-motor_info_[motor_ref_index_].polynominal[1] + sqrt_tmp * inv_sqrt(sqrt_tmp)) / (2 * motor_info_[motor_ref_index_].polynominal[2]);
+                break;
+              }
+            case spinal::MotorInfo::POLYNOMINAL_MODE:
+              {
+                /* pwm = F_inv[(V_ref / V)^1.5 f] */
+                float tenth_scaled_thrust = scaled_thrust * 0.1f; //special decimal order shift (x0.1)
+                /* 4 dimensional */
+                int max_dimenstional = 4;
+                target_pwm_[i] = motor_info_[motor_ref_index_].polynominal[max_dimenstional];
+                for (int j = max_dimenstional - 1; j >= 0; j--)
+                    target_pwm_[i] = target_pwm_[i] * tenth_scaled_thrust + motor_info_[motor_ref_index_].polynominal[j];
+                break;
+              }
+            default:
+              {
+                break;
+              }
+            }
+          target_pwm_[i] /= 100; // target_pwm is [%]
+
+          /* constraint */
+          if(target_pwm_[i] < min_duty_) target_pwm_[i]  = min_duty_;
+          else if(target_pwm_[i]  > max_duty_) target_pwm_[i]  = max_duty_;
+
+          /* motor pwm test */
+          if(pwm_test_flag_) target_pwm_[i] = pwm_test_value_;
+        }
+
+      /* for ros */
+      pwms_msg_.motor_value[i] = (target_pwm_[i] * 2000);
+    }
 }

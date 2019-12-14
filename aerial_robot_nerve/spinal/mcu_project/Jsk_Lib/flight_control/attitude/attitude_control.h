@@ -53,7 +53,7 @@
 
 /* fail safe */
 #define FLIGHT_COMMAND_TIMEOUT 500 //500ms
-#define MAX_TILT_ANGLE 0.43 // 25d degree
+#define MAX_TILT_ANGLE 1.0 // 25d degree
 
 #define CONTROL_PUB_INTERVAL 100 //40hz //100 //10ms
 
@@ -201,6 +201,7 @@ private:
   float max_thrust_;
   float min_thrust_;
   float force_landing_thrust_;
+  int8_t rotor_devider_;
   int8_t pwm_conversion_mode_;
   std::vector<spinal::MotorInfo> motor_info_;
   uint8_t motor_ref_index_;
@@ -221,7 +222,7 @@ private:
   void torqueAllocationMatrixInvCallback(const spinal::TorqueAllocationMatrixInv& msg);
   void pwmTestCallback(const std_msgs::Float32& pwm_msg);
 
-  float pwmConversion(float thrust);
+  void pwmConversion(void);
   void pwmsControl(void);
 
   void reset(void);
