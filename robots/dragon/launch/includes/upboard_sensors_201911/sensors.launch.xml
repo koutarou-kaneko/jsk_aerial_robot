@@ -13,10 +13,12 @@
       </include>
 
       <!-- vo by realsense t265 -->
+      <!--
       <include file="$(find realsense2_camera)/launch/multi_t265_odom.launch" >
-        <arg name="throttle_rate" value="80.0"/> <!-- 80 hz -->
+        <arg name="throttle_rate" value="80.0"/>
         <arg name="reset_duration" value = "0.5" />
-      </include>
+        </include>
+      -->
       <!-- mocap -->
       <include file="$(find aerial_robot_base)/launch/external_module/mocap.launch" />
 
