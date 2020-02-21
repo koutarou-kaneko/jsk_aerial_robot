@@ -480,7 +480,7 @@ void AttitudeController::fourAxisCommandCallback( const spinal::FourAxisCommand 
   /* failsafe2-1: if the pitch and roll angle is too big, start force landing */
   if(fabs(target_angle_[X]) > MAX_TILT_ANGLE || fabs(target_angle_[Y]) > MAX_TILT_ANGLE )
     {
-      setForceLandingFlag(true);
+      //setForceLandingFlag(true);
 #ifdef SIMULATION
       ROS_ERROR("failsafe2");
 #else
