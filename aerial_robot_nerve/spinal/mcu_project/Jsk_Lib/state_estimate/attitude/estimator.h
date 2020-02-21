@@ -18,7 +18,8 @@
 #include <array>
 
 #define DELTA_T 0.001f
-#define MAG_DECLINIATION -0.13002702927f //[rad] = -7.27[deg], http://www.magnetic-declination.com/
+//#define MAG_DECLINIATION -0.13002702927f //[rad] = -7.27[deg], http://www.magnetic-declination.com/
+#define MAG_DECLINIATION 0.03700098014f //[rad] = -2.12[deg], http://www.magnetic-declination.com/United%20Arab%20Emirates/Abu%20Dhabi/95.html
 #define GYRO_AMP 1.1395f  //if value= 1, it means normal complementrary filter
 
 namespace Axis
