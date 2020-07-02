@@ -428,7 +428,7 @@ void AttitudeController::fourAxisCommandCallback( const spinal::FourAxisCommand 
     {
       setForceLandingFlag(true);
 #ifdef SIMULATION
-      ROS_ERROR("failsafe: target angles are too large, roll: %f (%f), pitch: %f ()%f",
+      ROS_ERROR("failsafe: target angles are too large, roll: %f (%f), pitch: %f (%f)",
                 target_angle_[X], MAX_TILT_ANGLE, target_angle_[Y], MAX_TILT_ANGLE);
 #else
       nh_->logerror("failsafe: target angles are too large");

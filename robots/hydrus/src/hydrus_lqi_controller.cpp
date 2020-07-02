@@ -30,6 +30,9 @@ void HydrusLQIController::initialize(ros::NodeHandle nh,
   four_axis_gain_pub_ = nh_.advertise<aerial_robot_msgs::FourAxisGain>("debug/four_axes/gain", 1);
   p_matrix_pseudo_inverse_inertia_pub_ = nh_.advertise<spinal::PMatrixPseudoInverseWithInertia>("p_matrix_pseudo_inverse_inertia", 1);
 
+  //subscriber
+  ff_wrench_sub_ = nh.subscribe("ff_wrench", 10, &HydrusLQIController::ffWrenchCallback, this);
+
   //dynamic reconfigure server
   ros::NodeHandle control_nh(nh_, "controller");
   lqi_server_ = boost::make_shared<dynamic_reconfigure::Server<hydrus::LQIConfig> >(ros::NodeHandle(control_nh, "lqi"));
@@ -124,12 +127,15 @@ void HydrusLQIController::controlCore()
 void HydrusLQIController::allocateYawTerm()
 {
   Eigen::VectorXd target_thrust_yaw_term = Eigen::VectorXd::Zero(motor_num_);
+  Eigen::Vector4d p(0, 0, 0, ff_t_z_);
+  auto ff_yaw_collective_thrust = p_mat_pseudo_inv_ * p;
+  //std::cout << "Feedforward term of thrust: " << ff_yaw_collective_thrust.transpose << std::endl;
   for(int i = 0; i < motor_num_; i++)
     {
       double p_term = yaw_gains_.at(i)[0] * pid_controllers_.at(YAW).getErrP();
       double i_term = yaw_gains_.at(i)[1] * pid_controllers_.at(YAW).getErrI();
       double d_term = yaw_gains_.at(i)[2] * pid_controllers_.at(YAW).getErrD();
-      target_thrust_yaw_term(i) = p_term + i_term + d_term;
+      target_thrust_yaw_term(i) = p_term + i_term + d_term + ff_yaw_collective_thrust(i);
       pid_msg_.yaw.p_term.at(i) = p_term;
       pid_msg_.yaw.i_term.at(i) = i_term;
       pid_msg_.yaw.d_term.at(i) = d_term;
@@ -156,6 +162,13 @@ void HydrusLQIController::allocateYawTerm()
           candidate_yaw_term_ = target_thrust_yaw_term(i);
         }
     }
+}
+
+void HydrusLQIController::ffWrenchCallback(const geometry_msgs::Vector3ConstPtr& msg)
+{
+  ff_f_x_ = msg->x;
+  ff_f_y_ = msg->y;
+  ff_t_z_ = msg->z;
 }
 
 void HydrusLQIController::gainGeneratorFunc()

@@ -42,6 +42,7 @@
 #include <hydrus/hydrus_robot_model.h>
 #include <hydrus/LQIConfig.h>
 #include <sensor_msgs/JointState.h>
+#include <geometry_msgs/Vector3.h>
 #include <spinal/PMatrixPseudoInverseWithInertia.h>
 #include <spinal/RollPitchYawTerms.h>
 #include <ros/ros.h>
@@ -73,6 +74,9 @@ namespace aerial_robot_control
     ros::Publisher rpy_gain_pub_; //for spinal
     ros::Publisher four_axis_gain_pub_;
     ros::Publisher p_matrix_pseudo_inverse_inertia_pub_;
+
+    ros::Subscriber ff_wrench_sub_;
+    double ff_f_x_ = 0, ff_f_y_ = 0, ff_t_z_ = 0;
 
     int lqi_mode_;
     std::thread gain_generator_thread_;
@@ -107,6 +111,7 @@ namespace aerial_robot_control
     virtual void sendCmd() override;
     virtual void sendFourAxisCommand();
 
+    void ffWrenchCallback(const geometry_msgs::Vector3ConstPtr& msg);
     virtual void allocateYawTerm();
     void gainGeneratorFunc();
     void cfgLQICallback(hydrus::LQIConfig &config, uint32_t level); //dynamic reconfigure

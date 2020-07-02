@@ -22,8 +22,8 @@ void HydrusTiltedLQIController::controlCore()
 {
   PoseLinearController::controlCore();
 
-  tf::Vector3 target_acc_w(pid_controllers_.at(X).result(),
-                           pid_controllers_.at(Y).result(),
+  tf::Vector3 target_acc_w(pid_controllers_.at(X).result()+ff_f_x_,
+                           pid_controllers_.at(Y).result()+ff_f_y_,
                            pid_controllers_.at(Z).result());
 
   tf::Vector3 target_acc_dash = (tf::Matrix3x3(tf::createQuaternionFromYaw(rpy_.z()))).inverse() * target_acc_w;
