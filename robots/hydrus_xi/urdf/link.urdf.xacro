@@ -63,12 +63,16 @@
       <xacro:mesh_model type="link/propeller_link">
         <origin xyz="0 0 0" rpy="0 0 0"/>
       </xacro:mesh_model>
-      <!-- <collision> -->
-      <!--   <origin rpy="0 0 0" xyz="0 0 ${- collision_rotor_height / 2}"/> -->
-      <!--   <geometry> -->
-      <!--     <cylinder length="${collision_rotor_height}" radius="${protector_radius + 0.01}"/> -->
-      <!--   </geometry> -->
-      <!-- </collision> -->
+      <collision>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="package://hydrus_xi/urdf/mesh/link/propeller_link.dae"/>
+        </geometry>
+        <!--origin rpy="0.3 0 0" xyz="0 0 ${- collision_rotor_height / 2}"/-->
+        <!--geometry-->
+          <!--cylinder length="${collision_rotor_height}" radius="${protector_radius + 0.01}"/-->
+        <!--/geometry-->
+      </collision>
     </link>
     <xacro:damping_factor link="gimbal_link${self}"/>
 
