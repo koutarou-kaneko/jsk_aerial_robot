@@ -157,7 +157,7 @@ def sendFFWrench(pub, fx, fy, tz):
 if __name__ == '__main__':
     rospy.init_node("interactive_test")
     pub = rospy.Publisher("/hydrus_xi/ff_wrench", Vector3, queue_size=10)
-    rospy.sleep(rospy.Duration(1.0))
+    rospy.sleep(rospy.Duration(5.0))
     hyd = HydrusCommander()
     rospy.sleep(rospy.Duration(1.0))
     hyd.arm_and_takeoff()
