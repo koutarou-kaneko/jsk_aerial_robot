@@ -123,6 +123,9 @@ class HydrusCommander():
         self.joints_ctrl_pub.publish(joint_msg)
         time.sleep(self.WAIT_TIME)
 
+    def door_pose(self):
+        self.joint_publish([0.78, 1.57, 1.57])
+
     '''
     def open_joints(self):
         """open links"""
@@ -162,3 +165,5 @@ if __name__ == '__main__':
     rospy.sleep(rospy.Duration(1.0))
     hyd.arm_and_takeoff()
     embed()
+    #hyd.joint_publish([-1.57, 0, 1.57])
+    #hyd.joint_publish([-1.57, -1.57, -1.57])
