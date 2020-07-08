@@ -262,6 +262,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
 
       for(int i = 0; i < joint_names.size(); i++)
         {
+#if 0
           if(joint_names.at(i).find("joint") != std::string::npos)
             {
               if(fabs(joint_positions_for_plan_(joint_indices.at(i)) - 2 * M_PI / robot_model_->getRotorNum()) > 0.2 && init_from_normal_pose_)
@@ -270,6 +271,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
                   return false;
                 }
             }
+#endif
         }
 
       for(const auto& name: control_gimbal_names_)
