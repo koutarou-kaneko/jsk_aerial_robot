@@ -129,7 +129,7 @@ void HydrusLQIController::allocateYawTerm()
   Eigen::VectorXd target_thrust_yaw_term = Eigen::VectorXd::Zero(motor_num_);
   Eigen::Vector4d p(0, 0, 0, ff_t_z_);
   auto ff_yaw_collective_thrust = p_mat_pseudo_inv_ * p;
-  ROS_INFO_STREAM_THROTTLE(0.1, "Feedforward term of thrust: " << ff_yaw_collective_thrust.transpose());
+  //ROS_INFO_STREAM_THROTTLE(0.1, "Feedforward term of thrust: " << ff_yaw_collective_thrust.transpose());
   for(int i = 0; i < motor_num_; i++)
     {
       double p_term = yaw_gains_.at(i)[0] * pid_controllers_.at(YAW).getErrP();
