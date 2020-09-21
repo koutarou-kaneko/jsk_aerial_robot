@@ -58,5 +58,4 @@ if __name__ == '__main__':
             pub.publish(WrenchStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/cog') ,wrench=Wrench(force=Vector3(x=sumx, y=sumy, z=sumz))))
         except:
             rospy.loginfo_throttle(1, 'exception thrown')
-            embed()
-        #r.sleep()
+        r.sleep()

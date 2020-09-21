@@ -28,10 +28,29 @@ void HydrusTiltedLQIController::controlCore()
 
   tf::Vector3 target_acc_dash = (tf::Matrix3x3(tf::createQuaternionFromYaw(rpy_.z()))).inverse() * target_acc_w;
 
+  /*
   target_pitch_ = atan2(target_acc_dash.x(), target_acc_dash.z());
   target_roll_ = atan2(-target_acc_dash.y(), sqrt(target_acc_dash.x() * target_acc_dash.x() + target_acc_dash.z() * target_acc_dash.z()));
+  */
 
-  Eigen::VectorXd f = robot_model_->getStaticThrust();
+  // zero
+  target_pitch_ = 0;
+  target_roll_ = 0;
+
+  robot_model_->calcWrenchMatrixOnRoot(); // update Q matrix
+
+  /* calculate the static thrust on CoG frame */
+  /* note: can not calculate in root frame, sine the projected f_x, f_y is different in CoG and root */
+  Eigen::MatrixXd wrench_mat_on_cog = robot_model_->calcWrenchMatrixOnCoG();
+  
+  Eigen::MatrixXd Q_4(4,wrench_mat_on_cog.cols());
+  Q_4 << wrench_mat_on_cog.topRows(3), wrench_mat_on_cog.bottomRows(1);
+  Eigen::VectorXd grav(4), ff_wrench(4);
+  ff_wrench << ff_f_x_, ff_f_y_, 0, 0;
+  grav << robot_model_->getGravity().head(3), robot_model_->getGravity().tail(1);
+  grav = grav + ff_wrench;
+
+  Eigen::VectorXd f = aerial_robot_model::pseudoinverse(Q_4) * grav * robot_model_->getMass();
   Eigen::VectorXd allocate_scales = f / f.sum() * robot_model_->getMass();
   Eigen::VectorXd target_thrust_z_term = allocate_scales * target_acc_w.length();
 

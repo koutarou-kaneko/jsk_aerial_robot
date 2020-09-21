@@ -10,4 +10,5 @@
     </include>
 
     <node pkg="hydrus_xi" type="interactive_test.py" name="interactive_test" output="screen" />
+    <node pkg="hydrus_xi" type="thrust.py" name="thrust_viz" />
 </launch>
