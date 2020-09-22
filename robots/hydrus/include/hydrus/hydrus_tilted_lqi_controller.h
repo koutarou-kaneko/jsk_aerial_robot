@@ -55,14 +55,18 @@ namespace aerial_robot_control
   protected:
 
     ros::Publisher desired_baselink_rot_pub_;
+    ros::ServiceServer set_horizontal_force_mode_srv_;
+    ros::ServiceServer reset_horizontal_force_mode_srv_;
 
     double trans_constraint_weight_;
     double att_control_weight_;
+    bool horizontal_force_mode_ = false;
 
     void controlCore() override;
     bool optimalGain() override;
     void publishGain() override;
     void rosParamInit() override;
-
+    bool setHorizontalForceMode(std_srvs::Empty::Request&, std_srvs::Empty::Response&);
+    bool resetHorizontalForceMode(std_srvs::Empty::Request&, std_srvs::Empty::Response&);
   };
 };
