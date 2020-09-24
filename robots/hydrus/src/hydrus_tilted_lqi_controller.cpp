@@ -158,12 +158,14 @@ void HydrusTiltedLQIController::rosParamInit()
 bool HydrusTiltedLQIController::setHorizontalForceMode(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
 {
   horizontal_force_mode_ = true;
+  ROS_INFO("horizontal force mode set");
   return true;
 }
 
 bool HydrusTiltedLQIController::resetHorizontalForceMode(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
 {
   horizontal_force_mode_ = false;
+  ROS_INFO("horizontal force mode reset");
   return true;
 }
 
