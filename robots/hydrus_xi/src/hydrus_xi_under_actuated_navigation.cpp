@@ -315,7 +315,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
         {
           for(int i = 0; i < control_gimbal_indices_.size(); i++)
             {
-              if(i%2 == 0) opt_gimbal_angles_.at(i) = M_PI;
+              //if(i%2 == 0) opt_gimbal_angles_.at(i) = M_PI;
             }
 
           // hard-coding: singular line form
@@ -337,6 +337,12 @@ bool HydrusXiUnderActuatedNavigator::plan()
   try
     {
       nlopt::result result = vectoring_nl_solver_->optimize(opt_gimbal_angles_, max_f);
+      /*
+      opt_gimbal_angles_.at(0) = M_PI;
+      opt_gimbal_angles_.at(1) = M_PI / 2;
+      opt_gimbal_angles_.at(2) = M_PI / 2;
+      opt_gimbal_angles_.at(3) = 0;
+      */
 
       double roll,pitch,yaw;
       robot_model_for_plan_->getCogDesireOrientation<KDL::Rotation>().GetRPY(roll, pitch, yaw);
@@ -351,7 +357,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
           for(auto it: opt_gimbal_angles_) std::cout << std::setprecision(5) << it << " ";
           std::cout << ", max min yaw: " << max_min_yaw_;
           std::cout << ", fc t min: " << robot_model_for_plan_->getFeasibleControlTMin();
-          std::cout << ", atttidue: [" << roll << ", " << pitch;
+          std::cout << ", attitude: [" << roll << ", " << pitch;
           std::cout << "], force: [" << robot_model_for_plan_->getStaticThrust().transpose();
           std::cout << "]" << std::endl;
         }
