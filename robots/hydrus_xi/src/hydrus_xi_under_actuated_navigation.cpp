@@ -7,6 +7,47 @@ namespace
   int cnt = 0;
   int invalid_cnt = 0;
 
+  double maximizeHorizontalForceSquare(const std::vector<double> &x, std::vector<double> &grad, void *planner_ptr)
+  {
+    cnt++;
+    HydrusXiUnderActuatedNavigator *planner = reinterpret_cast<HydrusXiUnderActuatedNavigator*>(planner_ptr);
+    auto robot_model = planner->getRobotModelForPlan();
+    /* update robot model */
+    KDL::JntArray joint_positions = planner->getJointPositionsForPlan();
+    std::cout << "joint_pos: " << joint_positions.data << "\n";
+    for (int i =0; i<robot_model->getJointNum(); i++) {
+      std::cout<<" "<<robot_model->getJointNames().at(i);
+    }
+    std::cout<<std::endl;
+    for(int i = 0; i < x.size(); i++)
+      joint_positions(planner->getControlIndices().at(i)) = x.at(i);
+
+    robot_model->updateRobotModel(joint_positions);
+
+    if(!robot_model->stabilityCheck(planner->getPlanVerbose()))
+      {
+        invalid_cnt ++;
+        std::stringstream ss;
+        for(const auto& angle: x) ss << angle << ", ";
+        if(planner->getPlanVerbose()) ROS_WARN_STREAM("nlopt, robot stability is invalid with gimbals: " << ss.str() << " (cnt: " << invalid_cnt << ")");
+        return 0;
+      }
+
+    invalid_cnt = 0;
+
+    // ika iminasi
+    Eigen::VectorXd force_v = robot_model->getStaticThrust();
+    double average_force = force_v.sum() / force_v.size();
+    double variant = 0;
+
+    for(int i = 0; i < force_v.size(); i++)
+      variant += ((force_v(i) - average_force) * (force_v(i) - average_force));
+
+    variant = sqrt(variant / force_v.size());
+
+    return planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + planner->getForceVariantWeight() / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
+  }
+
   double maximizeFCTMin(const std::vector<double> &x, std::vector<double> &grad, void *planner_ptr)
   {
     cnt++;
@@ -188,13 +229,15 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
 
   /* nonlinear optimization for vectoring angles planner */
   vectoring_nl_solver_ = boost::make_shared<nlopt::opt>(nlopt::LN_COBYLA, control_gimbal_names_.size());
-  if(maximize_yaw_)
-    {
-      vectoring_nl_solver_->set_max_objective(maximizeMinYawTorque, this);
-      vectoring_nl_solver_->add_inequality_constraint(fcTMinConstraint, this, 1e-8);
-    }
-  else
+  if(maximize_yaw_) {
+    //vectoring_nl_solver_->set_max_objective(maximizeMinYawTorque, this);
+    //vectoring_nl_solver_->add_inequality_constraint(fcTMinConstraint, this, 1e-8);
+    
+    // detch up
+    vectoring_nl_solver_->set_max_objective(maximizeHorizontalForceSquare, this);
+  } else {
     vectoring_nl_solver_->set_max_objective(maximizeFCTMin, this);
+  }
 
   vectoring_nl_solver_->add_inequality_constraint(baselinkRotConstraint, this, 1e-8);
 
@@ -211,7 +254,7 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   yaw_range_lp_solver_.data()->setNumberOfVariables(rotor_num);
   yaw_range_lp_solver_.data()->setNumberOfConstraints(rotor_num);
 
-  // allocate LP problem matrices and vectores
+  // allocate LP problem matrices and vectors
   Eigen::SparseMatrix<double> hessian;
   hessian.resize(rotor_num, rotor_num);
 

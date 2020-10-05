@@ -44,20 +44,20 @@ void HydrusTiltedLQIController::controlCore()
 
     robot_model_->calcWrenchMatrixOnRoot(); // update Q matrix
     /* calculate the static thrust on CoG frame */
-    /* note: can not calculate in root frame, sine the projected f_x, f_y is different in CoG and root */
+    /* note: can not calculate in root frame, since the projected f_x, f_y is different in CoG and root */
     Eigen::MatrixXd wrench_mat_on_cog = robot_model_->calcWrenchMatrixOnCoG();
     std::cout << "Q:\n" << wrench_mat_on_cog << std::endl;
     
     Eigen::MatrixXd Q_4(4,wrench_mat_on_cog.cols());
     Q_4 << wrench_mat_on_cog.topRows(3), wrench_mat_on_cog.bottomRows(1);
-    //std::cout << "Q_4^T:\n" << aerial_robot_model::pseudoinverse(Q_4) << std::endl;
+    std::cout << "Q_4^T:\n" << aerial_robot_model::pseudoinverse(Q_4) << std::endl;
     Eigen::VectorXd grav(4), ff_wrench(4);
     ff_wrench << ff_f_x_, ff_f_y_, 0, 0;
     grav << robot_model_->getGravity().head(3), robot_model_->getGravity().tail(1);
     grav = grav + ff_wrench;
 
     f = aerial_robot_model::pseudoinverse(Q_4) * grav * robot_model_->getMass();
-    std::cout << "out:\n" << wrench_mat_on_cog*f << std::endl;
+    std::cout << "desired, out:\n" << grav << " " << wrench_mat_on_cog*f << std::endl;
   }
   
   Eigen::VectorXd allocate_scales = f / f.sum() * robot_model_->getMass();
