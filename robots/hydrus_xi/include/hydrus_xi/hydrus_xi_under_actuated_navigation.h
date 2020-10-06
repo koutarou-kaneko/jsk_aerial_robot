@@ -37,6 +37,7 @@
 
 #include <aerial_robot_control/flight_navigation.h>
 #include <algorithm>
+#include <string>
 #include <hydrus/hydrus_tilted_robot_model.h>
 #include <nlopt.hpp>
 #include <OsqpEigen/OsqpEigen.h>

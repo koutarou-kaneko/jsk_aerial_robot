@@ -14,11 +14,13 @@ namespace
     auto robot_model = planner->getRobotModelForPlan();
     /* update robot model */
     KDL::JntArray joint_positions = planner->getJointPositionsForPlan();
-    std::cout << "joint_pos: " << joint_positions.data << "\n";
-    for (int i =0; i<robot_model->getJointNum(); i++) {
-      std::cout<<" "<<robot_model->getJointNames().at(i);
-    }
-    std::cout<<std::endl;
+    
+    auto t1_mat = robot_model->forwardKinematics<Eigen::Affine3d>(std::string("thrust1"), planner->getJointPositionsForPlan()).matrix();
+    auto t2_mat = robot_model->forwardKinematics<Eigen::Affine3d>(std::string("thrust2"), planner->getJointPositionsForPlan()).matrix();
+    auto t3_mat = robot_model->forwardKinematics<Eigen::Affine3d>(std::string("thrust3"), planner->getJointPositionsForPlan()).matrix();
+    auto t4_mat = robot_model->forwardKinematics<Eigen::Affine3d>(std::string("thrust4"), planner->getJointPositionsForPlan()).matrix();
+    std::cout << "t1: " << t1_mat(0,2) << " " << t1_mat(1,2) << "\nt2: " << t2_mat(0,2) << " " << t2_mat(1,2) << "\nt3: " << t3_mat(0,2) << " " << t3_mat(1,2) << "\nt4: " << t4_mat(0,2) << " " << t4_mat(1,2) << "\n";
+    
     for(int i = 0; i < x.size(); i++)
       joint_positions(planner->getControlIndices().at(i)) = x.at(i);
 
