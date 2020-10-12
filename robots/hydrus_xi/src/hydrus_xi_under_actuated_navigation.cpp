@@ -37,17 +37,9 @@ namespace
 
     invalid_cnt = 0;
 
-    // ika iminasi
-    Eigen::VectorXd force_v = robot_model->getStaticThrust();
-    double average_force = force_v.sum() / force_v.size();
-    double variant = 0;
+    Eigen::Vector2d t_sum = {t1_mat(0,2)+t2_mat(0,2)+t3_mat(0,2)+t4_mat(0,2), t1_mat(1,2)+t2_mat(1,2)+t3_mat(1,2)+t4_mat(1,2)};
 
-    for(int i = 0; i < force_v.size(); i++)
-      variant += ((force_v(i) - average_force) * (force_v(i) - average_force));
-
-    variant = sqrt(variant / force_v.size());
-
-    return planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + planner->getForceVariantWeight() / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
+    return planner->h_f_direction_.dot(t_sum);
   }
 
   double maximizeFCTMin(const std::vector<double> &x, std::vector<double> &grad, void *planner_ptr)
@@ -211,6 +203,7 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   rosParamInit();
 
   gimbal_ctrl_pub_ = nh_.advertise<sensor_msgs::JointState>("gimbals_ctrl", 1);
+  ff_wrench_sub_ = nh_.subscribe("ff_wrench", 10, &HydrusXiUnderActuatedNavigator::ffWrenchCallback, this);
 
   if(nh.hasParam("control_gimbal_names"))
     {
@@ -430,6 +423,13 @@ bool HydrusXiUnderActuatedNavigator::plan()
   prev_opt_gimbal_angles_ = opt_gimbal_angles_;
 
   return true;
+}
+
+void HydrusXiUnderActuatedNavigator::ffWrenchCallback(const geometry_msgs::Vector3ConstPtr& msg)
+{
+  double normalize = std::sqrt(std::pow(msg->x, 2)+std::pow(msg->y, 2));
+  h_f_direction_[0] = msg->x / normalize;
+  h_f_direction_[1] = msg->y / normalize;
 }
 
 void HydrusXiUnderActuatedNavigator::rosParamInit()

@@ -73,8 +73,10 @@ namespace aerial_robot_navigation
     const bool getPlanVerbose() const { return plan_verbose_; }
 
     void setMaxMinYaw(const double max_min_yaw) { max_min_yaw_ = max_min_yaw;}
+    Eigen::Vector2d h_f_direction_;
   private:
     ros::Publisher gimbal_ctrl_pub_;
+    ros::Subscriber ff_wrench_sub_;
     std::thread plan_thread_;
     boost::shared_ptr<HydrusTiltedRobotModel> robot_model_for_plan_;
     OsqpEigen::Solver yaw_range_lp_solver_;
@@ -97,6 +99,7 @@ namespace aerial_robot_navigation
 
     std::vector<double> opt_gimbal_angles_, prev_opt_gimbal_angles_;
 
+    void ffWrenchCallback(const geometry_msgs::Vector3ConstPtr& msg);
     void threadFunc();
     bool plan();
 
