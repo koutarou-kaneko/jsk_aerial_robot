@@ -42,6 +42,18 @@ class HydrusCommander():
         self.takeoff_pub.publish(Empty())
         time.sleep(self.WAIT_TIME)
 
+    def arm(self):
+        # send arm
+        time.sleep(self.WAIT_TIME)
+        self.start_pub.publish(Empty())
+        time.sleep(self.WAIT_TIME)
+
+    def takeoff(self):
+        # send arm
+        time.sleep(self.WAIT_TIME)
+        self.takeoff_pub.publish(Empty())
+        time.sleep(self.WAIT_TIME)
+
     def land(self):
         time.sleep(self.WAIT_TIME)
         self.land_pub.publish(Empty())
@@ -163,7 +175,7 @@ if __name__ == '__main__':
     rospy.sleep(rospy.Duration(5.0))
     hyd = HydrusCommander()
     rospy.sleep(rospy.Duration(1.0))
-    hyd.arm_and_takeoff()
+    hyd.arm()
     embed()
     #hyd.joint_publish([-1.57, 0, 1.57])
     #hyd.joint_publish([-1.57, -1.57, -1.57])

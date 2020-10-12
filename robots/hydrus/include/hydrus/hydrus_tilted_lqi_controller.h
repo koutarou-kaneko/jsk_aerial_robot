@@ -36,6 +36,7 @@
 #pragma once
 
 #include <hydrus/hydrus_lqi_controller.h>
+#include <hydrus/hydrus_tilted_robot_model.h>
 #include <spinal/DesireCoord.h>
 
 namespace aerial_robot_control
@@ -58,6 +59,7 @@ namespace aerial_robot_control
     ros::ServiceServer set_horizontal_force_mode_srv_;
     ros::ServiceServer reset_horizontal_force_mode_srv_;
 
+    boost::shared_ptr<HydrusTiltedRobotModel> tilted_model_;
     double trans_constraint_weight_;
     double att_control_weight_;
     bool horizontal_force_mode_ = false;

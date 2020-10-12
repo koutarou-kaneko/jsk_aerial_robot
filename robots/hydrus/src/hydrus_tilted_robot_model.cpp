@@ -5,7 +5,6 @@ HydrusTiltedRobotModel::HydrusTiltedRobotModel(bool init_with_rosparam, bool ver
 {
 }
 
-
 void HydrusTiltedRobotModel::calcStaticThrust()
 {
   calcWrenchMatrixOnRoot(); // update Q matrix
@@ -16,6 +15,31 @@ void HydrusTiltedRobotModel::calcStaticThrust()
 
   Eigen::VectorXd static_thrust = aerial_robot_model::pseudoinverse(wrench_mat_on_cog.middleRows(2, 4)) * getGravity().segment(2,4) * getMass();
   setStaticThrust(static_thrust);
+}
+
+void HydrusTiltedRobotModel::calc3DoFThrust(double ff_f_x, double ff_f_y)
+{
+  calcWrenchMatrixOnRoot(); // update Q matrix
+  /* calculate the static thrust on CoG frame */
+  /* note: can not calculate in root frame, since the projected f_x, f_y is different in CoG and root */
+  Eigen::MatrixXd wrench_mat_on_cog = calcWrenchMatrixOnCoG();
+  std::cout << "Q:\n" << wrench_mat_on_cog << std::endl;
+  
+  Eigen::MatrixXd Q_4(4,wrench_mat_on_cog.cols());
+  Q_4 << wrench_mat_on_cog.topRows(3), wrench_mat_on_cog.bottomRows(1);
+  std::cout << "Q_4^T:\n" << aerial_robot_model::pseudoinverse(Q_4) << std::endl;
+  Eigen::VectorXd grav(4), ff_wrench(4);
+  ff_wrench << ff_f_x, ff_f_y, 0, 0;
+  grav << getGravity().head(3), getGravity().tail(1);
+  grav = grav + ff_wrench;
+
+  three_dof_thrust_ = aerial_robot_model::pseudoinverse(Q_4) * grav * getMass();
+  std::cout << "desired, out:\n" << grav << " " << wrench_mat_on_cog * three_dof_thrust_ << std::endl;
+}
+
+Eigen::VectorXd HydrusTiltedRobotModel::get3DoFThrust()
+{
+  return three_dof_thrust_;
 }
 
 void HydrusTiltedRobotModel::updateRobotModelImpl(const KDL::JntArray& joint_positions)

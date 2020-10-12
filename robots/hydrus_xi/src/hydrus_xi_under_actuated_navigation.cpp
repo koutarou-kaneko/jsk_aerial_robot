@@ -19,8 +19,12 @@ namespace
     auto t2_mat = robot_model->forwardKinematics<Eigen::Affine3d>(std::string("thrust2"), planner->getJointPositionsForPlan()).matrix();
     auto t3_mat = robot_model->forwardKinematics<Eigen::Affine3d>(std::string("thrust3"), planner->getJointPositionsForPlan()).matrix();
     auto t4_mat = robot_model->forwardKinematics<Eigen::Affine3d>(std::string("thrust4"), planner->getJointPositionsForPlan()).matrix();
-    std::cout << "t1: " << t1_mat(0,2) << " " << t1_mat(1,2) << "\nt2: " << t2_mat(0,2) << " " << t2_mat(1,2) << "\nt3: " << t3_mat(0,2) << " " << t3_mat(1,2) << "\nt4: " << t4_mat(0,2) << " " << t4_mat(1,2) << "\n";
-    
+
+    ROS_INFO_THROTTLE(1, "t1: %lf %lf", t1_mat(0,2), t1_mat(1,2));
+    ROS_INFO_THROTTLE(1, "t2: %lf %lf", t2_mat(0,2), t2_mat(1,2));
+    ROS_INFO_THROTTLE(1, "t3: %lf %lf", t3_mat(0,2), t3_mat(1,2));
+    ROS_INFO_THROTTLE(1, "t4: %lf %lf", t4_mat(0,2), t4_mat(1,2));
+
     for(int i = 0; i < x.size(); i++)
       joint_positions(planner->getControlIndices().at(i)) = x.at(i);
 
@@ -37,8 +41,12 @@ namespace
 
     invalid_cnt = 0;
 
-    Eigen::Vector2d t_sum = {t1_mat(0,2)+t2_mat(0,2)+t3_mat(0,2)+t4_mat(0,2), t1_mat(1,2)+t2_mat(1,2)+t3_mat(1,2)+t4_mat(1,2)};
+    //boost::shared_ptr<HydrusTiltedRobotModel> tilted_model = boost::dynamic_pointer_cast<HydrusTiltedRobotModel>(robot_model);
+    auto thrust = robot_model->get3DoFThrust();
+    Eigen::Vector2d t_sum = {t1_mat(0,2)*thrust(0)+t2_mat(0,2)*thrust(1)+t3_mat(0,2)*thrust(2)+t4_mat(0,2)*thrust(3), t1_mat(1,2)*thrust(0)+t2_mat(1,2)*thrust(1)+t3_mat(1,2)*thrust(2)+t4_mat(1,2)*thrust(3)};
+    //Eigen::Vector2d t_sum = {t1_mat(0,2)+t2_mat(0,2)+t3_mat(0,2)+t4_mat(0,2), t1_mat(1,2)+t2_mat(1,2)+t3_mat(1,2)+t4_mat(1,2)};
 
+    ROS_INFO_THROTTLE(1, "dir, thrust: %lf %lf %lf %lf %lf %lf", planner->h_f_direction_(0), planner->h_f_direction_(1), thrust(0), thrust(1), thrust(2), thrust(3));
     return planner->h_f_direction_.dot(t_sum);
   }
 

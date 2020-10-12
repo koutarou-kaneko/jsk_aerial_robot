@@ -46,6 +46,9 @@ public:
   virtual ~HydrusTiltedRobotModel() = default;
 
   virtual void calcStaticThrust() override;
+  void calc3DoFThrust(double, double);
+  Eigen::VectorXd get3DoFThrust();
+  Eigen::VectorXd three_dof_thrust_ = Eigen::VectorXd::Zero(4);
 
 private:
   void updateRobotModelImpl(const KDL::JntArray& joint_positions) override;

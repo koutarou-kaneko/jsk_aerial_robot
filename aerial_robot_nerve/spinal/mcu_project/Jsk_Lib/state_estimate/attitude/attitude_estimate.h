@@ -238,7 +238,7 @@ public:
 
   EstimatorAlgorithm* getEstimator() {return estimator_;}
 
-  /* receive message via ros protocal */
+  /* receive message via ros protocol */
   inline const ap::Vector3f getAttitude(uint8_t frame)  { return estimator_->getAttitude(frame); }
   inline const ap::Vector3f getAngular(uint8_t frame) { return estimator_->getAngular(frame); }
   inline const ap::Vector3f getSmoothAngular(uint8_t frame) { return estimator_->getSmoothAngular(frame); }

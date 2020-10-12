@@ -14,6 +14,7 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   desired_baselink_rot_pub_ = nh_.advertise<spinal::DesireCoord>("desire_coordinate", 1);
   set_horizontal_force_mode_srv_ = nh.advertiseService("set_horizontal_force_mode", &HydrusTiltedLQIController::setHorizontalForceMode, this);
   reset_horizontal_force_mode_srv_ = nh.advertiseService("reset_horizontal_force_mode", &HydrusTiltedLQIController::resetHorizontalForceMode, this);
+  tilted_model_ = boost::dynamic_pointer_cast<HydrusTiltedRobotModel>(robot_model);
 
   pid_msg_.z.p_term.resize(1);
   pid_msg_.z.i_term.resize(1);
@@ -42,22 +43,8 @@ void HydrusTiltedLQIController::controlCore()
     target_pitch_ = 0;
     target_roll_ = 0;
 
-    robot_model_->calcWrenchMatrixOnRoot(); // update Q matrix
-    /* calculate the static thrust on CoG frame */
-    /* note: can not calculate in root frame, since the projected f_x, f_y is different in CoG and root */
-    Eigen::MatrixXd wrench_mat_on_cog = robot_model_->calcWrenchMatrixOnCoG();
-    std::cout << "Q:\n" << wrench_mat_on_cog << std::endl;
-    
-    Eigen::MatrixXd Q_4(4,wrench_mat_on_cog.cols());
-    Q_4 << wrench_mat_on_cog.topRows(3), wrench_mat_on_cog.bottomRows(1);
-    std::cout << "Q_4^T:\n" << aerial_robot_model::pseudoinverse(Q_4) << std::endl;
-    Eigen::VectorXd grav(4), ff_wrench(4);
-    ff_wrench << ff_f_x_, ff_f_y_, 0, 0;
-    grav << robot_model_->getGravity().head(3), robot_model_->getGravity().tail(1);
-    grav = grav + ff_wrench;
-
-    f = aerial_robot_model::pseudoinverse(Q_4) * grav * robot_model_->getMass();
-    std::cout << "desired, out:\n" << grav << " " << wrench_mat_on_cog*f << std::endl;
+    tilted_model_->calc3DoFThrust(ff_f_x_, ff_f_y_);
+    f = tilted_model_->get3DoFThrust();
   }
   
   Eigen::VectorXd allocate_scales = f / f.sum() * robot_model_->getMass();
