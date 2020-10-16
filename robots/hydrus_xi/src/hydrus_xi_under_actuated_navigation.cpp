@@ -232,20 +232,23 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
 
   /* nonlinear optimization for vectoring angles planner */
   vectoring_nl_solver_ = boost::make_shared<nlopt::opt>(nlopt::LN_COBYLA, control_gimbal_names_.size());
+  vectoring_nl_solver_h_ = boost::make_shared<nlopt::opt>(nlopt::LN_COBYLA, control_gimbal_names_.size());
   if(maximize_yaw_) {
-    //vectoring_nl_solver_->set_max_objective(maximizeMinYawTorque, this);
-    //vectoring_nl_solver_->add_inequality_constraint(fcTMinConstraint, this, 1e-8);
+    vectoring_nl_solver_->set_max_objective(maximizeMinYawTorque, this);
+    vectoring_nl_solver_->add_inequality_constraint(fcTMinConstraint, this, 1e-8);
     
-    // detch up
-    vectoring_nl_solver_->set_max_objective(maximizeHorizontalForceSquare, this);
   } else {
     vectoring_nl_solver_->set_max_objective(maximizeFCTMin, this);
   }
+  vectoring_nl_solver_h_->set_max_objective(maximizeHorizontalForceSquare, this);
 
   vectoring_nl_solver_->add_inequality_constraint(baselinkRotConstraint, this, 1e-8);
+  vectoring_nl_solver_h_->add_inequality_constraint(baselinkRotConstraint, this, 1e-8);
 
   vectoring_nl_solver_->set_xtol_rel(1e-4); //1e-4
+  vectoring_nl_solver_h_->set_xtol_rel(1e-4); //1e-4
   vectoring_nl_solver_->set_maxeval(1000); // 1000 times
+  vectoring_nl_solver_h_->set_maxeval(1000); // 1000 times
   /* linear optimization for yaw range */
   double rotor_num = robot_model->getRotorNum();
 
@@ -303,6 +306,12 @@ void HydrusXiUnderActuatedNavigator::threadFunc()
 
 bool HydrusXiUnderActuatedNavigator::plan()
 {
+  boost::shared_ptr<nlopt::opt> nl_solver_now;
+  if (horizontal_mode_) {
+    nl_solver_now = vectoring_nl_solver_h_;
+  } else {
+    nl_solver_now = vectoring_nl_solver_;
+  }
   joint_positions_for_plan_ = robot_model_->getJointPositions(); // real
 
   if(joint_positions_for_plan_.rows() == 0) return false;
@@ -350,7 +359,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
     }
   else
     {
-      /* heuristic assigment for the init state of vectoring angles */
+      /* heuristic assignment for the init state of vectoring angles */
 
       opt_gimbal_angles_.resize(control_gimbal_indices_.size(), 0); // all angles  are zero
 
@@ -375,20 +384,14 @@ bool HydrusXiUnderActuatedNavigator::plan()
         }
     }
 
-  vectoring_nl_solver_->set_lower_bounds(lb);
-  vectoring_nl_solver_->set_upper_bounds(ub);
+  nl_solver_now->set_lower_bounds(lb);
+  nl_solver_now->set_upper_bounds(ub);
 
   double start_time = ros::Time::now().toSec();
   double max_f = 0;
   try
     {
-      nlopt::result result = vectoring_nl_solver_->optimize(opt_gimbal_angles_, max_f);
-      /*
-      opt_gimbal_angles_.at(0) = M_PI;
-      opt_gimbal_angles_.at(1) = M_PI / 2;
-      opt_gimbal_angles_.at(2) = M_PI / 2;
-      opt_gimbal_angles_.at(3) = 0;
-      */
+      nlopt::result result = nl_solver_now->optimize(opt_gimbal_angles_, max_f);
 
       double roll,pitch,yaw;
       robot_model_for_plan_->getCogDesireOrientation<KDL::Rotation>().GetRPY(roll, pitch, yaw);

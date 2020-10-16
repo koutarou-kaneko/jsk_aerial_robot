@@ -15,6 +15,7 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   set_horizontal_force_mode_srv_ = nh.advertiseService("set_horizontal_force_mode", &HydrusTiltedLQIController::setHorizontalForceMode, this);
   reset_horizontal_force_mode_srv_ = nh.advertiseService("reset_horizontal_force_mode", &HydrusTiltedLQIController::resetHorizontalForceMode, this);
   tilted_model_ = boost::dynamic_pointer_cast<HydrusTiltedRobotModel>(robot_model);
+  navigator_ = navigator;
 
   pid_msg_.z.p_term.resize(1);
   pid_msg_.z.i_term.resize(1);
@@ -149,6 +150,7 @@ void HydrusTiltedLQIController::rosParamInit()
 bool HydrusTiltedLQIController::setHorizontalForceMode(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
 {
   horizontal_force_mode_ = true;
+  navigator_->horizontal_mode_ = true;
   ROS_INFO("horizontal force mode set");
   return true;
 }
@@ -156,6 +158,7 @@ bool HydrusTiltedLQIController::setHorizontalForceMode(std_srvs::Empty::Request&
 bool HydrusTiltedLQIController::resetHorizontalForceMode(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
 {
   horizontal_force_mode_ = false;
+  navigator_->horizontal_mode_ = false;
   ROS_INFO("horizontal force mode reset");
   return true;
 }

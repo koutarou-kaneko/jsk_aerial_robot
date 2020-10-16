@@ -194,6 +194,7 @@ namespace aerial_robot_navigation
     static constexpr int PS4_AXIS_GYRO_PITCH              = 13;
 
     static const sensor_msgs::Joy ps4joyToPs3joyConvert(const sensor_msgs::Joy& ps4_joy_msg);
+    bool horizontal_mode_ = false;
 
   protected:
     ros::NodeHandle nh_;

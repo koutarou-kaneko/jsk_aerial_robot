@@ -80,7 +80,7 @@ namespace aerial_robot_navigation
     std::thread plan_thread_;
     boost::shared_ptr<HydrusTiltedRobotModel> robot_model_for_plan_;
     OsqpEigen::Solver yaw_range_lp_solver_;
-    boost::shared_ptr<nlopt::opt> vectoring_nl_solver_;
+    boost::shared_ptr<nlopt::opt> vectoring_nl_solver_, vectoring_nl_solver_h_;
 
     KDL::JntArray joint_positions_for_plan_;
     std::vector<std::string> control_gimbal_names_;

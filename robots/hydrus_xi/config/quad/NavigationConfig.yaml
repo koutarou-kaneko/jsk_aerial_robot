@@ -32,7 +32,7 @@ navigation:
 
   # gimbal vectoring planner
   plan_verbose: false
-  maximize_yaw: true # true: maximize min yaw torque, false: maximize feasible control torque convex
+  maximize_yaw: false # true: maximize min yaw torque, false: maximize feasible control torque convex
   plan_freq: 20.0
   baselink_rot_thresh: 0.01
   gimbal_delta_angle: 0.2
