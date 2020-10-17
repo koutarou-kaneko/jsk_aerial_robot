@@ -23,20 +23,20 @@ void HydrusTiltedRobotModel::calc3DoFThrust(double ff_f_x, double ff_f_y)
   /* calculate the static thrust on CoG frame */
   /* note: can not calculate in root frame, since the projected f_x, f_y is different in CoG and root */
   Eigen::MatrixXd wrench_mat_on_cog = calcWrenchMatrixOnCoG();
-  //std::cout << "Q:\n" << wrench_mat_on_cog << std::endl;
+  ROS_INFO_STREAM_THROTTLE(1, "Q:\n" << wrench_mat_on_cog);
   
   Eigen::MatrixXd Q_4(4,wrench_mat_on_cog.cols());
   Q_4 << wrench_mat_on_cog.topRows(3), wrench_mat_on_cog.bottomRows(1);
-  //std::cout << "Q_4^T:\n" << aerial_robot_model::pseudoinverse(Q_4) << std::endl;
+  ROS_INFO_STREAM_THROTTLE(1, "Q_4^T:\n" << aerial_robot_model::pseudoinverse(Q_4));
   Eigen::VectorXd grav(4), ff_wrench(4);
   ff_wrench << ff_f_x, ff_f_y, 0, 0;
   grav << getGravity().head(3), getGravity().tail(1);
   grav = grav + ff_wrench;
 
   three_dof_thrust_ = aerial_robot_model::pseudoinverse(Q_4) * grav * getMass();
-  //std::cout << "desired, out:\n" << grav << " " << wrench_mat_on_cog * three_dof_thrust_ << std::endl;
+  ROS_INFO_STREAM_THROTTLE(1, "desired, out:\n" << grav << "\n" << wrench_mat_on_cog * three_dof_thrust_);
   auto out = wrench_mat_on_cog*three_dof_thrust_;
-  ROS_INFO_THROTTLE(1, "thrust sum: %lf %lf %lf %lf %lf %lf", out(0), out(1), out(2), out(3), out(4), out(5));
+  //ROS_INFO_THROTTLE(1, "thrust sum: %lf %lf %lf %lf %lf %lf", out(0), out(1), out(2), out(3), out(4), out(5));
 }
 
 Eigen::VectorXd HydrusTiltedRobotModel::get3DoFThrust()

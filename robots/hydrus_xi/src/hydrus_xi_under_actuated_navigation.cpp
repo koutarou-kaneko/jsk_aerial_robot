@@ -341,7 +341,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
   std::vector<double> lb(control_gimbal_indices_.size(), - M_PI);
   std::vector<double> ub(control_gimbal_indices_.size(), M_PI);
 
-  /* update the range by using the last optimization result with the assumption that the motion is cotinuous */
+  /* update the range by using the last optimization result with the assumption that the motion is continuous */
   if(opt_gimbal_angles_.size() != 0)
     {
       double delta_angle = gimbal_delta_angle_;
