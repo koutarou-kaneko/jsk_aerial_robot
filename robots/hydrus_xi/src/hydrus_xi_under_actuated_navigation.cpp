@@ -41,10 +41,9 @@ namespace
 
     invalid_cnt = 0;
 
-    //boost::shared_ptr<HydrusTiltedRobotModel> tilted_model = boost::dynamic_pointer_cast<HydrusTiltedRobotModel>(robot_model);
+    robot_model->calc3DoFThrust(planner->ff_f_xy_[0], planner->ff_f_xy_[1]);
     auto thrust = robot_model->get3DoFThrust();
     Eigen::Vector2d t_sum = {t1_mat(0,2)*thrust(0)+t2_mat(0,2)*thrust(1)+t3_mat(0,2)*thrust(2)+t4_mat(0,2)*thrust(3), t1_mat(1,2)*thrust(0)+t2_mat(1,2)*thrust(1)+t3_mat(1,2)*thrust(2)+t4_mat(1,2)*thrust(3)};
-    //Eigen::Vector2d t_sum = {t1_mat(0,2)+t2_mat(0,2)+t3_mat(0,2)+t4_mat(0,2), t1_mat(1,2)+t2_mat(1,2)+t3_mat(1,2)+t4_mat(1,2)};
 
     ROS_INFO_THROTTLE(1, "dir, thrust: %lf %lf %lf %lf %lf %lf", planner->h_f_direction_(0), planner->h_f_direction_(1), thrust(0), thrust(1), thrust(2), thrust(3));
     return planner->h_f_direction_.dot(t_sum);
@@ -207,6 +206,7 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   BaseNavigator::initialize(nh, nhp, robot_model, estimator);
 
   robot_model_for_plan_ = boost::make_shared<HydrusTiltedRobotModel>(); // for planning, not the real robot model
+  robot_model_real_ = boost::dynamic_pointer_cast<HydrusTiltedRobotModel>(robot_model);
 
   rosParamInit();
 
@@ -392,7 +392,9 @@ bool HydrusXiUnderActuatedNavigator::plan()
   try
     {
       nlopt::result result = nl_solver_now->optimize(opt_gimbal_angles_, max_f);
-
+      ROS_INFO_STREAM_THROTTLE(1, "res: " << int(result) << " maxf: " << max_f << " opt: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3]);
+      ROS_INFO_STREAM_THROTTLE(1, "gimbals: " << joint_positions_for_plan_.data(0) << " " << joint_positions_for_plan_.data(3) << " " << joint_positions_for_plan_.data(6) << " " << joint_positions_for_plan_.data(9));
+      
       double roll,pitch,yaw;
       robot_model_for_plan_->getCogDesireOrientation<KDL::Rotation>().GetRPY(roll, pitch, yaw);
 
@@ -438,6 +440,8 @@ bool HydrusXiUnderActuatedNavigator::plan()
 
 void HydrusXiUnderActuatedNavigator::ffWrenchCallback(const geometry_msgs::Vector3ConstPtr& msg)
 {
+  ff_f_xy_[0] = msg->x;
+  ff_f_xy_[1] = msg->y;
   double normalize = std::sqrt(std::pow(msg->x, 2)+std::pow(msg->y, 2));
   h_f_direction_[0] = msg->x / normalize;
   h_f_direction_[1] = msg->y / normalize;
