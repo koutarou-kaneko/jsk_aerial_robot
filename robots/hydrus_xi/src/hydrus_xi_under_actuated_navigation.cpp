@@ -20,18 +20,12 @@ namespace
     auto t3_mat = robot_model->forwardKinematics<Eigen::Affine3d>(std::string("thrust3"), planner->getJointPositionsForPlan()).matrix();
     auto t4_mat = robot_model->forwardKinematics<Eigen::Affine3d>(std::string("thrust4"), planner->getJointPositionsForPlan()).matrix();
 
-    /*
-    ROS_INFO_THROTTLE(1, "t1: %lf %lf", t1_mat(0,2), t1_mat(1,2));
-    ROS_INFO_THROTTLE(1, "t2: %lf %lf", t2_mat(0,2), t2_mat(1,2));
-    ROS_INFO_THROTTLE(1, "t3: %lf %lf", t3_mat(0,2), t3_mat(1,2));
-    ROS_INFO_THROTTLE(1, "t4: %lf %lf", t4_mat(0,2), t4_mat(1,2));
-    */
-
     for(int i = 0; i < x.size(); i++)
       joint_positions(planner->getControlIndices().at(i)) = x.at(i);
 
     robot_model->updateRobotModel(joint_positions);
 
+    /* suppress for debugging
     if(!robot_model->stabilityCheck(planner->getPlanVerbose()))
       {
         invalid_cnt ++;
@@ -40,6 +34,7 @@ namespace
         if(planner->getPlanVerbose()) ROS_WARN_STREAM("nlopt, robot stability is invalid with gimbals: " << ss.str() << " (cnt: " << invalid_cnt << ")");
         return 0;
       }
+    */
 
     invalid_cnt = 0;
 
@@ -195,6 +190,19 @@ namespace
     return planner->getFCTMinThresh() - planner->getRobotModelForPlan()->getFeasibleControlTMin();
   }
 
+  void thrustLimitConstraint(unsigned m, double* result, unsigned n, const double* x, double *gradient, void *planner_ptr)
+  {
+    HydrusXiUnderActuatedNavigator *planner = reinterpret_cast<HydrusXiUnderActuatedNavigator*>(planner_ptr);
+    auto robot_model = planner->getRobotModelForPlan();
+    robot_model->calc3DoFThrust(planner->ff_f_xy_[0], planner->ff_f_xy_[1]);
+    auto thrust = robot_model->get3DoFThrust();
+    Eigen::VectorXd ret_e(8);
+    ret_e << thrust-Eigen::VectorXd::Constant(4, robot_model->getThrustUpperLimit()), Eigen::VectorXd::Constant(4, robot_model->getThrustLowerLimit())-thrust;
+
+    for (int i=0; i<m; i++) {
+      result[i] = ret_e(i);
+    }
+  }
 };
 
 HydrusXiUnderActuatedNavigator::HydrusXiUnderActuatedNavigator():
@@ -256,6 +264,7 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
 
   vectoring_nl_solver_->add_inequality_constraint(baselinkRotConstraint, this, 1e-8);
   vectoring_nl_solver_h_->add_inequality_constraint(baselinkRotConstraint, this, 1e-8);
+  vectoring_nl_solver_h_->add_inequality_mconstraint(thrustLimitConstraint, this, std::vector<double>(8, 1e-8));
 
   vectoring_nl_solver_->set_xtol_rel(1e-4); //1e-4
   vectoring_nl_solver_h_->set_xtol_rel(1e-4); //1e-4
