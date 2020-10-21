@@ -20,10 +20,12 @@ namespace
     auto t3_mat = robot_model->forwardKinematics<Eigen::Affine3d>(std::string("thrust3"), planner->getJointPositionsForPlan()).matrix();
     auto t4_mat = robot_model->forwardKinematics<Eigen::Affine3d>(std::string("thrust4"), planner->getJointPositionsForPlan()).matrix();
 
+    /*
     ROS_INFO_THROTTLE(1, "t1: %lf %lf", t1_mat(0,2), t1_mat(1,2));
     ROS_INFO_THROTTLE(1, "t2: %lf %lf", t2_mat(0,2), t2_mat(1,2));
     ROS_INFO_THROTTLE(1, "t3: %lf %lf", t3_mat(0,2), t3_mat(1,2));
     ROS_INFO_THROTTLE(1, "t4: %lf %lf", t4_mat(0,2), t4_mat(1,2));
+    */
 
     for(int i = 0; i < x.size(); i++)
       joint_positions(planner->getControlIndices().at(i)) = x.at(i);
@@ -46,7 +48,17 @@ namespace
     Eigen::Vector2d t_sum = {t1_mat(0,2)*thrust(0)+t2_mat(0,2)*thrust(1)+t3_mat(0,2)*thrust(2)+t4_mat(0,2)*thrust(3), t1_mat(1,2)*thrust(0)+t2_mat(1,2)*thrust(1)+t3_mat(1,2)*thrust(2)+t4_mat(1,2)*thrust(3)};
 
     ROS_INFO_THROTTLE(1, "dir, thrust: %lf %lf %lf %lf %lf %lf", planner->h_f_direction_(0), planner->h_f_direction_(1), thrust(0), thrust(1), thrust(2), thrust(3));
-    return planner->h_f_direction_.dot(t_sum);
+
+    double average_force = thrust.sum() / thrust.size();
+    double variant = 0;
+
+    for(int i = 0; i < thrust.size(); i++)
+      variant += ((thrust(i) - average_force) * (thrust(i) - average_force));
+
+    variant = sqrt(variant / thrust.size());
+
+    ROS_INFO_STREAM_THROTTLE(1, "obj func element: " << planner->getForceNormWeight() * robot_model->getMass() / thrust.norm() << " " << planner->getForceVariantWeight() / variant << " " << planner->h_f_direction_.dot(t_sum));
+    return planner->getForceNormWeight() * robot_model->getMass() / thrust.norm()  + planner->getForceVariantWeight() / variant + planner->h_f_direction_.dot(t_sum);
   }
 
   double maximizeFCTMin(const std::vector<double> &x, std::vector<double> &grad, void *planner_ptr)
@@ -454,8 +466,8 @@ void HydrusXiUnderActuatedNavigator::rosParamInit()
   getParam<bool>(navi_nh, "plan_verbose", plan_verbose_, false);
   getParam<bool>(navi_nh, "maximize_yaw", maximize_yaw_, false);
   getParam<double>(navi_nh, "gimbal_delta_angle", gimbal_delta_angle_, 0.2);
-  getParam<double>(navi_nh, "force_norm_rate", force_norm_weight_, 2.0);
-  getParam<double>(navi_nh, "force_variant_rate", force_variant_weight_, 0.01);
+  getParam<double>(navi_nh, "force_norm_weight", force_norm_weight_, 2.0);
+  getParam<double>(navi_nh, "force_variant_weight", force_variant_weight_, 0.01);
   getParam<double>(navi_nh, "yaw_torque_weight", yaw_torque_weight_, 1.0);
   getParam<double>(navi_nh, "fc_t_min_weight", fc_t_min_weight_, 1.0);
   getParam<double>(navi_nh, "baselink_rot_thresh", baselink_rot_thresh_, 0.02);
