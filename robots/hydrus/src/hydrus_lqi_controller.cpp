@@ -213,10 +213,10 @@ bool HydrusLQIController::checkRobotModel()
 
   if(!robot_model_->stabilityCheck(verbose_))
     {
-      ROS_ERROR_NAMED("LQI gain generator", "LQI gain generator: invalid pose, stability is invalid");
+      //ROS_ERROR_NAMED("LQI gain generator", "LQI gain generator: invalid pose, stability is invalid");
       if(hydrus_robot_model_->getWrenchDof() == 4 && hydrus_robot_model_->getFeasibleControlRollPitchMin() > hydrus_robot_model_->getFeasibleControlRollPitchMinThre())
         {
-          ROS_WARN_NAMED("LQI gain generator", "LQI gain generator: change to three axis stable mode");
+          //ROS_WARN_NAMED("LQI gain generator", "LQI gain generator: change to three axis stable mode");
           lqi_mode_ = 3;
           return true;
         }

@@ -52,7 +52,7 @@ namespace
 
     variant = sqrt(variant / thrust.size());
 
-    ROS_INFO_STREAM_THROTTLE(1, "obj func element: " << planner->getForceNormWeight() * robot_model->getMass() / thrust.norm() << " " << planner->getForceVariantWeight() / variant << " " << planner->h_f_direction_.dot(t_sum));
+    //a ROS_INFO_STREAM_THROTTLE(1, "obj func element: " << planner->getForceNormWeight() * robot_model->getMass() / thrust.norm() << " " << planner->getForceVariantWeight() / variant << " " << planner->h_f_direction_.dot(t_sum));
     return planner->getForceNormWeight() * robot_model->getMass() / thrust.norm()  + planner->getForceVariantWeight() / variant + planner->h_f_direction_.dot(t_sum);
   }
 
@@ -263,7 +263,7 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   vectoring_nl_solver_h_->set_max_objective(maximizeHorizontalForceSquare, this);
 
   vectoring_nl_solver_->add_inequality_constraint(baselinkRotConstraint, this, 1e-8);
-  vectoring_nl_solver_h_->add_inequality_constraint(baselinkRotConstraint, this, 1e-8);
+  //vectoring_nl_solver_h_->add_inequality_constraint(baselinkRotConstraint, this, 1e-8);
   vectoring_nl_solver_h_->add_inequality_mconstraint(thrustLimitConstraint, this, std::vector<double>(8, 1e-8));
 
   vectoring_nl_solver_->set_xtol_rel(1e-4); //1e-4
@@ -367,10 +367,10 @@ bool HydrusXiUnderActuatedNavigator::plan()
     {
       double delta_angle = gimbal_delta_angle_;
 
-      if(!robot_model_for_plan_->stabilityCheck(false))
+      /*if(!robot_model_for_plan_->stabilityCheck(false))
         {
           delta_angle = M_PI; // reset
-        }
+        }*/
 
       for(int i = 0; i < opt_gimbal_angles_.size(); i++)
          {
@@ -413,7 +413,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
   try
     {
       nlopt::result result = nl_solver_now->optimize(opt_gimbal_angles_, max_f);
-      ROS_INFO_STREAM_THROTTLE(1, "res: " << int(result) << " maxf: " << max_f << " opt: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3]);
+      ROS_INFO_STREAM_THROTTLE(0.01, "res: " << int(result) << " maxf: " << max_f << " opt: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3]);
       ROS_INFO_STREAM_THROTTLE(1, "gimbals: " << joint_positions_for_plan_.data(0) << " " << joint_positions_for_plan_.data(3) << " " << joint_positions_for_plan_.data(6) << " " << joint_positions_for_plan_.data(9));
       
       double roll,pitch,yaw;

@@ -176,6 +176,7 @@ if __name__ == '__main__':
     hyd = HydrusCommander()
     rospy.sleep(rospy.Duration(1.0))
     hyd.arm()
+    sendFFWrench(pub,1,0,0)
     embed()
     #hyd.joint_publish([-1.57, 0, 1.57])
     #hyd.joint_publish([-1.57, -1.57, -1.57])
