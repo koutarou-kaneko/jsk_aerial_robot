@@ -76,6 +76,7 @@ namespace aerial_robot_navigation
     void setMaxMinYaw(const double max_min_yaw) { max_min_yaw_ = max_min_yaw;}
     Eigen::Vector2d h_f_direction_, ff_f_xy_;
     boost::shared_ptr<HydrusTiltedRobotModel> robot_model_real_;
+    bool vectoring_reset_flag_ = false;
   private:
     ros::Publisher gimbal_ctrl_pub_;
     ros::Subscriber ff_wrench_sub_;

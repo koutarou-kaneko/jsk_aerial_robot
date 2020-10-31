@@ -279,7 +279,7 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   vectoring_nl_solver_->set_xtol_rel(1e-4); //1e-4
   vectoring_nl_solver_h_->set_xtol_rel(1e-4); //1e-4
   vectoring_nl_solver_->set_maxeval(1000); // 1000 times
-  vectoring_nl_solver_h_->set_maxeval(10000); // 1000 times
+  vectoring_nl_solver_h_->set_maxeval(1000); // 1000 times
   /* linear optimization for yaw range */
   double rotor_num = robot_model->getRotorNum();
 
@@ -377,9 +377,11 @@ bool HydrusXiUnderActuatedNavigator::plan()
     {
       double delta_angle = gimbal_delta_angle_;
 
-      if((not horizontal_mode_) and (!robot_model_for_plan_->stabilityCheck(false)))
+      if((horizontal_mode_ and vectoring_reset_flag_) or ((not horizontal_mode_) and (!robot_model_for_plan_->stabilityCheck(false))))
         {
           delta_angle = M_PI; // reset
+          vectoring_reset_flag_ = false;
+          ROS_INFO("Vectoring angle optimization reset");
         }
 
       for(int i = 0; i < opt_gimbal_angles_.size(); i++)
@@ -476,6 +478,7 @@ void HydrusXiUnderActuatedNavigator::ffWrenchCallback(const geometry_msgs::Vecto
   double normalize = std::sqrt(std::pow(msg->x, 2)+std::pow(msg->y, 2));
   h_f_direction_[0] = msg->x / normalize;
   h_f_direction_[1] = msg->y / normalize;
+  vectoring_reset_flag_ = true;
 }
 
 void HydrusXiUnderActuatedNavigator::rosParamInit()
