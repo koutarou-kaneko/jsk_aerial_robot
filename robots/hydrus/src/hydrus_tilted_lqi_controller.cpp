@@ -151,6 +151,7 @@ bool HydrusTiltedLQIController::setHorizontalForceMode(std_srvs::Empty::Request&
 {
   horizontal_force_mode_ = true;
   navigator_->horizontal_mode_ = true;
+  tilted_model_->horizontal_mode_ = true;
   ROS_INFO("horizontal force mode set");
   return true;
 }
@@ -159,6 +160,7 @@ bool HydrusTiltedLQIController::resetHorizontalForceMode(std_srvs::Empty::Reques
 {
   horizontal_force_mode_ = false;
   navigator_->horizontal_mode_ = false;
+  tilted_model_->horizontal_mode_ = false;
   ROS_INFO("horizontal force mode reset");
   return true;
 }

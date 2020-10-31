@@ -10,7 +10,7 @@ void HydrusTiltedRobotModel::calcStaticThrust()
   calcWrenchMatrixOnRoot(); // update Q matrix
 
   /* calculate the static thrust on CoG frame */
-  /* note: can not calculate in root frame, sine the projected f_x, f_y is different in CoG and root */
+  /* note: can not calculate in root frame, since the projected f_x, f_y is different in CoG and root */
   Eigen::MatrixXd wrench_mat_on_cog = calcWrenchMatrixOnCoG();
 
   Eigen::VectorXd static_thrust = aerial_robot_model::pseudoinverse(wrench_mat_on_cog.middleRows(2, 4)) * getGravity().segment(2,4) * getMass();
@@ -34,7 +34,8 @@ void HydrusTiltedRobotModel::calc3DoFThrust(double ff_f_x, double ff_f_y)
   grav = grav + ff_wrench;
 
   three_dof_thrust_ = aerial_robot_model::pseudoinverse(Q_4) * grav * getMass();
-  ROS_INFO_STREAM_THROTTLE(1, "wrench out [N]: " << (wrench_mat_on_cog * three_dof_thrust_).transpose());
+  thrust_wrench_ = wrench_mat_on_cog * three_dof_thrust_;
+  ROS_INFO_STREAM_THROTTLE(1, "wrench out [N]: " << thrust_wrench_.transpose());
 }
 
 Eigen::VectorXd HydrusTiltedRobotModel::get3DoFThrust()
@@ -57,8 +58,14 @@ void HydrusTiltedRobotModel::updateRobotModelImpl(const KDL::JntArray& joint_pos
   Eigen::MatrixXd wrench_mat_on_cog = calcWrenchMatrixOnCoG();
   Eigen::VectorXd f = cog_rot_inv * wrench_mat_on_cog.topRows(3) * getStaticThrust();
 
-  double f_norm_roll = atan2(f(1), f(2));
-  double f_norm_pitch = atan2(-f(0), sqrt(f(1)*f(1) + f(2)*f(2)));
+  double f_norm_roll, f_norm_pitch;
+  if (not horizontal_mode_) {
+    f_norm_roll = atan2(f(1), f(2));
+    f_norm_pitch = atan2(-f(0), sqrt(f(1)*f(1) + f(2)*f(2)));
+  } else {
+    f_norm_roll = 0;
+    f_norm_pitch = 0;
+  }
 
   /* set the hoverable frame as CoG and reupdate model */
   setCogDesireOrientation(f_norm_roll, f_norm_pitch, 0);

@@ -72,7 +72,7 @@ Visualization Manager:
         hydrus_xi/cog:
           Value: true
         hydrus_xi/fc:
-          Value: false
+          Value: true
         hydrus_xi/gimbal_link1:
           Value: true
         hydrus_xi/gimbal_link2:
@@ -92,7 +92,7 @@ Visualization Manager:
         hydrus_xi/pc:
           Value: false
         hydrus_xi/root:
-          Value: false
+          Value: true
         hydrus_xi/rotor_parent1:
           Value: false
         hydrus_xi/rotor_parent2:

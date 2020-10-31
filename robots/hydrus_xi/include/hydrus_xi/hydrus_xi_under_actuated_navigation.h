@@ -64,6 +64,7 @@ namespace aerial_robot_navigation
     inline const double& getForceVariantWeight() const { return force_variant_weight_;}
     inline const double& getYawTorqueWeight() const { return yaw_torque_weight_;}
     inline const double& getFCTMinWeight() const { return fc_t_min_weight_;}
+    inline const double& getUncontrolledTorqueWeight() const { return uncontrolled_torque_weight_;}
     inline const double& getBaselinkRotThresh() const { return baselink_rot_thresh_;}
     inline const double& getFCTMinThresh() const { return fc_t_min_thresh_;}
 
@@ -94,6 +95,7 @@ namespace aerial_robot_navigation
     double force_variant_weight_; // cost func
     double yaw_torque_weight_; // cost func
     double fc_t_min_weight_; // cost func
+    double uncontrolled_torque_weight_; // cost func
     double baselink_rot_thresh_; // constraint func
     double fc_t_min_thresh_; // constraint func
     double gimbal_delta_angle_; // configuration state
