@@ -262,7 +262,7 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
 
   /* nonlinear optimization for vectoring angles planner */
   vectoring_nl_solver_ = boost::make_shared<nlopt::opt>(nlopt::LN_COBYLA, control_gimbal_names_.size());
-  vectoring_nl_solver_h_ = boost::make_shared<nlopt::opt>(nlopt::LN_COBYLA, control_gimbal_names_.size());
+  vectoring_nl_solver_h_ = boost::make_shared<nlopt::opt>(nlopt::GN_ORIG_DIRECT_L, control_gimbal_names_.size());
   if(maximize_yaw_) {
     vectoring_nl_solver_->set_max_objective(maximizeMinYawTorque, this);
     vectoring_nl_solver_->add_inequality_constraint(fcTMinConstraint, this, 1e-8);
@@ -425,7 +425,10 @@ bool HydrusXiUnderActuatedNavigator::plan()
   try
     {
       nlopt::result result = nl_solver_now->optimize(opt_gimbal_angles_, max_f);
-      ROS_INFO_STREAM_THROTTLE(0.01, /*"res: " << int(result) << */"maxf: " << max_f /*<< " opt: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3]*/);
+      if (result == 5) {
+        vectoring_reset_flag_ = true;
+      }
+      ROS_INFO_STREAM_THROTTLE(0.01, "res: " << int(result) << " maxf: " << max_f /*<< " opt: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3]*/);
       ROS_INFO_STREAM_THROTTLE(1, "gimbals: " << joint_positions_for_plan_.data(0) << " " << joint_positions_for_plan_.data(3) << " " << joint_positions_for_plan_.data(6) << " " << joint_positions_for_plan_.data(9));
       
       double roll,pitch,yaw;
