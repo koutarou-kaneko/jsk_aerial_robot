@@ -242,6 +242,8 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
 
   gimbal_ctrl_pub_ = nh_.advertise<sensor_msgs::JointState>("gimbals_ctrl", 1);
   ff_wrench_sub_ = nh_.subscribe("ff_wrench", 10, &HydrusXiUnderActuatedNavigator::ffWrenchCallback, this);
+  ff_f_xy_[0] = 0.01;
+  ff_f_xy_[1] = 0.0;
 
   if(nh.hasParam("control_gimbal_names"))
     {

@@ -18,4 +18,46 @@
     </inertial>
   </xacro:extra_module>
 
+  #### gripper ####
+  <xacro:extra_module_collision name = "gripper_plane" parent = "link4" visible = "1"
+                      model_url = "package://hydrus_xi/urdf/mesh/mechanical/door_opening_plate.STL">
+    <origin xyz="0.65 0.06 -0.05" rpy="1.5708 0 -1.5708"/>
+    <inertial>
+      <mass value = "0.100" />
+      <origin xyz="0.06 0.05 0.0035" rpy="0 0 0"/>
+      <inertia
+          ixx="0.0003" ixy="0.0003" ixz="0.0"
+          iyy="0.0005" iyz="0.0"
+          izz="0.0008"/>
+    </inertial>
+    <collision>
+      <geometry>
+        <mesh filename="package://hydrus_xi/urdf/mesh/mechanical/door_opening_plate.STL"/>
+      </geometry>
+    </collision>
+  </xacro:extra_module_collision>
+  <gazebo reference="gripper_plane">
+    <self_collide>true</self_collide>
+  </gazebo>
+  <xacro:extra_module_collision name = "gripper_rod" parent = "link1" visible = "1"
+                      model_url = "package://hydrus_xi/urdf/mesh/mechanical/door_opening_rod_asm.STL">
+    <origin xyz="-0.01 -0.016 -0.012" rpy="0 0 3.1415"/>
+    <inertial>
+      <mass value = "0.04" />
+      <origin xyz="0.066 -0.016 0.01" rpy="0 0 0"/>
+      <inertia
+          ixx="0.0001" ixy="0.0" ixz="0.0"
+          iyy="0.0003" iyz="0.0"
+          izz="0.0003"/>
+    </inertial>
+    <collision>
+      <geometry>
+        <mesh filename="package://hydrus_xi/urdf/mesh/mechanical/door_opening_rod_asm.STL"/>
+      </geometry>
+    </collision>
+  </xacro:extra_module_collision>
+  <gazebo reference="gripper_rod">
+    <self_collide>true</self_collide>
+  </gazebo>
+
 </robot>
