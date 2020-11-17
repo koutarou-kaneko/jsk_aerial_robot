@@ -101,7 +101,7 @@ namespace aerial_robot_navigation
     double fc_t_min_thresh_; // constraint func
     double gimbal_delta_angle_; // configuration state
 
-    std::vector<double> opt_gimbal_angles_, prev_opt_gimbal_angles_;
+    std::vector<double> opt_gimbal_angles_, prev_opt_gimbal_angles_, opt_x_, opt_static_thrusts_;
 
     void ffWrenchCallback(const geometry_msgs::Vector3ConstPtr& msg);
     void threadFunc();

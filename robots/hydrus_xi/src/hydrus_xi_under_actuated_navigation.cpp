@@ -101,6 +101,46 @@ namespace
     return planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + planner->getForceVariantWeight() / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
   }
 
+  double maximizeFCTMinWide(const std::vector<double> &x_wide, std::vector<double> &grad, void *planner_ptr)
+  {
+    std::vector<double> x(4);
+    for (int i=0; i<4; i++) {
+      x[i] = x_wide[i];
+    }
+    cnt++;
+    HydrusXiUnderActuatedNavigator *planner = reinterpret_cast<HydrusXiUnderActuatedNavigator*>(planner_ptr);
+    auto robot_model = planner->getRobotModelForPlan();
+    /* update robot model */
+    KDL::JntArray joint_positions = planner->getJointPositionsForPlan();
+    for(int i = 0; i < x.size(); i++)
+      joint_positions(planner->getControlIndices().at(i)) = x.at(i);
+
+    robot_model->updateRobotModel(joint_positions);
+
+    if(!robot_model->stabilityCheck(planner->getPlanVerbose()))
+      {
+        invalid_cnt ++;
+        std::stringstream ss;
+        for(const auto& angle: x) ss << angle << ", ";
+        if(planner->getPlanVerbose()) ROS_WARN_STREAM("nlopt, robot stability is invalid with gimbals: " << ss.str() << " (cnt: " << invalid_cnt << ")");
+        return 0;
+      }
+
+    invalid_cnt = 0;
+
+    Eigen::VectorXd force_v = robot_model->getStaticThrust();
+    double average_force = force_v.sum() / force_v.size();
+    double variant = 0;
+
+    for(int i = 0; i < force_v.size(); i++)
+      variant += ((force_v(i) - average_force) * (force_v(i) - average_force));
+
+    variant = sqrt(variant / force_v.size());
+
+    ROS_INFO_STREAM_THROTTLE(1, "obj func elem: " << planner->getForceNormWeight() * robot_model->getMass() / force_v.norm() << " " << planner->getForceVariantWeight() / variant << " " << planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin());
+    return planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + planner->getForceVariantWeight() / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
+  }
+
   double maximizeMinYawTorque(const std::vector<double> &x, std::vector<double> &grad, void *planner_ptr)
   {
     cnt++;
@@ -213,6 +253,28 @@ namespace
       result[i] = ret_e(i);
     }
   }
+  
+  void kinematicsConstraint(unsigned m, double* result, unsigned n, const double* x, double *gradient, void *planner_ptr)
+  {
+    HydrusXiUnderActuatedNavigator *planner = reinterpret_cast<HydrusXiUnderActuatedNavigator*>(planner_ptr);
+    auto robot_model = planner->getRobotModelForPlan();
+    auto joints = robot_model->getJointPositions();
+    joints.data[0] = x[0];
+    joints.data[3] = x[1];
+    joints.data[6] = x[2];
+    joints.data[9] = x[3];
+    robot_model->updateRobotModel(joints);
+    robot_model->calcWrenchMatrixOnRoot();
+    auto Q = robot_model->calcWrenchMatrixOnCoG();
+    Eigen::VectorXd thrusts(4), wrench_des(6);
+    thrusts << x[4], x[5], x[6], x[7];
+    wrench_des << planner->ff_f_xy_[0], planner->ff_f_xy_[1], robot_model->getGravity()[2], 0, 0, 0;
+    auto res = Q*thrusts-3.61453*wrench_des;
+    ROS_INFO_STREAM_THROTTLE(1, "thrusts:\n" << thrusts << "wrench:\n" << Q*thrusts);
+    for (int i=0; i<6; i++) {
+      result[i] = res[i];
+    }
+  }
 };
 
 HydrusXiUnderActuatedNavigator::HydrusXiUnderActuatedNavigator():
@@ -264,24 +326,28 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
 
   /* nonlinear optimization for vectoring angles planner */
   vectoring_nl_solver_ = boost::make_shared<nlopt::opt>(nlopt::LN_COBYLA, control_gimbal_names_.size());
-  vectoring_nl_solver_h_ = boost::make_shared<nlopt::opt>(nlopt::GN_ORIG_DIRECT_L, control_gimbal_names_.size());
+  vectoring_nl_solver_h_ = boost::make_shared<nlopt::opt>(nlopt::LN_COBYLA, 2*control_gimbal_names_.size());
   if(maximize_yaw_) {
     vectoring_nl_solver_->set_max_objective(maximizeMinYawTorque, this);
     vectoring_nl_solver_->add_inequality_constraint(fcTMinConstraint, this, 1e-8);
-    
   } else {
     vectoring_nl_solver_->set_max_objective(maximizeFCTMin, this);
   }
-  vectoring_nl_solver_h_->set_max_objective(maximizeHorizontalForceSquare, this);
-
   vectoring_nl_solver_->add_inequality_constraint(baselinkRotConstraint, this, 1e-8);
-  //vectoring_nl_solver_h_->add_inequality_constraint(baselinkRotConstraint, this, 1e-8);
-  vectoring_nl_solver_h_->add_inequality_mconstraint(thrustLimitConstraint, this, std::vector<double>(8, 1e-8));
+  
+  //vectoring_nl_solver_h_->set_max_objective(maximizeHorizontalForceSquare, this);
+  //vectoring_nl_solver_h_->add_inequality_mconstraint(thrustLimitConstraint, this, std::vector<double>(8, 1e-8));
+  vectoring_nl_solver_h_->set_max_objective(maximizeFCTMinWide, this);
+  vectoring_nl_solver_h_->add_equality_mconstraint(kinematicsConstraint, this, std::vector<double>(6, 1e-2));
 
   vectoring_nl_solver_->set_xtol_rel(1e-4); //1e-4
   vectoring_nl_solver_h_->set_xtol_rel(1e-4); //1e-4
   vectoring_nl_solver_->set_maxeval(1000); // 1000 times
-  vectoring_nl_solver_h_->set_maxeval(1000); // 1000 times
+  vectoring_nl_solver_h_->set_maxeval(10000); // 1000 times
+
+  opt_static_thrusts_ = {0, 0, 0, 0};
+  opt_x_ = {M_PI, M_PI, M_PI, M_PI, 0, 0, 0, 0};
+
   /* linear optimization for yaw range */
   double rotor_num = robot_model->getRotorNum();
 
@@ -373,6 +439,13 @@ bool HydrusXiUnderActuatedNavigator::plan()
   /* find the optimal gimbal vectoring angles from nlopt */
   std::vector<double> lb(control_gimbal_indices_.size(), - M_PI);
   std::vector<double> ub(control_gimbal_indices_.size(), M_PI);
+  std::vector<double> lbh(2*control_gimbal_indices_.size(), - M_PI);
+  std::vector<double> ubh(2*control_gimbal_indices_.size(), M_PI);
+
+  for (int i=0; i<opt_gimbal_angles_.size(); i++) {
+    lbh.at(4+i) = robot_model_real_->getThrustLowerLimit();
+    ubh.at(4+i) = robot_model_real_->getThrustUpperLimit();
+  }
 
   /* update the range by using the last optimization result with the assumption that the motion is continuous */
   if(opt_gimbal_angles_.size() != 0)
@@ -390,12 +463,14 @@ bool HydrusXiUnderActuatedNavigator::plan()
          {
            lb.at(i) = opt_gimbal_angles_.at(i) - delta_angle;
            ub.at(i) = opt_gimbal_angles_.at(i) + delta_angle;
+           lbh.at(i) = opt_gimbal_angles_.at(i) - delta_angle;
+           ubh.at(i) = opt_gimbal_angles_.at(i) + delta_angle;
          }
     }
   else
     {
       /* heuristic assignment for the init state of vectoring angles */
-
+      ROS_INFO("navigation opt gimbal initialize");
       opt_gimbal_angles_.resize(control_gimbal_indices_.size(), 0); // all angles  are zero
 
       // contraint bound is relaxed to perform global search
@@ -419,18 +494,32 @@ bool HydrusXiUnderActuatedNavigator::plan()
         }
     }
 
-  nl_solver_now->set_lower_bounds(lb);
-  nl_solver_now->set_upper_bounds(ub);
+  if (not horizontal_mode_) {
+    nl_solver_now->set_lower_bounds(lb);
+    nl_solver_now->set_upper_bounds(ub);
+  } else {
+    nl_solver_now->set_lower_bounds(lbh);
+    nl_solver_now->set_upper_bounds(ubh);
+  }
 
   double start_time = ros::Time::now().toSec();
   double max_f = 0;
   try
     {
-      nlopt::result result = nl_solver_now->optimize(opt_gimbal_angles_, max_f);
-      if (result == 5) {
+      nlopt::result result;
+      if (not horizontal_mode_) {
+        result = nl_solver_now->optimize(opt_gimbal_angles_, max_f);
+        opt_x_ = {opt_gimbal_angles_.at(0), opt_gimbal_angles_.at(1), opt_gimbal_angles_.at(2), opt_gimbal_angles_.at(3), 10.0, 10.0, 10.0, 10.0};
+      } else {
+        //ROS_INFO_STREAM_THROTTLE(0.1, "opt_x_: " << opt_x_[0] << " " << opt_x_[1] << " " << opt_x_[2] << " " << opt_x_[3] << " " << opt_x_[4] << " " << opt_x_[5] << " " << opt_x_[6] << " " << opt_x_[7]);
+        result = nl_solver_now->optimize(opt_x_, max_f);
+        opt_gimbal_angles_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)};
+        opt_static_thrusts_ = {opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
+      }
+      if (result != 4) {
         vectoring_reset_flag_ = true;
       }
-      ROS_INFO_STREAM_THROTTLE(0.01, "res: " << int(result) << " maxf: " << max_f /*<< " opt: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3]*/);
+      ROS_INFO_STREAM_THROTTLE(0.1, "res: " << int(result) << " maxf: " << max_f << " opt: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3] << " " << opt_static_thrusts_[0] << " " << opt_static_thrusts_[1] << " " << opt_static_thrusts_[2] << " " << opt_static_thrusts_[3]);
       ROS_INFO_STREAM_THROTTLE(1, "gimbals: " << joint_positions_for_plan_.data(0) << " " << joint_positions_for_plan_.data(3) << " " << joint_positions_for_plan_.data(6) << " " << joint_positions_for_plan_.data(9));
       
       double roll,pitch,yaw;
