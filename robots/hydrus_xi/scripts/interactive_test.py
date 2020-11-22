@@ -172,7 +172,7 @@ class HydrusCommander():
 
     def ik(self, des_x, des_y, des_yaw):
         #todo: use tf
-        l1=0.67
+        l1=0.68
         l2=0.6
         l3=0.6
         l4=0.9
@@ -193,16 +193,16 @@ class HydrusCommander():
                 joints[1]=-2*theta
                 joints[2]=des_yaw+i*d-np.pi-joints[0]-joints[1]
                 if (joints < 1.57).all() and (joints > -1.57).all():
-                    q=tf.transformations.quaternion_about_axis(des_yaw+i*d, (0,0,1))
-                    self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link4'),pose=Pose(position=Point(x=l1-des_x, y=-des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
+                    q=tf.transformations.quaternion_about_axis(des_yaw+i*d+np.pi, (0,0,1))
+                    self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
                     print "Found solution: tol +%d" % i
                     break
                 joints[0]=np.arctan2(l23[1], l23[0])-theta
                 joints[1]=2*theta
                 joints[2]=des_yaw+i*d-np.pi-joints[0]-joints[1]
                 if (joints < 1.57).all() and (joints > -1.57).all():
-                    q=tf.transformations.quaternion_about_axis(des_yaw+i*d, (0,0,1))
-                    self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link4'),pose=Pose(position=Point(x=l1-des_x, y=-des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
+                    q=tf.transformations.quaternion_about_axis(des_yaw+i*d+np.pi, (0,0,1))
+                    self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
                     print "Found solution: tol +%d" % i
                     break
             l23=des+RotMat(des_yaw-i*d)*link4-link1
@@ -212,16 +212,16 @@ class HydrusCommander():
                 joints[1]=-2*theta
                 joints[2]=des_yaw-i*d-np.pi-joints[0]-joints[1]
                 if (joints < 1.57).all() and (joints > -1.57).all():
-                    q=tf.transformations.quaternion_about_axis(des_yaw-i*d, (0,0,1))
-                    self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link4'),pose=Pose(position=Point(x=l1-des_x, y=-des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
+                    q=tf.transformations.quaternion_about_axis(des_yaw-i*d+np.pi, (0,0,1))
+                    self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
                     print "Found solution: tol -%d" % i
                     break
                 joints[0]=np.arctan2(l23[1], l23[0])-theta
                 joints[1]=2*theta
                 joints[2]=des_yaw-i*d-np.pi-joints[0]-joints[1]
                 if (joints < 1.57).all() and (joints > -1.57).all():
-                    q=tf.transformations.quaternion_about_axis(des_yaw-i*d, (0,0,1))
-                    self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link4'),pose=Pose(position=Point(x=l1-des_x, y=-des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
+                    q=tf.transformations.quaternion_about_axis(des_yaw-i*d+np.pi, (0,0,1))
+                    self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
                     print "Found solution: tol -%d" % i
                     break
             if i==25:
@@ -229,7 +229,8 @@ class HydrusCommander():
                 solfound=False
         if solfound:
             #Reversed since link order is different
-            self.joint_publish([-joints[2], -joints[1], -joints[0]])
+            #self.joint_publish([-joints[2], -joints[1], -joints[0]])
+            self.joint_publish([joints[0], joints[1], joints[2]])
         
     def ik_array(self, start, end, n, dt):
         dx   = (end[0]-start[0])/n
