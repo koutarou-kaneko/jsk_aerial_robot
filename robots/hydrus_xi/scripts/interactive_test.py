@@ -10,9 +10,12 @@ import math
 
 from sensor_msgs.msg import JointState
 from aerial_robot_msgs.msg import FlightNav
-from std_msgs.msg import Empty
-from geometry_msgs.msg import Vector3Stamped, Vector3
+from std_msgs.msg import Empty, Header
+from geometry_msgs.msg import Vector3Stamped, Vector3, PoseStamped, Pose, Point, Quaternion
 from std_srvs.srv import Trigger, SetBool, SetBoolRequest
+
+def RotMat(t):
+    return np.matrix([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])
 
 class HydrusCommander():
     def __init__(self, nav_mode=2, name="hydrus_commander"):
@@ -22,6 +25,7 @@ class HydrusCommander():
         self.takeoff_pub = rospy.Publisher("/hydrus_xi/teleop_command/takeoff", Empty,  queue_size=1)
         self.land_pub = rospy.Publisher("/hydrus_xi/teleop_command/land", Empty,  queue_size=1)
         self.halt_pub = rospy.Publisher("/hydrus_xi/teleop_command/halt", Empty, queue_size=1)
+        self.manip_pub = rospy.Publisher("/hydrus_xi/manipulation_end", PoseStamped, queue_size=1)
 
         self.set_joint_torque_client = rospy.ServiceProxy("/hydrus_xi/joints/torque_enable", SetBool)
         self.extra_servos_ctrl_pub = rospy.Publisher("/hydrus_xi/extra_servos_ctrl", JointState, queue_size=1)
@@ -166,6 +170,69 @@ class HydrusCommander():
         time.sleep(10)
         self.halt()
 
+    def ik(self, des_x, des_y, des_yaw):
+        #todo: use tf
+        l1=0.67
+        l2=0.6
+        l3=0.6
+        l4=0.9
+        solfound=True
+        joints=np.array([1.57,1.57,1.57])
+        link1=np.array([[l1], [0]])
+        link2=np.array([[l2], [0]])
+        link3=np.array([[l3], [0]])
+        link4=np.array([[l4], [0]])
+        des=np.array([[des_x], [des_y]])
+        d=0.02 #[rad]
+
+        for i in range(26):
+            l23=des+RotMat(des_yaw+i*d)*link4-link1
+            if (l2+l3)>=np.linalg.norm(l23):
+                theta=np.arccos(np.linalg.norm(l23)/2/l2)
+                joints[0]=np.arctan2(l23[1], l23[0])+theta
+                joints[1]=-2*theta
+                joints[2]=des_yaw-np.pi-joints[0]-joints[1]
+                if (joints < 1.57).all() and (joints > -1.57).all():
+                    q=tf.transformations.quaternion_about_axis(des_yaw+i*d, (0,0,1))
+                    self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link4'),pose=Pose(position=Point(x=l1-des_x, y=-des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
+                    print "Found solution: tol +%d" % i
+                    break
+                else:
+                    print "Rejected: %lf %lf %lf" % joints[0], joints[1], joints[2]
+                joints[0]=np.arctan2(l23[1], l23[0])-theta
+                joints[1]=2*theta
+                joints[2]=des_yaw-np.pi-joints[0]-joints[1]
+                if (joints < 1.57).all() and (joints > -1.57).all():
+                    q=tf.transformations.quaternion_about_axis(des_yaw+i*d, (0,0,1))
+                    self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link4'),pose=Pose(position=Point(x=l1-des_x, y=-des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
+                    print "Found solution: tol +%d" % i
+                    break
+            l23=des+RotMat(des_yaw-i*d)*link4-link1
+            if (l2+l3)>=np.linalg.norm(l23):
+                theta=np.arccos(np.linalg.norm(l23)/2/l2)
+                joints[0]=np.arctan2(l23[1], l23[0])+theta
+                joints[1]=-2*theta
+                joints[2]=des_yaw-np.pi-joints[0]-joints[1]
+                if (joints < 1.57).all() and (joints > -1.57).all():
+                    q=tf.transformations.quaternion_about_axis(des_yaw-i*d, (0,0,1))
+                    self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link4'),pose=Pose(position=Point(x=l1-des_x, y=-des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
+                    print "Found solution: tol -%d" % i
+                    break
+                joints[0]=np.arctan2(l23[1], l23[0])-theta
+                joints[1]=2*theta
+                joints[2]=des_yaw-np.pi-joints[0]-joints[1]
+                if (joints < 1.57).all() and (joints > -1.57).all():
+                    q=tf.transformations.quaternion_about_axis(des_yaw-i*d, (0,0,1))
+                    self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link4'),pose=Pose(position=Point(x=l1-des_x, y=-des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
+                    print "Found solution: tol -%d" % i
+                    break
+            if i==25:
+                print "Could not find solution"
+                solfound=False
+        if solfound:
+            #Reversed since link order is different
+            self.joint_publish([-joints[2], -joints[1], -joints[0]])
+
 def sendFFWrench(pub, fx, fy, tz):
     pub.publish(Vector3(x=fx, y=fy, z=tz))
 
@@ -175,8 +242,15 @@ if __name__ == '__main__':
     rospy.sleep(rospy.Duration(5.0))
     hyd = HydrusCommander()
     rospy.sleep(rospy.Duration(1.0))
-    hyd.arm()
-    sendFFWrench(pub,1,0,0)
+    '''
+    hyd.arm_and_takeoff()
+    rospy.sleep(rospy.Duration(15.0))
+    hyd.change_yaw(1.57)
+    rospy.sleep(rospy.Duration(2.0))
+    hyd.move_to(1,1)
+    rospy.sleep(rospy.Duration(2.0))
+    hyd.joint_publish([0, 1.57, 1.57])
+    rospy.sleep(rospy.Duration(1.0))
+    hyd.move_to(1,-0.5)
+    '''
     embed()
-    #hyd.joint_publish([-1.57, 0, 1.57])
-    #hyd.joint_publish([-1.57, -1.57, -1.57])

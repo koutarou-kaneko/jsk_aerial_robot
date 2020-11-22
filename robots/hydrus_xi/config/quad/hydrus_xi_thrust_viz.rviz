@@ -4,10 +4,13 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /Global Options1
+        - /Grid1
         - /TF1
         - /TF1/Frames1
         - /RobotModel1
         - /WrenchStamped1
+        - /Pose1
       Splitter Ratio: 0.5
     Tree Height: 698
   - Class: rviz/Selection
@@ -37,7 +40,7 @@ Visualization Manager:
   Class: ""
   Displays:
     - Alpha: 0.5
-      Cell Size: 1
+      Cell Size: 0.10000000149011612
       Class: rviz/Grid
       Color: 160; 160; 164
       Enabled: true
@@ -51,7 +54,7 @@ Visualization Manager:
         Y: 0
         Z: 0
       Plane: XY
-      Plane Cell Count: 10
+      Plane Cell Count: 100
       Reference Frame: <Fixed Frame>
       Value: true
     - Class: rviz/TF
@@ -78,6 +81,10 @@ Visualization Manager:
         hydrus_xi/gimbal_link3:
           Value: true
         hydrus_xi/gimbal_link4:
+          Value: true
+        hydrus_xi/gripper_plane:
+          Value: true
+        hydrus_xi/gripper_rod:
           Value: true
         hydrus_xi/link1:
           Value: false
@@ -115,6 +122,15 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
+        hydrus_xi/link4:
+          hydrus_xi/bat4:
+            {}
+          hydrus_xi/gimbal_link4:
+            hydrus_xi/rotor_parent4:
+              hydrus_xi/thrust4:
+                {}
+          hydrus_xi/gripper_plane:
+            {}
         world:
           hydrus_xi/root:
             hydrus_xi/cog:
@@ -126,6 +142,8 @@ Visualization Manager:
                 hydrus_xi/rotor_parent1:
                   hydrus_xi/thrust1:
                     {}
+              hydrus_xi/gripper_rod:
+                {}
               hydrus_xi/link2:
                 hydrus_xi/bat2:
                   {}
@@ -142,13 +160,6 @@ Visualization Manager:
                     hydrus_xi/rotor_parent3:
                       hydrus_xi/thrust3:
                         {}
-                  hydrus_xi/link4:
-                    hydrus_xi/bat4:
-                      {}
-                    hydrus_xi/gimbal_link4:
-                      hydrus_xi/rotor_parent4:
-                        hydrus_xi/thrust4:
-                          {}
                   hydrus_xi/pc:
                     {}
       Update Interval: 0
@@ -204,6 +215,16 @@ Visualization Manager:
           Show Trail: false
           Value: true
         gimbal_link4:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        gripper_plane:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        gripper_rod:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -289,11 +310,26 @@ Visualization Manager:
       Torque Color: 204; 204; 51
       Unreliable: false
       Value: true
+    - Alpha: 1
+      Axes Length: 1
+      Axes Radius: 0.10000000149011612
+      Class: rviz/Pose
+      Color: 252; 233; 79
+      Enabled: true
+      Head Length: 0.05000000074505806
+      Head Radius: 0.05000000074505806
+      Name: Pose
+      Shaft Length: 0.10000000149011612
+      Shaft Radius: 0.019999999552965164
+      Shape: Arrow
+      Topic: /hydrus_xi/manipulation_end
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: hydrus_xi/root
+    Fixed Frame: hydrus_xi/link4
     Frame Rate: 30
   Name: root
   Tools:
@@ -316,7 +352,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0
+      Angle: 3.140021562576294
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -326,11 +362,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 429.7975769042969
+      Scale: 288.1730651855469
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
-      X: 0.39839452505111694
-      Y: 0.29532235860824585
+      X: 0.6727645993232727
+      Y: 0.9426960945129395
     Saved: ~
 Window Geometry:
   Displays:
