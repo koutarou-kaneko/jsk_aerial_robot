@@ -256,6 +256,12 @@ class HydrusCommander():
             self.ik(start[0]+i*dx, start[1]+i*dy, start[2]+i*dyaw)
             rospy.sleep(rospy.Duration(dt))
 
+    def square(self,p1=[-0.75,0.3,0.3],p2=[-0.75,0.8,0.3],p3=[-0.25,0.8,0.6],p4=[-0.25,0.3,0.6],n=10,dt=0):
+        self.ik_array(p1,p2,n,dt)
+        self.ik_array(p2,p3,n,dt)
+        self.ik_array(p3,p4,n,dt)
+        self.ik_array(p4,p1,n,dt)
+
 def sendFFWrench(pub, fx, fy, tz):
     pub.publish(Vector3(x=fx, y=fy, z=tz))
 
