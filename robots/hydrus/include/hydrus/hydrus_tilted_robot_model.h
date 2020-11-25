@@ -48,9 +48,10 @@ public:
   virtual void calcStaticThrust() override;
   void calc3DoFThrust(double, double);
   Eigen::VectorXd get3DoFThrust();
-  Eigen::VectorXd three_dof_thrust_ = Eigen::VectorXd::Zero(4);
+  void set3DoFThrust(std::vector<double> thrust_vector);
   Eigen::VectorXd thrust_wrench_ = Eigen::VectorXd::Zero(6);
   bool horizontal_mode_ = false;
 private:
   void updateRobotModelImpl(const KDL::JntArray& joint_positions) override;
+  Eigen::VectorXd three_dof_thrust_ = Eigen::VectorXd::Zero(4);
 };

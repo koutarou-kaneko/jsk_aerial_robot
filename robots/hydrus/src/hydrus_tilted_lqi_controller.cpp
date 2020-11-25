@@ -44,7 +44,8 @@ void HydrusTiltedLQIController::controlCore()
     target_pitch_ = 0;
     target_roll_ = 0;
 
-    tilted_model_->calc3DoFThrust(ff_f_x_, ff_f_y_);
+    // Don't calc here when optimize all axis
+    //tilted_model_->calc3DoFThrust(ff_f_x_, ff_f_y_);
     f = tilted_model_->get3DoFThrust();
   }
   

@@ -43,6 +43,11 @@ Eigen::VectorXd HydrusTiltedRobotModel::get3DoFThrust()
   return three_dof_thrust_;
 }
 
+void HydrusTiltedRobotModel::set3DoFThrust(std::vector<double> thrust_vector)
+{
+  three_dof_thrust_ << thrust_vector.at(0), thrust_vector.at(1), thrust_vector.at(2), thrust_vector.at(3);
+}
+
 void HydrusTiltedRobotModel::updateRobotModelImpl(const KDL::JntArray& joint_positions)
 {
   aerial_robot_model::RobotModel::updateRobotModelImpl(joint_positions);

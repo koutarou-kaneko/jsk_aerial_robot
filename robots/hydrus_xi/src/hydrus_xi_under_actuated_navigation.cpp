@@ -141,6 +141,26 @@ namespace
     return planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + planner->getForceVariantWeight() / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
   }
 
+  double maximizeBalanceWide(const std::vector<double> &x_wide, std::vector<double> &grad, void *planner_ptr)
+  {
+    HydrusXiUnderActuatedNavigator *planner = reinterpret_cast<HydrusXiUnderActuatedNavigator*>(planner_ptr);
+    auto robot_model = planner->getRobotModelForPlan();
+
+    Eigen::VectorXd thrust(4);
+    thrust << x_wide[4], x_wide[5], x_wide[6], x_wide[7];
+
+    double average_force = thrust.sum() / thrust.size();
+    double variant = 0;
+
+    for(int i = 0; i < thrust.size(); i++)
+      variant += ((thrust(i) - average_force) * (thrust(i) - average_force));
+
+    variant = sqrt(variant / thrust.size());
+
+    ROS_INFO_STREAM_THROTTLE(1, "obj func elem: " << planner->getForceNormWeight() * robot_model->getMass() / thrust.norm() << " " << planner->getForceVariantWeight() / variant);
+    return planner->getForceNormWeight() * robot_model->getMass() / thrust.norm()  + planner->getForceVariantWeight() / variant;
+  }
+
   double maximizeMinYawTorque(const std::vector<double> &x, std::vector<double> &grad, void *planner_ptr)
   {
     cnt++;
@@ -258,6 +278,9 @@ namespace
   {
     HydrusXiUnderActuatedNavigator *planner = reinterpret_cast<HydrusXiUnderActuatedNavigator*>(planner_ptr);
     auto robot_model = planner->getRobotModelForPlan();
+    //KDL::JntArray joint_positions = planner->getJointPositionsForPlan();
+    //for(int i = 0; i < x.size(); i++)
+    //  joint_positions(planner->getControlIndices().at(i)) = x.at(i);
     auto joints = robot_model->getJointPositions();
     joints.data[0] = x[0];
     joints.data[3] = x[1];
@@ -337,13 +360,13 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   
   //vectoring_nl_solver_h_->set_max_objective(maximizeHorizontalForceSquare, this);
   //vectoring_nl_solver_h_->add_inequality_mconstraint(thrustLimitConstraint, this, std::vector<double>(8, 1e-8));
-  vectoring_nl_solver_h_->set_max_objective(maximizeFCTMinWide, this);
+  vectoring_nl_solver_h_->set_max_objective(maximizeBalanceWide, this);
   vectoring_nl_solver_h_->add_equality_mconstraint(kinematicsConstraint, this, std::vector<double>(6, 1e-2));
 
   vectoring_nl_solver_->set_xtol_rel(1e-4); //1e-4
   vectoring_nl_solver_h_->set_xtol_rel(1e-4); //1e-4
   vectoring_nl_solver_->set_maxeval(1000); // 1000 times
-  vectoring_nl_solver_h_->set_maxeval(10000); // 1000 times
+  vectoring_nl_solver_h_->set_maxeval(1000); // 1000 times
 
   opt_static_thrusts_ = {0, 0, 0, 0};
   opt_x_ = {M_PI, M_PI, M_PI, M_PI, 0, 0, 0, 0};
@@ -509,13 +532,14 @@ bool HydrusXiUnderActuatedNavigator::plan()
       nlopt::result result;
       if (not horizontal_mode_) {
         result = nl_solver_now->optimize(opt_gimbal_angles_, max_f);
-        opt_x_ = {opt_gimbal_angles_.at(0), opt_gimbal_angles_.at(1), opt_gimbal_angles_.at(2), opt_gimbal_angles_.at(3), 10.0, 10.0, 10.0, 10.0};
+        opt_x_ = {opt_gimbal_angles_.at(0), opt_gimbal_angles_.at(1), opt_gimbal_angles_.at(2), opt_gimbal_angles_.at(3), 9.0, 10.0, 10.0, 9.0};
       } else {
         //ROS_INFO_STREAM_THROTTLE(0.1, "opt_x_: " << opt_x_[0] << " " << opt_x_[1] << " " << opt_x_[2] << " " << opt_x_[3] << " " << opt_x_[4] << " " << opt_x_[5] << " " << opt_x_[6] << " " << opt_x_[7]);
         result = nl_solver_now->optimize(opt_x_, max_f);
         opt_gimbal_angles_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)};
-        opt_static_thrusts_ = {opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
       }
+      opt_static_thrusts_ = {opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
+      robot_model_real_->set3DoFThrust(opt_static_thrusts_);
       if (result != 4) {
         vectoring_reset_flag_ = true;
       }
