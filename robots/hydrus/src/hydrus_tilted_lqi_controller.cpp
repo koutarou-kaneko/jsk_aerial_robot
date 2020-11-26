@@ -16,6 +16,11 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   pid_msg_.z.p_term.resize(1);
   pid_msg_.z.i_term.resize(1);
   pid_msg_.z.d_term.resize(1);
+
+  ros::NodeHandle control_nh(nh_, "controller");
+  lqi_additional_server_ = boost::make_shared<dynamic_reconfigure::Server<hydrus::LQIForTiltConfig> >(ros::NodeHandle(control_nh, "lqi_additional"));
+  dynamic_reconf_func_lqi_additional_ = boost::bind(&HydrusTiltedLQIController::cfgLQIAdditionalCallback, this, _1, _2);
+  lqi_additional_server_->setCallback(dynamic_reconf_func_lqi_additional_);
 }
 
 void HydrusTiltedLQIController::controlCore()
@@ -129,7 +134,27 @@ void HydrusTiltedLQIController::rosParamInit()
 
   getParam<double>(lqi_nh, "trans_constraint_weight", trans_constraint_weight_, 1.0);
   getParam<double>(lqi_nh, "att_control_weight", att_control_weight_, 1.0);
+
+  ros::NodeHandle lqi_additional_nh(control_nh, "lqi_additional");
+  lqi_additional_nh.setParam("trans_constraint_weight", trans_constraint_weight_);
 }
+
+void HydrusTiltedLQIController::cfgLQIAdditionalCallback(hydrus::LQIForTiltConfig &config, uint32_t level)
+{
+  if(config.lqi_flag)
+    {
+      switch(level)
+        {
+        case 1:
+          ROS_INFO_STREAM_NAMED("LQI for tilt gain generator", "LQI for tilt gain generator: change the weight to suppress the lateral force " << trans_constraint_weight_ <<  " to "  << config.trans_constraint_weight);
+          trans_constraint_weight_ = config.trans_constraint_weight;
+          break;
+        default :
+          break;
+        }
+    }
+}
+
 
 
 /* plugin registration */

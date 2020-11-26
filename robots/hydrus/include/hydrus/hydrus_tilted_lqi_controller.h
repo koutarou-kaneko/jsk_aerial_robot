@@ -36,6 +36,7 @@
 #pragma once
 
 #include <hydrus/hydrus_lqi_controller.h>
+#include <hydrus/LQIForTiltConfig.h>
 #include <spinal/DesireCoord.h>
 
 namespace aerial_robot_control
@@ -58,6 +59,11 @@ namespace aerial_robot_control
 
     double trans_constraint_weight_;
     double att_control_weight_;
+
+    boost::shared_ptr<dynamic_reconfigure::Server<hydrus::LQIForTiltConfig> > lqi_additional_server_;
+    dynamic_reconfigure::Server<hydrus::LQIForTiltConfig>::CallbackType dynamic_reconf_func_lqi_additional_;
+
+    void cfgLQIAdditionalCallback(hydrus::LQIForTiltConfig &config, uint32_t level); //dynamic reconfigure
 
     void controlCore() override;
     bool optimalGain() override;
