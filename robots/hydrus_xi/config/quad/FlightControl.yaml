@@ -48,5 +48,5 @@ controller:
     r3: 1.0
     r4: 1.0
 
-    trans_constraint_weight: 100
+    trans_constraint_weight: 20 # give more focus on the attitude control, enhancing the attitude control under line-shape form
     att_control_weight: 1
