@@ -50,7 +50,7 @@ public:
   Eigen::VectorXd get3DoFThrust();
   void set3DoFThrust(std::vector<double> thrust_vector);
   Eigen::VectorXd thrust_wrench_ = Eigen::VectorXd::Zero(6);
-  bool horizontal_mode_ = false;
+  bool horizontal_mode_ = false, transition_flag_ = false;
 private:
   void updateRobotModelImpl(const KDL::JntArray& joint_positions) override;
   Eigen::VectorXd three_dof_thrust_ = Eigen::VectorXd::Zero(4);

@@ -480,16 +480,17 @@ bool HydrusXiUnderActuatedNavigator::plan()
         {
           delta_angle = M_PI; // reset
           vectoring_reset_flag_ = false;
-          ROS_INFO("Vectoring angle optimization reset");
+          robot_model_real_->transition_flag_ = true;
+          ROS_INFO("Vectoring angle optimization reset, transitioning");
         }
 
       for(int i = 0; i < opt_gimbal_angles_.size(); i++)
-         {
-           lb.at(i) = opt_gimbal_angles_.at(i) - delta_angle;
-           ub.at(i) = opt_gimbal_angles_.at(i) + delta_angle;
-           lbh.at(i) = opt_gimbal_angles_.at(i) - delta_angle;
-           ubh.at(i) = opt_gimbal_angles_.at(i) + delta_angle;
-         }
+        {
+          lb.at(i) = opt_gimbal_angles_.at(i) - delta_angle;
+          ub.at(i) = opt_gimbal_angles_.at(i) + delta_angle;
+          lbh.at(i) = opt_gimbal_angles_.at(i) - delta_angle;
+          ubh.at(i) = opt_gimbal_angles_.at(i) + delta_angle;
+        }
     }
   else
     {
@@ -539,10 +540,25 @@ bool HydrusXiUnderActuatedNavigator::plan()
         result = nl_solver_now->optimize(opt_x_, max_f);
         opt_gimbal_angles_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)};
       }
-      if (opt_gimbal_angles - joint_pos_fb_ < thres) {
-        opt_static_thrusts_ = {opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
-      } else {
-        opt_static_thrusts_ = calcTemporalThrusts();
+      opt_static_thrusts_ = {opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
+      // Transition
+      double thres = 0.1;
+      if (horizontal_mode_ and robot_model_real_->transition_flag_) {
+        bool transitioning = false;
+        for (int i=0; i<4; i++) {
+          auto gimbal_diff_abs = std::abs(opt_gimbal_angles_[i] - joint_pos_fb_[i]);
+          if (gimbal_diff_abs > 3*M_PI) gimbal_diff_abs -= 4*M_PI;
+          if (gimbal_diff_abs > M_PI) gimbal_diff_abs -= 2*M_PI;
+          ROS_INFO_STREAM_THROTTLE(0.1, "gimbal diff: " << std::abs(gimbal_diff_abs));
+          if (std::abs(gimbal_diff_abs) > thres) {
+            transitioning = true;
+          }
+        }
+        if (not transitioning) {
+          // Converged
+          ROS_INFO("Converged, transition flag reset");
+          robot_model_real_->transition_flag_ = false;
+        }
       }
       robot_model_real_->set3DoFThrust(opt_static_thrusts_);
       if (result != 4) {

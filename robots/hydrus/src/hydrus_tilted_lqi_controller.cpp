@@ -47,6 +47,9 @@ void HydrusTiltedLQIController::controlCore()
     // Don't calc here when optimize all axis
     //tilted_model_->calc3DoFThrust(ff_f_x_, ff_f_y_);
     f = tilted_model_->get3DoFThrust();
+    if (tilted_model_->transition_flag_) {
+      ROS_WARN_THROTTLE(0.1, "Transitioning... from Controller");
+    }
   }
   
   Eigen::VectorXd allocate_scales = f / f.sum() * robot_model_->getMass();
