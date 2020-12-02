@@ -66,6 +66,7 @@ namespace aerial_robot_control
     double att_control_weight_;
     bool horizontal_force_mode_ = false;
 
+    void allocateYawTerm() override;
     void controlCore() override;
     bool optimalGain() override;
     void publishGain() override;

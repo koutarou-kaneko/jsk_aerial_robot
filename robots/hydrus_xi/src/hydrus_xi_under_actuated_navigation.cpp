@@ -327,6 +327,7 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
 
   gimbal_ctrl_pub_ = nh_.advertise<sensor_msgs::JointState>("gimbals_ctrl", 1);
   ff_wrench_sub_ = nh_.subscribe("ff_wrench", 10, &HydrusXiUnderActuatedNavigator::ffWrenchCallback, this);
+  joint_fb_sub_ = nh_.subscribe("joint_states", 10, &HydrusXiUnderActuatedNavigator::jointStatesCallback, this);
   ff_f_xy_[0] = 0.01;
   ff_f_xy_[1] = 0.0;
 
@@ -538,7 +539,11 @@ bool HydrusXiUnderActuatedNavigator::plan()
         result = nl_solver_now->optimize(opt_x_, max_f);
         opt_gimbal_angles_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)};
       }
-      opt_static_thrusts_ = {opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
+      if (opt_gimbal_angles - joint_pos_fb_ < thres) {
+        opt_static_thrusts_ = {opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
+      } else {
+        opt_static_thrusts_ = calcTemporalThrusts();
+      }
       robot_model_real_->set3DoFThrust(opt_static_thrusts_);
       if (result != 4) {
         vectoring_reset_flag_ = true;
@@ -591,12 +596,19 @@ bool HydrusXiUnderActuatedNavigator::plan()
 
 void HydrusXiUnderActuatedNavigator::ffWrenchCallback(const geometry_msgs::Vector3ConstPtr& msg)
 {
-  ff_f_xy_[0] = msg->x;
-  ff_f_xy_[1] = msg->y;
-  double normalize = std::sqrt(std::pow(msg->x, 2)+std::pow(msg->y, 2));
-  h_f_direction_[0] = msg->x / normalize;
-  h_f_direction_[1] = msg->y / normalize;
+  auto ff = robot_model_real_->getCog<Eigen::Affine3d>().rotation().inverse() * Eigen::Vector3d(msg->x, msg->y, 0);
+  ff_f_xy_[0] = ff(0);
+  ff_f_xy_[1] = ff(1);
+  ROS_INFO_STREAM("ff_converted: " << ff_f_xy_[0] << " " << ff_f_xy_[1] << " " << robot_model_real_->getCog<Eigen::Affine3d>().rotation().inverse().eulerAngles(0,1,2));
+  double normalize = std::sqrt(std::pow(ff(0), 2)+std::pow(ff(1), 2));
+  h_f_direction_[0] = ff(0) / normalize;
+  h_f_direction_[1] = ff(1) / normalize;
   vectoring_reset_flag_ = true;
+}
+
+void HydrusXiUnderActuatedNavigator::jointStatesCallback(const sensor_msgs::JointStateConstPtr& msg)
+{
+  joint_pos_fb_ = msg->position;
 }
 
 void HydrusXiUnderActuatedNavigator::rosParamInit()

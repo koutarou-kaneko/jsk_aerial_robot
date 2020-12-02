@@ -71,6 +71,55 @@ void HydrusTiltedLQIController::controlCore()
   allocateYawTerm();
 }
 
+void HydrusTiltedLQIController::allocateYawTerm()
+{
+  Eigen::VectorXd target_thrust_yaw_term = Eigen::VectorXd::Zero(motor_num_);
+  Eigen::Vector4d p;
+  if (horizontal_force_mode_) {
+    auto cog = robot_model_->getCog<Eigen::Affine3d>();
+    auto ff_f_cog = cog.rotation().inverse() * Eigen::Vector3d(ff_f_x_, ff_f_y_, 0);
+    double compensate = cog.translation()(1)*ff_f_cog(0) - (cog.translation()(0)+0.08)*ff_f_cog(1);
+    ROS_INFO_STREAM_THROTTLE(1, "comp: " << compensate);
+    p << 0, 0, 0, ff_t_z_ - compensate;
+  } else {
+    p << 0, 0, 0, 0;
+  }
+  auto ff_yaw_collective_thrust = p_mat_pseudo_inv_ * p;
+  //ROS_INFO_STREAM_THROTTLE(0.1, "Feedforward term of thrust: " << ff_yaw_collective_thrust.transpose());
+  for(int i = 0; i < motor_num_; i++)
+    {
+      double p_term = yaw_gains_.at(i)[0] * pid_controllers_.at(YAW).getErrP();
+      double i_term = yaw_gains_.at(i)[1] * pid_controllers_.at(YAW).getErrI();
+      double d_term = yaw_gains_.at(i)[2] * pid_controllers_.at(YAW).getErrD();
+      target_thrust_yaw_term(i) = p_term + i_term + d_term + ff_yaw_collective_thrust(i);
+      pid_msg_.yaw.p_term.at(i) = p_term;
+      pid_msg_.yaw.i_term.at(i) = i_term;
+      pid_msg_.yaw.d_term.at(i) = d_term;
+    }
+  // constraint yaw (also  I term)
+  int index;
+  double max_term = target_thrust_yaw_term.cwiseAbs().maxCoeff(&index);
+  double residual = max_term - pid_controllers_.at(YAW).getLimitSum();
+  if(residual > 0)
+    {
+      pid_controllers_.at(YAW).setErrI(pid_controllers_.at(YAW).getErrI() - residual / yaw_gains_.at(index)[1]);
+      target_thrust_yaw_term *= (1 - residual / max_term);
+    }
+
+  // special process for yaw since the bandwidth between PC and spinal
+  double max_yaw_scale = 0; // for reconstruct yaw control term in spinal
+  for(int i = 0; i < motor_num_; i++)
+    {
+      pid_msg_.yaw.total.at(i) =  target_thrust_yaw_term(i);
+
+      if(yaw_gains_[i][2] > max_yaw_scale)
+        {
+          max_yaw_scale = yaw_gains_[i][2];
+          candidate_yaw_term_ = target_thrust_yaw_term(i);
+        }
+    }
+}
+
 bool HydrusTiltedLQIController::optimalGain()
 {
   /* calculate the P_orig pseudo inverse */

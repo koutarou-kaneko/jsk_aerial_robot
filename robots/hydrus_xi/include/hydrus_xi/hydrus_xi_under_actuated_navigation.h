@@ -79,7 +79,7 @@ namespace aerial_robot_navigation
     bool vectoring_reset_flag_ = false;
   private:
     ros::Publisher gimbal_ctrl_pub_;
-    ros::Subscriber ff_wrench_sub_;
+    ros::Subscriber ff_wrench_sub_, joint_fb_sub_;
     std::thread plan_thread_;
     boost::shared_ptr<HydrusTiltedRobotModel> robot_model_for_plan_;
     OsqpEigen::Solver yaw_range_lp_solver_;
@@ -101,9 +101,10 @@ namespace aerial_robot_navigation
     double fc_t_min_thresh_; // constraint func
     double gimbal_delta_angle_; // configuration state
 
-    std::vector<double> opt_gimbal_angles_, prev_opt_gimbal_angles_, opt_x_, opt_static_thrusts_;
+    std::vector<double> opt_gimbal_angles_, prev_opt_gimbal_angles_, opt_x_, opt_static_thrusts_, joint_pos_fb_;
 
     void ffWrenchCallback(const geometry_msgs::Vector3ConstPtr& msg);
+    void jointStatesCallback(const sensor_msgs::JointStateConstPtr& msg);
     void threadFunc();
     bool plan();
 
