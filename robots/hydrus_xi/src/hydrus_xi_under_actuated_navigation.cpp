@@ -369,6 +369,7 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   vectoring_nl_solver_->set_maxeval(1000); // 1000 times
   vectoring_nl_solver_h_->set_maxeval(1000); // 1000 times
 
+  opt_gimbal_angles_tmp_ = {0, 0, 0, 0};
   opt_static_thrusts_ = {0, 0, 0, 0};
   opt_x_ = {M_PI, M_PI, M_PI, M_PI, 0, 0, 0, 0};
 
@@ -425,6 +426,17 @@ void HydrusXiUnderActuatedNavigator::threadFunc()
       plan();
       loop_rate.sleep();
     }
+}
+
+void HydrusXiUnderActuatedNavigator::sanitizeJoints(std::vector<double>& joints)
+{
+  for (int i=0; i<joints.size(); i++) {
+    if (joints[i] > M_PI) {
+      joints[i] -= 2*M_PI;
+    } else if (joints[i] < -M_PI) {
+      joints[i] += 2*M_PI;
+    }
+  }
 }
 
 bool HydrusXiUnderActuatedNavigator::plan()
@@ -537,6 +549,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
         opt_x_ = {opt_gimbal_angles_.at(0), opt_gimbal_angles_.at(1), opt_gimbal_angles_.at(2), opt_gimbal_angles_.at(3), 9.0, 10.0, 10.0, 9.0};
       } else {
         //ROS_INFO_STREAM_THROTTLE(0.1, "opt_x_: " << opt_x_[0] << " " << opt_x_[1] << " " << opt_x_[2] << " " << opt_x_[3] << " " << opt_x_[4] << " " << opt_x_[5] << " " << opt_x_[6] << " " << opt_x_[7]);
+        opt_x_ = {opt_gimbal_angles_.at(0), opt_gimbal_angles_.at(1), opt_gimbal_angles_.at(2), opt_gimbal_angles_.at(3), opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
         result = nl_solver_now->optimize(opt_x_, max_f);
         opt_gimbal_angles_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)};
       }
@@ -551,6 +564,23 @@ bool HydrusXiUnderActuatedNavigator::plan()
           if (gimbal_diff_abs > M_PI) gimbal_diff_abs -= 2*M_PI;
           ROS_INFO_STREAM_THROTTLE(0.1, "gimbal diff: " << std::abs(gimbal_diff_abs));
           if (std::abs(gimbal_diff_abs) > thres) {
+            for(int i = 0; i < opt_gimbal_angles_.size(); i++) {
+              if (gimbal_diff_abs > 0) {
+                lbh.at(i) = joint_pos_fb_.at(i);
+                ubh.at(i) = joint_pos_fb_.at(i) + gimbal_delta_angle_;
+                opt_x_[i] = joint_pos_fb_.at(i) + gimbal_delta_angle_;
+              } else {
+                lbh.at(i) = joint_pos_fb_.at(i) - gimbal_delta_angle_;
+                ubh.at(i) = joint_pos_fb_.at(i);
+                opt_x_[i] = joint_pos_fb_.at(i) - gimbal_delta_angle_;
+              }
+            }
+            nl_solver_now->set_lower_bounds(lbh);
+            nl_solver_now->set_upper_bounds(ubh);
+            result = nl_solver_now->optimize(opt_x_, max_f);
+            ROS_INFO_STREAM("tmp res: " << int(result) << " maxf: " << max_f << " opt: " << opt_x_[0] << " " << opt_x_[1] << " " << opt_x_[2] << " " << opt_x_[3] << " " << opt_x_[4] << " " << opt_x_[5] << " " << opt_x_[6] << " " << opt_x_[7]);
+            opt_gimbal_angles_tmp_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)};
+            opt_static_thrusts_ = {opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
             transitioning = true;
           }
         }
@@ -561,10 +591,10 @@ bool HydrusXiUnderActuatedNavigator::plan()
         }
       }
       robot_model_real_->set3DoFThrust(opt_static_thrusts_);
-      if (result != 4) {
+      if (result != 4 or result != 5) {
         vectoring_reset_flag_ = true;
       }
-      ROS_INFO_STREAM_THROTTLE(0.1, "res: " << int(result) << " maxf: " << max_f << " opt: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3] << " " << opt_static_thrusts_[0] << " " << opt_static_thrusts_[1] << " " << opt_static_thrusts_[2] << " " << opt_static_thrusts_[3]);
+      ROS_INFO_STREAM("res: " << int(result) << " maxf: " << max_f << " opt: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3] << " " << opt_static_thrusts_[0] << " " << opt_static_thrusts_[1] << " " << opt_static_thrusts_[2] << " " << opt_static_thrusts_[3]);
       ROS_INFO_STREAM_THROTTLE(1, "gimbals: " << joint_positions_for_plan_.data(0) << " " << joint_positions_for_plan_.data(3) << " " << joint_positions_for_plan_.data(6) << " " << joint_positions_for_plan_.data(9));
       
       double roll,pitch,yaw;
@@ -601,7 +631,11 @@ bool HydrusXiUnderActuatedNavigator::plan()
   for(int i = 0; i < control_gimbal_indices_.size(); i++)
     {
       gimbal_msg.name.push_back(control_gimbal_names_.at(i));
-      gimbal_msg.position.push_back(opt_gimbal_angles_.at(i));
+      if (robot_model_real_->transition_flag_) {
+        gimbal_msg.position.push_back(opt_gimbal_angles_tmp_.at(i));
+      } else {
+        gimbal_msg.position.push_back(opt_gimbal_angles_.at(i));
+      }
     }
   gimbal_ctrl_pub_.publish(gimbal_msg);
 
