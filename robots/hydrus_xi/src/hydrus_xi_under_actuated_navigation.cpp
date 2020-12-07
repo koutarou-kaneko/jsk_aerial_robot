@@ -555,18 +555,21 @@ bool HydrusXiUnderActuatedNavigator::plan()
       }
       opt_static_thrusts_ = {opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
       // Transition
-      double thres = 0.1;
+      double thres = 0.2;
       if (horizontal_mode_ and robot_model_real_->transition_flag_) {
         bool transitioning = false;
         for (int i=0; i<4; i++) {
-          auto gimbal_diff_abs = std::abs(opt_gimbal_angles_[i] - joint_pos_fb_[i]);
-          while (gimbal_diff_abs > M_PI) {
-            gimbal_diff_abs = std::abs(gimbal_diff_abs - 2*M_PI);
+          auto gimbal_diff = opt_gimbal_angles_[i] - joint_pos_fb_[i];
+          while (gimbal_diff > M_PI) {
+            gimbal_diff = gimbal_diff - 2*M_PI;
           }
-          ROS_INFO_STREAM_THROTTLE(0.01, "gimbal diff: " << gimbal_diff_abs << " " << opt_gimbal_angles_[i] << " " << joint_pos_fb_[i]);
-          if (gimbal_diff_abs > thres) {
+          while (gimbal_diff < -M_PI) {
+            gimbal_diff = gimbal_diff + 2*M_PI;
+          }
+          ROS_INFO_STREAM_THROTTLE(0.01, "gimbal diff: " << gimbal_diff << " " << opt_gimbal_angles_[i] << " " << joint_pos_fb_[i]);
+          if (std::abs(gimbal_diff) > thres) {
             for(int i = 0; i < opt_gimbal_angles_.size(); i++) {
-              if (gimbal_diff_abs > 0) {
+              if (gimbal_diff > 0) {
                 lbh.at(i) = joint_pos_fb_.at(i);
                 ubh.at(i) = joint_pos_fb_.at(i) + gimbal_delta_angle_;
                 opt_x_[i] = joint_pos_fb_.at(i) + gimbal_delta_angle_;
@@ -592,7 +595,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
         }
       }
       robot_model_real_->set3DoFThrust(opt_static_thrusts_);
-      if (result != 4 or result != 5) {
+      if (result != 4 and result != 5) {
         vectoring_reset_flag_ = true;
       }
       ROS_INFO_STREAM("res: " << int(result) << " maxf: " << max_f << " opt: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3] << " " << opt_static_thrusts_[0] << " " << opt_static_thrusts_[1] << " " << opt_static_thrusts_[2] << " " << opt_static_thrusts_[3]);

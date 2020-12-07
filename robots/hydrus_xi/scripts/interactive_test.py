@@ -10,6 +10,7 @@ import math
 
 from sensor_msgs.msg import JointState
 from aerial_robot_msgs.msg import FlightNav
+from spinal.msg import ServoStates
 from std_msgs.msg import Empty, Header
 from geometry_msgs.msg import Vector3Stamped, Vector3, PoseStamped, Pose, Point, Quaternion
 from std_srvs.srv import Trigger, SetBool, SetBoolRequest
@@ -24,16 +25,19 @@ class HydrusCommander():
         self.nav_control_pub = rospy.Publisher("/hydrus_xi/uav/nav", FlightNav, queue_size=1)
         self.takeoff_pub = rospy.Publisher("/hydrus_xi/teleop_command/takeoff", Empty,  queue_size=1)
         self.land_pub = rospy.Publisher("/hydrus_xi/teleop_command/land", Empty,  queue_size=1)
+        self.force_landing_pub = rospy.Publisher("/hydrus_xi/teleop_command/force_landing", Empty,  queue_size=1)
         self.halt_pub = rospy.Publisher("/hydrus_xi/teleop_command/halt", Empty, queue_size=1)
         self.manip_pub = rospy.Publisher("/hydrus_xi/manipulation_end", PoseStamped, queue_size=1)
 
         self.set_joint_torque_client = rospy.ServiceProxy("/hydrus_xi/joints/torque_enable", SetBool)
         self.extra_servos_ctrl_pub = rospy.Publisher("/hydrus_xi/extra_servos_ctrl", JointState, queue_size=1)
         self.joints_ctrl_pub = rospy.Publisher("/hydrus_xi/joints_ctrl", JointState, queue_size=1)
+        self.servo_states_sub = rospy.Subscriber('/hydrus_xi/servo/states', ServoStates, self.servo_states_cb)
 
         #self.cover_pose = rospy.get_param('~cover_pose')
         #self.close_pose = rospy.get_param('~close_pose')
         self.nav_mode = nav_mode
+        errors = [False, False, False]
 
         # constants
         self.WAIT_TIME = 0.5
@@ -139,8 +143,15 @@ class HydrusCommander():
         self.joints_ctrl_pub.publish(joint_msg)
         time.sleep(self.WAIT_TIME)
 
-    def door_pose(self):
-        self.joint_publish([0.78, 1.57, 1.57])
+    def servo_states_cb(self):
+        for i, servo in enumerate(msg.servos):
+            if servo.error != 0:
+                print "Servo error, force landing"
+                self.force_landing_pub.publish(Empty())
+                time.sleep(self.WAIT_TIME)
+                self.errors[i] = True
+            else:
+                self.errors[i] = False
 
     '''
     def open_joints(self):
@@ -270,7 +281,7 @@ if __name__ == '__main__':
     pub = rospy.Publisher("/hydrus_xi/ff_wrench", Vector3, queue_size=10)
     rospy.sleep(rospy.Duration(5.0))
     hyd = HydrusCommander()
-    '''
+    
     rospy.sleep(rospy.Duration(1.0))
     hyd.arm_and_takeoff()
     rospy.sleep(rospy.Duration(15.0))
@@ -281,5 +292,5 @@ if __name__ == '__main__':
     hyd.joint_publish([1.57, 1.57, 0])
     rospy.sleep(rospy.Duration(2.0))
     hyd.move_to(-0.2,0.1)
-    '''
+    
     embed()
