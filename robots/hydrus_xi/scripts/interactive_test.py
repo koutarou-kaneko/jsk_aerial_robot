@@ -270,6 +270,7 @@ if __name__ == '__main__':
     pub = rospy.Publisher("/hydrus_xi/ff_wrench", Vector3, queue_size=10)
     rospy.sleep(rospy.Duration(5.0))
     hyd = HydrusCommander()
+    '''
     rospy.sleep(rospy.Duration(1.0))
     hyd.arm_and_takeoff()
     rospy.sleep(rospy.Duration(15.0))
@@ -280,4 +281,5 @@ if __name__ == '__main__':
     hyd.joint_publish([1.57, 1.57, 0])
     rospy.sleep(rospy.Duration(2.0))
     hyd.move_to(-0.2,0.1)
+    '''
     embed()

@@ -560,10 +560,11 @@ bool HydrusXiUnderActuatedNavigator::plan()
         bool transitioning = false;
         for (int i=0; i<4; i++) {
           auto gimbal_diff_abs = std::abs(opt_gimbal_angles_[i] - joint_pos_fb_[i]);
-          if (gimbal_diff_abs > 3*M_PI) gimbal_diff_abs -= 4*M_PI;
-          if (gimbal_diff_abs > M_PI) gimbal_diff_abs -= 2*M_PI;
-          ROS_INFO_STREAM_THROTTLE(0.1, "gimbal diff: " << std::abs(gimbal_diff_abs));
-          if (std::abs(gimbal_diff_abs) > thres) {
+          while (gimbal_diff_abs > M_PI) {
+            gimbal_diff_abs = std::abs(gimbal_diff_abs - 2*M_PI);
+          }
+          ROS_INFO_STREAM_THROTTLE(0.01, "gimbal diff: " << gimbal_diff_abs << " " << opt_gimbal_angles_[i] << " " << joint_pos_fb_[i]);
+          if (gimbal_diff_abs > thres) {
             for(int i = 0; i < opt_gimbal_angles_.size(); i++) {
               if (gimbal_diff_abs > 0) {
                 lbh.at(i) = joint_pos_fb_.at(i);
