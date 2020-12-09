@@ -79,6 +79,7 @@ namespace aerial_robot_navigation
     bool vectoring_reset_flag_ = false;
   private:
     ros::Publisher gimbal_ctrl_pub_;
+    ros::Publisher gimbal_diff_pub_[4];
     ros::Subscriber ff_wrench_sub_, joint_fb_sub_;
     std::thread plan_thread_;
     boost::shared_ptr<HydrusTiltedRobotModel> robot_model_for_plan_;

@@ -326,6 +326,11 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   rosParamInit();
 
   gimbal_ctrl_pub_ = nh_.advertise<sensor_msgs::JointState>("gimbals_ctrl", 1);
+  gimbal_diff_pub_[0] = nh_.advertise<geometry_msgs::Vector3>("gimbal1_diff", 1);
+  gimbal_diff_pub_[1] = nh_.advertise<geometry_msgs::Vector3>("gimbal2_diff", 1);
+  gimbal_diff_pub_[2] = nh_.advertise<geometry_msgs::Vector3>("gimbal3_diff", 1);
+  gimbal_diff_pub_[3] = nh_.advertise<geometry_msgs::Vector3>("gimbal4_diff", 1);
+
   ff_wrench_sub_ = nh_.subscribe("ff_wrench", 10, &HydrusXiUnderActuatedNavigator::ffWrenchCallback, this);
   joint_fb_sub_ = nh_.subscribe("joint_states", 10, &HydrusXiUnderActuatedNavigator::jointStatesCallback, this);
   ff_f_xy_[0] = 0.01;
@@ -555,7 +560,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
       }
       opt_static_thrusts_ = {opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
       // Transition
-      double thres = 0.2;
+      double thres = 0.25;
       if (horizontal_mode_ and robot_model_real_->transition_flag_) {
         bool transitioning = false;
         for (int i=0; i<4; i++) {
@@ -566,29 +571,34 @@ bool HydrusXiUnderActuatedNavigator::plan()
           while (gimbal_diff < -M_PI) {
             gimbal_diff = gimbal_diff + 2*M_PI;
           }
-          ROS_INFO_STREAM_THROTTLE(0.01, "gimbal diff" << i << ": " << gimbal_diff << " " << opt_gimbal_angles_[i] << " " << joint_pos_fb_[i]);
+          geometry_msgs::Vector3 diff_to_send;
+          diff_to_send.x=gimbal_diff;
+          diff_to_send.y=opt_gimbal_angles_[i];
+          diff_to_send.z=joint_pos_fb_[i];
+          gimbal_diff_pub_[i].publish(diff_to_send);
           if (std::abs(gimbal_diff) > thres) {
             for(int i = 0; i < opt_gimbal_angles_.size(); i++) {
               if (gimbal_diff > 0) {
-                lbh.at(i) = joint_pos_fb_.at(i);
-                ubh.at(i) = joint_pos_fb_.at(i) + gimbal_delta_angle_;
+                lbh.at(i) = joint_pos_fb_.at(i) + 0.5*gimbal_delta_angle_;
+                ubh.at(i) = joint_pos_fb_.at(i) + 1.5*gimbal_delta_angle_;
                 opt_x_[i] = joint_pos_fb_.at(i) + gimbal_delta_angle_;
               } else {
-                lbh.at(i) = joint_pos_fb_.at(i) - gimbal_delta_angle_;
-                ubh.at(i) = joint_pos_fb_.at(i);
+                lbh.at(i) = joint_pos_fb_.at(i) - 1.5*gimbal_delta_angle_;
+                ubh.at(i) = joint_pos_fb_.at(i) - 0.5*gimbal_delta_angle_;
                 opt_x_[i] = joint_pos_fb_.at(i) - gimbal_delta_angle_;
               }
             }
+            transitioning = true;
+          }
+        }
+        if (transitioning) {
             nl_solver_now->set_lower_bounds(lbh);
             nl_solver_now->set_upper_bounds(ubh);
             result = nl_solver_now->optimize(opt_x_, max_f);
             ROS_INFO_STREAM("tmp res: " << int(result) << " maxf: " << max_f << " opt: " << opt_x_[0] << " " << opt_x_[1] << " " << opt_x_[2] << " " << opt_x_[3] << " " << opt_x_[4] << " " << opt_x_[5] << " " << opt_x_[6] << " " << opt_x_[7]);
             opt_gimbal_angles_tmp_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)};
             opt_static_thrusts_ = {opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
-            transitioning = true;
-          }
-        }
-        if (not transitioning) {
+        } else {
           // Converged
           ROS_INFO("Converged, transition flag reset");
           robot_model_real_->transition_flag_ = false;

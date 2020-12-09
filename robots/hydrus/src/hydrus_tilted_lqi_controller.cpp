@@ -48,6 +48,7 @@ void HydrusTiltedLQIController::controlCore()
     //tilted_model_->calc3DoFThrust(ff_f_x_, ff_f_y_);
     f = tilted_model_->get3DoFThrust();
     if (tilted_model_->transition_flag_) {
+      target_roll_ = -0.05;
       ROS_WARN_THROTTLE(0.1, "Transitioning... from Controller");
     }
   }
