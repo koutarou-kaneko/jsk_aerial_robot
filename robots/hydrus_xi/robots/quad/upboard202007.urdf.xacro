@@ -59,5 +59,10 @@
   <gazebo reference="gripper_rod">
     <self_collide>true</self_collide>
   </gazebo>
+  <gazebo reference="gripper_plane">
+    <material>Gazebo/Black</material>
+    <mu1 value="5" />
+    <mu2 value="5" />
+  </gazebo>
 
 </robot>

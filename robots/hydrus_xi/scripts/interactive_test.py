@@ -287,10 +287,17 @@ if __name__ == '__main__':
     rospy.sleep(rospy.Duration(15.0))
     hyd.change_yaw(1.57)
     rospy.sleep(rospy.Duration(2.0))
+    '''
     hyd.joint_publish([1.4, 1.57, 0])
     rospy.sleep(rospy.Duration(1.0))
     hyd.joint_publish([1.57, 1.57, 0])
     rospy.sleep(rospy.Duration(2.0))
     hyd.move_to(-0.2,0.1)
-    
+    '''
+    #ichimonji version
+    hyd.joint_publish([1.4, 1.57, 0])
+    rospy.sleep(rospy.Duration(1.0))
+    hyd.joint_publish([1.57, 0, 0])
+    rospy.sleep(rospy.Duration(3.0))
+    hyd.move_to(0,0.4)
     embed()

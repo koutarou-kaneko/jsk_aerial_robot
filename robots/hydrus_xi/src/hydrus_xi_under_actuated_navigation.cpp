@@ -566,7 +566,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
           while (gimbal_diff < -M_PI) {
             gimbal_diff = gimbal_diff + 2*M_PI;
           }
-          ROS_INFO_STREAM_THROTTLE(0.01, "gimbal diff: " << gimbal_diff << " " << opt_gimbal_angles_[i] << " " << joint_pos_fb_[i]);
+          ROS_INFO_STREAM_THROTTLE(0.01, "gimbal diff" << i << ": " << gimbal_diff << " " << opt_gimbal_angles_[i] << " " << joint_pos_fb_[i]);
           if (std::abs(gimbal_diff) > thres) {
             for(int i = 0; i < opt_gimbal_angles_.size(); i++) {
               if (gimbal_diff > 0) {
