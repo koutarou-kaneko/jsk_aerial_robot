@@ -30,9 +30,6 @@ void HydrusLQIController::initialize(ros::NodeHandle nh,
   four_axis_gain_pub_ = nh_.advertise<aerial_robot_msgs::FourAxisGain>("debug/four_axes/gain", 1);
   p_matrix_pseudo_inverse_inertia_pub_ = nh_.advertise<spinal::PMatrixPseudoInverseWithInertia>("p_matrix_pseudo_inverse_inertia", 1);
 
-  //subscriber
-  ff_wrench_sub_ = nh.subscribe("ff_wrench", 10, &HydrusLQIController::ffWrenchCallback, this);
-
   //dynamic reconfigure server
   ros::NodeHandle control_nh(nh_, "controller");
   lqi_server_ = boost::make_shared<dynamic_reconfigure::Server<hydrus::LQIConfig> >(ros::NodeHandle(control_nh, "lqi"));
@@ -159,13 +156,6 @@ void HydrusLQIController::allocateYawTerm()
           candidate_yaw_term_ = target_thrust_yaw_term(i);
         }
     }
-}
-
-void HydrusLQIController::ffWrenchCallback(const geometry_msgs::Vector3ConstPtr& msg)
-{
-  ff_f_x_ = msg->x;
-  ff_f_y_ = msg->y;
-  ff_t_z_ = msg->z;
 }
 
 void HydrusLQIController::gainGeneratorFunc()

@@ -17,6 +17,9 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   tilted_model_ = boost::dynamic_pointer_cast<HydrusTiltedRobotModel>(robot_model);
   navigator_ = navigator;
 
+  //subscriber
+  ff_wrench_sub_ = nh.subscribe("ff_wrench", 10, &HydrusTiltedLQIController::ffWrenchCallback, this);
+
   pid_msg_.z.p_term.resize(1);
   pid_msg_.z.i_term.resize(1);
   pid_msg_.z.d_term.resize(1);
@@ -48,8 +51,9 @@ void HydrusTiltedLQIController::controlCore()
     //tilted_model_->calc3DoFThrust(ff_f_x_, ff_f_y_);
     f = tilted_model_->get3DoFThrust();
     if (tilted_model_->transition_flag_) {
-      target_roll_ = -0.05;
-      ROS_WARN_THROTTLE(0.1, "Transitioning... from Controller");
+      target_pitch_ = -atan2(ff_f_norm_x_, 1);
+      target_roll_ = -atan2(-ff_f_norm_y_, sqrt(ff_f_norm_x_ * ff_f_norm_x_ + 1));
+      ROS_WARN_STREAM_THROTTLE(0.1, "Transitioning... roll: " << target_roll_ << " pitch: " << target_pitch_);
     }
   }
   
@@ -81,10 +85,10 @@ void HydrusTiltedLQIController::allocateYawTerm()
   Eigen::Vector4d p;
   if (horizontal_force_mode_) {
     auto cog = robot_model_->getCog<Eigen::Affine3d>();
-    auto ff_f_cog = cog.rotation().inverse() * Eigen::Vector3d(ff_f_x_, ff_f_y_, 0);
-    double compensate = 3.615 * cog.translation()(1)*ff_f_cog(0) - (cog.translation()(0)+0.08)*ff_f_cog(1);
+    //auto ff_f_cog = cog.rotation().inverse() * Eigen::Vector3d(ff_f_x_, ff_f_y_, 0);
+    double compensate = 3.615 * (cog.translation()(1)*ff_f_x_ - (cog.translation()(0)+0.08)*ff_f_y_);
     ROS_INFO_STREAM_THROTTLE(1, "comp: " << compensate);
-    p << 0, 0, 0, ff_t_z_ - compensate;
+    p << 0, 0, 0, ff_t_z_ + compensate;
   } else {
     p << 0, 0, 0, 0;
   }
@@ -122,6 +126,18 @@ void HydrusTiltedLQIController::allocateYawTerm()
           candidate_yaw_term_ = target_thrust_yaw_term(i);
         }
     }
+}
+
+void HydrusTiltedLQIController::ffWrenchCallback(const geometry_msgs::Vector3ConstPtr& msg)
+{
+  ff_f_x_ = msg->x;
+  ff_f_y_ = msg->y;
+  ff_t_z_ = msg->z;
+  auto ff = robot_model_->getCog<Eigen::Affine3d>().rotation().inverse() * Eigen::Vector3d(msg->x, msg->y, 0);
+  //ROS_INFO_STREAM("ff_converted: " << ff_f_xy_[0] << " " << ff_f_xy_[1] << " " << robot_model_real_->getCog<Eigen::Affine3d>().rotation().inverse().eulerAngles(0,1,2));
+  double normalize = 20.0*std::sqrt(std::pow(msg->x, 2)+std::pow(msg->y, 2));
+  ff_f_norm_x_ = ff(0) / normalize;
+  ff_f_norm_y_ = ff(1) / normalize;
 }
 
 bool HydrusTiltedLQIController::optimalGain()
