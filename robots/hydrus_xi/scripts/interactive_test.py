@@ -287,17 +287,31 @@ if __name__ == '__main__':
     rospy.sleep(rospy.Duration(15.0))
     hyd.change_yaw(1.57)
     rospy.sleep(rospy.Duration(2.0))
+    
+    #J
     hyd.joint_publish([1.4, 1.57, 0])
     rospy.sleep(rospy.Duration(1.0))
     hyd.joint_publish([1.57, 1.57, 0])
     rospy.sleep(rospy.Duration(2.0))
-    hyd.move_to(-0.2,0.1)
+    hyd.move_to(-0.2,0.2)
     '''
-    #ichimonji version
+    #L
     hyd.joint_publish([1.4, 1.57, 0])
     rospy.sleep(rospy.Duration(1.0))
     hyd.joint_publish([1.57, 0, 0])
     rospy.sleep(rospy.Duration(3.0))
     hyd.move_to(0,0.4)
+    
+    #door
+    hyd.joint_publish([1.4, 1.57, 0])
+    rospy.sleep(rospy.Duration(1.0))
+    #hyd.ik(-0.1,1.1,-0.2)
+    hyd.joint_publish([0.773, 1.378, 0.793])
+    rospy.sleep(rospy.Duration(3.0))
+    hyd.move_to(0.5,0.5)
+    rospy.sleep(rospy.Duration(1.0))
+    hyd.change_yaw(2.36)
+    rospy.sleep(rospy.Duration(3.0))
+    hyd.move_to(0.2,-0.1)
     '''
     embed()

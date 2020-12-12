@@ -367,7 +367,7 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   //vectoring_nl_solver_h_->set_max_objective(maximizeHorizontalForceSquare, this);
   //vectoring_nl_solver_h_->add_inequality_mconstraint(thrustLimitConstraint, this, std::vector<double>(8, 1e-8));
   vectoring_nl_solver_h_->set_max_objective(maximizeBalanceWide, this);
-  vectoring_nl_solver_h_->add_equality_mconstraint(kinematicsConstraint, this, std::vector<double>(6, 1e-2));
+  vectoring_nl_solver_h_->add_equality_mconstraint(kinematicsConstraint, this, std::vector<double>(6, 1e-4));
 
   vectoring_nl_solver_->set_xtol_rel(1e-4); //1e-4
   vectoring_nl_solver_h_->set_xtol_rel(1e-4); //1e-4
@@ -559,6 +559,8 @@ bool HydrusXiUnderActuatedNavigator::plan()
         opt_gimbal_angles_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)};
       }
       opt_static_thrusts_ = {opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
+      ROS_INFO_STREAM("res: " << int(result) << " maxf: " << max_f << " opt: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3] << " " << opt_static_thrusts_[0] << " " << opt_static_thrusts_[1] << " " << opt_static_thrusts_[2] << " " << opt_static_thrusts_[3]);
+
       // Transition
       double thres = 0.25;
       if (horizontal_mode_ and robot_model_real_->transition_flag_) {
@@ -608,7 +610,6 @@ bool HydrusXiUnderActuatedNavigator::plan()
       if (result != 4 and result != 5) {
         vectoring_reset_flag_ = true;
       }
-      ROS_INFO_STREAM("res: " << int(result) << " maxf: " << max_f << " opt: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3] << " " << opt_static_thrusts_[0] << " " << opt_static_thrusts_[1] << " " << opt_static_thrusts_[2] << " " << opt_static_thrusts_[3]);
       ROS_INFO_STREAM_THROTTLE(1, "gimbals: " << joint_positions_for_plan_.data(0) << " " << joint_positions_for_plan_.data(3) << " " << joint_positions_for_plan_.data(6) << " " << joint_positions_for_plan_.data(9));
       
       double roll,pitch,yaw;

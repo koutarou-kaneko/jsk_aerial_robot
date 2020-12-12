@@ -134,10 +134,10 @@ void HydrusTiltedLQIController::ffWrenchCallback(const geometry_msgs::Vector3Con
   ff_f_y_ = msg->y;
   ff_t_z_ = msg->z;
   auto ff = robot_model_->getCog<Eigen::Affine3d>().rotation().inverse() * Eigen::Vector3d(msg->x, msg->y, 0);
-  //ROS_INFO_STREAM("ff_converted: " << ff_f_xy_[0] << " " << ff_f_xy_[1] << " " << robot_model_real_->getCog<Eigen::Affine3d>().rotation().inverse().eulerAngles(0,1,2));
-  double normalize = 20.0*std::sqrt(std::pow(msg->x, 2)+std::pow(msg->y, 2));
+  double normalize = 20.0*std::sqrt(std::pow(ff(0), 2)+std::pow(ff(1), 2));
   ff_f_norm_x_ = ff(0) / normalize;
   ff_f_norm_y_ = ff(1) / normalize;
+  ROS_INFO_STREAM("ff_norm: " << ff_f_norm_x_ << " " << ff_f_norm_y_ << ", rotinv:\n" << robot_model_->getCog<Eigen::Affine3d>().rotation().inverse());
 }
 
 bool HydrusTiltedLQIController::optimalGain()
