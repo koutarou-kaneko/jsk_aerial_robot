@@ -293,7 +293,7 @@ namespace
     thrusts << x[4], x[5], x[6], x[7];
     wrench_des << planner->ff_f_xy_[0], planner->ff_f_xy_[1], robot_model->getGravity()[2], 0, 0, 0;
     auto res = Q*thrusts-3.61453*wrench_des;
-    ROS_INFO_STREAM_THROTTLE(1, "thrusts:\n" << thrusts << "wrench:\n" << Q*thrusts);
+    //ROS_INFO_STREAM("EqConstDiff: " << res.transpose());
     for (int i=0; i<6; i++) {
       result[i] = res[i];
     }
@@ -367,12 +367,12 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   //vectoring_nl_solver_h_->set_max_objective(maximizeHorizontalForceSquare, this);
   //vectoring_nl_solver_h_->add_inequality_mconstraint(thrustLimitConstraint, this, std::vector<double>(8, 1e-8));
   vectoring_nl_solver_h_->set_max_objective(maximizeBalanceWide, this);
-  vectoring_nl_solver_h_->add_equality_mconstraint(kinematicsConstraint, this, std::vector<double>(6, 1e-2));
+  vectoring_nl_solver_h_->add_equality_mconstraint(kinematicsConstraint, this, {0.05, 0.05, 0.1, 0.001, 0.001, 0.001}/*std::vector<double>(6, 1e-2)*/);
 
   vectoring_nl_solver_->set_xtol_rel(1e-4); //1e-4
-  vectoring_nl_solver_h_->set_xtol_rel(1e-4); //1e-4
+  //vectoring_nl_solver_h_->set_xtol_rel(1e-4); //1e-4
   vectoring_nl_solver_->set_maxeval(1000); // 1000 times
-  vectoring_nl_solver_h_->set_maxeval(10000); // 1000 times
+  vectoring_nl_solver_h_->set_maxeval(1000); // 1000 times
 
   opt_gimbal_angles_tmp_ = {0, 0, 0, 0};
   opt_static_thrusts_ = {0, 0, 0, 0};
@@ -605,6 +605,12 @@ bool HydrusXiUnderActuatedNavigator::plan()
         }
       }
       robot_model_real_->set3DoFThrust(opt_static_thrusts_);
+      /* debug print to make sure that optimization is to blame
+      robot_model_real_->calcWrenchMatrixOnRoot();
+      auto Q = robot_model_real_->calcWrenchMatrixOnCoG();
+      Eigen::Vector4d thr(opt_static_thrusts_.at(0), opt_static_thrusts_.at(1), opt_static_thrusts_.at(2), opt_static_thrusts_.at(3));
+      ROS_INFO_STREAM("opt thrust wrench recalc: " << Q*thr);
+      */
       if (result != 4 and result != 5) {
         vectoring_reset_flag_ = true;
       }
