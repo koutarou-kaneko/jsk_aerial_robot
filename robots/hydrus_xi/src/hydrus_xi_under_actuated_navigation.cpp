@@ -367,12 +367,12 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   //vectoring_nl_solver_h_->set_max_objective(maximizeHorizontalForceSquare, this);
   //vectoring_nl_solver_h_->add_inequality_mconstraint(thrustLimitConstraint, this, std::vector<double>(8, 1e-8));
   vectoring_nl_solver_h_->set_max_objective(maximizeBalanceWide, this);
-  vectoring_nl_solver_h_->add_equality_mconstraint(kinematicsConstraint, this, std::vector<double>(6, 1e-4));
+  vectoring_nl_solver_h_->add_equality_mconstraint(kinematicsConstraint, this, std::vector<double>(6, 1e-2));
 
   vectoring_nl_solver_->set_xtol_rel(1e-4); //1e-4
   vectoring_nl_solver_h_->set_xtol_rel(1e-4); //1e-4
   vectoring_nl_solver_->set_maxeval(1000); // 1000 times
-  vectoring_nl_solver_h_->set_maxeval(1000); // 1000 times
+  vectoring_nl_solver_h_->set_maxeval(10000); // 1000 times
 
   opt_gimbal_angles_tmp_ = {0, 0, 0, 0};
   opt_static_thrusts_ = {0, 0, 0, 0};
@@ -562,7 +562,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
       ROS_INFO_STREAM("res: " << int(result) << " maxf: " << max_f << " opt: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3] << " " << opt_static_thrusts_[0] << " " << opt_static_thrusts_[1] << " " << opt_static_thrusts_[2] << " " << opt_static_thrusts_[3]);
 
       // Transition
-      double thres = 0.25;
+      double thres = 0.1;
       if (horizontal_mode_ and robot_model_real_->transition_flag_) {
         bool transitioning = false;
         for (int i=0; i<4; i++) {
@@ -579,16 +579,14 @@ bool HydrusXiUnderActuatedNavigator::plan()
           diff_to_send.z=joint_pos_fb_[i];
           gimbal_diff_pub_[i].publish(diff_to_send);
           if (std::abs(gimbal_diff) > thres) {
-            for(int i = 0; i < opt_gimbal_angles_.size(); i++) {
-              if (gimbal_diff > 0) {
-                lbh.at(i) = joint_pos_fb_.at(i) + 0.5*gimbal_delta_angle_;
-                ubh.at(i) = joint_pos_fb_.at(i) + 1.5*gimbal_delta_angle_;
-                opt_x_[i] = joint_pos_fb_.at(i) + gimbal_delta_angle_;
-              } else {
-                lbh.at(i) = joint_pos_fb_.at(i) - 1.5*gimbal_delta_angle_;
-                ubh.at(i) = joint_pos_fb_.at(i) - 0.5*gimbal_delta_angle_;
-                opt_x_[i] = joint_pos_fb_.at(i) - gimbal_delta_angle_;
-              }
+            if (gimbal_diff > 0) {
+              lbh.at(i) = joint_pos_fb_.at(i) + 0.5*gimbal_delta_angle_;
+              ubh.at(i) = joint_pos_fb_.at(i) + 1.5*gimbal_delta_angle_;
+              opt_x_[i] = joint_pos_fb_.at(i) + gimbal_delta_angle_;
+            } else {
+              lbh.at(i) = joint_pos_fb_.at(i) - 1.5*gimbal_delta_angle_;
+              ubh.at(i) = joint_pos_fb_.at(i) - 0.5*gimbal_delta_angle_;
+              opt_x_[i] = joint_pos_fb_.at(i) - gimbal_delta_angle_;
             }
             transitioning = true;
           }

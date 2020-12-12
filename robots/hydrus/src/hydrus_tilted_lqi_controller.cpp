@@ -51,9 +51,9 @@ void HydrusTiltedLQIController::controlCore()
     //tilted_model_->calc3DoFThrust(ff_f_x_, ff_f_y_);
     f = tilted_model_->get3DoFThrust();
     if (tilted_model_->transition_flag_) {
-      target_pitch_ = -atan2(ff_f_norm_x_, 1);
-      target_roll_ = -atan2(-ff_f_norm_y_, sqrt(ff_f_norm_x_ * ff_f_norm_x_ + 1));
-      ROS_WARN_STREAM_THROTTLE(0.1, "Transitioning... roll: " << target_roll_ << " pitch: " << target_pitch_);
+      //target_pitch_ = atan2(ff_f_norm_x_, 1);
+      //target_roll_ = atan2(-ff_f_norm_y_, sqrt(ff_f_norm_x_ * ff_f_norm_x_ + 1));
+      //ROS_WARN_STREAM_THROTTLE(0.1, "Transitioning... roll: " << target_roll_ << " pitch: " << target_pitch_);
     }
   }
   
@@ -137,7 +137,7 @@ void HydrusTiltedLQIController::ffWrenchCallback(const geometry_msgs::Vector3Con
   double normalize = 20.0*std::sqrt(std::pow(ff(0), 2)+std::pow(ff(1), 2));
   ff_f_norm_x_ = ff(0) / normalize;
   ff_f_norm_y_ = ff(1) / normalize;
-  ROS_INFO_STREAM("ff_norm: " << ff_f_norm_x_ << " " << ff_f_norm_y_ << ", rotinv:\n" << robot_model_->getCog<Eigen::Affine3d>().rotation().inverse());
+  ROS_INFO_STREAM("ff_norm: " << ff_f_norm_x_ << " " << ff_f_norm_y_ << " normala" << normalize << " ff: " << ff << ", rotinv:\n" << robot_model_->getCog<Eigen::Affine3d>().rotation().inverse());
 }
 
 bool HydrusTiltedLQIController::optimalGain()
