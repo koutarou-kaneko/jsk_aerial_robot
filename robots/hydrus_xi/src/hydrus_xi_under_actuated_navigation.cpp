@@ -446,15 +446,20 @@ void HydrusXiUnderActuatedNavigator::sanitizeJoints(std::vector<double>& joints)
 
 bool HydrusXiUnderActuatedNavigator::plan()
 {
+  joint_positions_for_plan_ = robot_model_->getJointPositions(); // real
+
   boost::shared_ptr<nlopt::opt> nl_solver_now;
   if (horizontal_mode_) {
     nl_solver_now = vectoring_nl_solver_h_;
     robot_model_for_plan_->horizontal_mode_ = true;
+    setTargetYaw(last_target_yaw_ + joint_positions_for_plan_.data[2] - last_normal_joint1_angle_);
   } else {
     nl_solver_now = vectoring_nl_solver_;
     robot_model_for_plan_->horizontal_mode_ = false;
+    last_normal_joint1_angle_ = joint_positions_for_plan_.data[2];
+    last_target_yaw_ = getTargetRPY().getZ();
   }
-  joint_positions_for_plan_ = robot_model_->getJointPositions(); // real
+  ROS_INFO_STREAM_THROTTLE(0.1, "target link1 yaw: " << getTargetRPY().getZ()-joint_positions_for_plan_.data[2]);
 
   if(joint_positions_for_plan_.rows() == 0) return false;
 
