@@ -370,7 +370,7 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   vectoring_nl_solver_h_->add_equality_mconstraint(kinematicsConstraint, this, {0.05, 0.05, 0.1, 0.001, 0.001, 0.001}/*std::vector<double>(6, 1e-2)*/);
 
   vectoring_nl_solver_->set_xtol_rel(1e-4); //1e-4
-  //vectoring_nl_solver_h_->set_xtol_rel(1e-4); //1e-4
+  vectoring_nl_solver_h_->set_xtol_rel(1e-4); //1e-4
   vectoring_nl_solver_->set_maxeval(1000); // 1000 times
   vectoring_nl_solver_h_->set_maxeval(1000); // 1000 times
 
@@ -449,8 +449,10 @@ bool HydrusXiUnderActuatedNavigator::plan()
   boost::shared_ptr<nlopt::opt> nl_solver_now;
   if (horizontal_mode_) {
     nl_solver_now = vectoring_nl_solver_h_;
+    robot_model_for_plan_->horizontal_mode_ = true;
   } else {
     nl_solver_now = vectoring_nl_solver_;
+    robot_model_for_plan_->horizontal_mode_ = false;
   }
   joint_positions_for_plan_ = robot_model_->getJointPositions(); // real
 
@@ -553,10 +555,21 @@ bool HydrusXiUnderActuatedNavigator::plan()
         result = nl_solver_now->optimize(opt_gimbal_angles_, max_f);
         opt_x_ = {opt_gimbal_angles_.at(0), opt_gimbal_angles_.at(1), opt_gimbal_angles_.at(2), opt_gimbal_angles_.at(3), 9.0, 10.0, 10.0, 9.0};
       } else {
-        //ROS_INFO_STREAM_THROTTLE(0.1, "opt_x_: " << opt_x_[0] << " " << opt_x_[1] << " " << opt_x_[2] << " " << opt_x_[3] << " " << opt_x_[4] << " " << opt_x_[5] << " " << opt_x_[6] << " " << opt_x_[7]);
         opt_x_ = {opt_gimbal_angles_.at(0), opt_gimbal_angles_.at(1), opt_gimbal_angles_.at(2), opt_gimbal_angles_.at(3), opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
         result = nl_solver_now->optimize(opt_x_, max_f);
         opt_gimbal_angles_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)};
+        /*auto jnt = robot_model_for_plan_->getJointPositions();
+        jnt.data[0] = opt_x_.at(0);
+        jnt.data[3] = opt_x_.at(1);
+        jnt.data[6] = opt_x_.at(2);
+        jnt.data[9] = opt_x_.at(3);
+        robot_model_for_plan_->updateRobotModel(jnt);
+        robot_model_for_plan_->calcWrenchMatrixOnRoot();
+        auto Q = robot_model_for_plan_->calcWrenchMatrixOnCoG();
+        Eigen::Vector4d thr(opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7));
+        Eigen::VectorXd wrench_des(6);
+        wrench_des << ff_f_xy_[0], ff_f_xy_[1], robot_model_real_->getGravity()[2], 0, 0, 0;
+        ROS_INFO_STREAM("sol: " << (Q*thr).transpose() << " obj: " << (robot_model_real_->getMass()*wrench_des).transpose() << "diff: " << (Q*thr-robot_model_real_->getMass()*wrench_des).transpose());*/
       }
       opt_static_thrusts_ = {opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
       ROS_INFO_STREAM("res: " << int(result) << " maxf: " << max_f << " opt: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3] << " " << opt_static_thrusts_[0] << " " << opt_static_thrusts_[1] << " " << opt_static_thrusts_[2] << " " << opt_static_thrusts_[3]);
