@@ -278,10 +278,10 @@ namespace
   {
     HydrusXiUnderActuatedNavigator *planner = reinterpret_cast<HydrusXiUnderActuatedNavigator*>(planner_ptr);
     auto robot_model = planner->getRobotModelForPlan();
-    //KDL::JntArray joint_positions = planner->getJointPositionsForPlan();
+    KDL::JntArray joints = planner->getJointPositionsForPlan();
     //for(int i = 0; i < x.size(); i++)
     //  joint_positions(planner->getControlIndices().at(i)) = x.at(i);
-    auto joints = robot_model->getJointPositions();
+    //auto joints = robot_model->getJointPositions();
     joints.data[0] = x[0];
     joints.data[3] = x[1];
     joints.data[6] = x[2];
