@@ -135,15 +135,21 @@ class HydrusCommander():
         self.extra_servos_ctrl_pub.publish(joint_msg)
         time.sleep(self.WAIT_TIME)
 
-    def joint_publish(self, joint_state):
+    def joint_publish(self, joint_state, short_waittime=False):
         """publish joint_state list"""
         joint_msg = JointState()
         joint_msg.position = joint_state
-        time.sleep(self.WAIT_TIME)
+        if short_waittime:
+            time.sleep(0.05)
+        else:
+            time.sleep(self.WAIT_TIME)
         self.joints_ctrl_pub.publish(joint_msg)
-        time.sleep(self.WAIT_TIME)
+        if short_waittime:
+            time.sleep(0.05)
+        else:
+            time.sleep(self.WAIT_TIME)
 
-    def servo_states_cb(self):
+    def servo_states_cb(self, msg):
         for i, servo in enumerate(msg.servos):
             if servo.error != 0:
                 print "Servo error, force landing"
@@ -257,7 +263,7 @@ class HydrusCommander():
         if solfound:
             #Reversed since link order is different
             #self.joint_publish([-joints[2], -joints[1], -joints[0]])
-            self.joint_publish([joints[0], joints[1], joints[2]])
+            self.joint_publish([joints[0], joints[1], joints[2]], short_waittime=True)
         
     def ik_array(self, start, end, n, dt):
         dx   = (end[0]-start[0])/n
