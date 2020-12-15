@@ -39,8 +39,8 @@ controller:
     roll_pitch_i: 20
     roll_pitch_d: 150
 
-    yaw_p: 100
-    yaw_i: 0.5
+    yaw_p: 300 # 100
+    yaw_i: 1 # 0.5
     yaw_d: 100 # old: 50
 
     r1: 1.0

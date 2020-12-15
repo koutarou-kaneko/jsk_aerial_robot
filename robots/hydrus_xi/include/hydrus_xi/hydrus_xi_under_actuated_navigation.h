@@ -74,7 +74,8 @@ namespace aerial_robot_navigation
     const bool getPlanVerbose() const { return plan_verbose_; }
 
     void setMaxMinYaw(const double max_min_yaw) { max_min_yaw_ = max_min_yaw;}
-    Eigen::Vector2d h_f_direction_, ff_f_xy_;
+    Eigen::Vector2d ff_f_xy_;
+    Eigen::Vector3d ff_f_xy_baselink_;
     boost::shared_ptr<HydrusTiltedRobotModel> robot_model_real_;
     bool vectoring_reset_flag_ = false;
   private:

@@ -37,7 +37,8 @@ class HydrusCommander():
         #self.cover_pose = rospy.get_param('~cover_pose')
         #self.close_pose = rospy.get_param('~close_pose')
         self.nav_mode = nav_mode
-        errors = [False, False, False]
+        self.errors = [False, False, False]
+        self.last_pose = [0.05, -0.25, 1.57]
 
         # constants
         self.WAIT_TIME = 0.5
@@ -221,6 +222,7 @@ class HydrusCommander():
                     q=tf.transformations.quaternion_about_axis(des_yaw+i*d+np.pi, (0,0,1))
                     self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
                     print "Found solution: tol +%d" % i
+                    self.last_pose = [des_x, des_y, des_yaw+i*d]
                     break
                 else:
                     print "failed: %lf %lf %lf" % (joints[0], joints[1], joints[2])
@@ -231,6 +233,7 @@ class HydrusCommander():
                     q=tf.transformations.quaternion_about_axis(des_yaw+i*d+np.pi, (0,0,1))
                     self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
                     print "Found solution: tol +%d" % i
+                    self.last_pose = [des_x, des_y, des_yaw+i*d]
                     break
                 else:
                     print "failed: %lf %lf %lf" % (joints[0], joints[1], joints[2])
@@ -244,6 +247,7 @@ class HydrusCommander():
                     q=tf.transformations.quaternion_about_axis(des_yaw-i*d+np.pi, (0,0,1))
                     self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
                     print "Found solution: tol -%d" % i
+                    self.last_pose = [des_x, des_y, des_yaw-i*d]
                     break
                 else:
                     print "failed: %lf %lf %lf" % (joints[0], joints[1], joints[2])
@@ -254,6 +258,7 @@ class HydrusCommander():
                     q=tf.transformations.quaternion_about_axis(des_yaw-i*d+np.pi, (0,0,1))
                     self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
                     print "Found solution: tol -%d" % i
+                    self.last_pose = [des_x, des_y, des_yaw-i*d]
                     break
                 else:
                     print "failed: %lf %lf %lf" % (joints[0], joints[1], joints[2])
@@ -265,13 +270,16 @@ class HydrusCommander():
             #self.joint_publish([-joints[2], -joints[1], -joints[0]])
             self.joint_publish([joints[0], joints[1], joints[2]], short_waittime=True)
         
-    def ik_array(self, start, end, n, dt):
+    def ik_array(self, start, end, n, dt=0):
         dx   = (end[0]-start[0])/n
         dy   = (end[1]-start[1])/n
         dyaw = (end[2]-start[2])/n
         for i in range(n+1):
             self.ik(start[0]+i*dx, start[1]+i*dy, start[2]+i*dyaw)
             rospy.sleep(rospy.Duration(dt))
+    
+    def ik_target(self, target, n, dt=0):
+        self.ik_array(self.last_pose, target, n, dt)
 
     def square(self,p1=[-0.75,0.3,0.3],p2=[-0.75,0.8,0.3],p3=[-0.25,0.8,0.6],p4=[-0.25,0.3,0.6],n=10,dt=0):
         self.ik_array(p1,p2,n,dt)

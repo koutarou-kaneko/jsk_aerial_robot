@@ -50,7 +50,7 @@ namespace
     auto thrust = robot_model->get3DoFThrust();
     Eigen::Vector2d t_sum = {t1_mat(0,2)*thrust(0)+t2_mat(0,2)*thrust(1)+t3_mat(0,2)*thrust(2)+t4_mat(0,2)*thrust(3), t1_mat(1,2)*thrust(0)+t2_mat(1,2)*thrust(1)+t3_mat(1,2)*thrust(2)+t4_mat(1,2)*thrust(3)};
 
-    ROS_INFO_THROTTLE(1, "dir, thrust: %lf %lf %lf %lf %lf %lf", planner->h_f_direction_(0), planner->h_f_direction_(1), thrust(0), thrust(1), thrust(2), thrust(3));
+    //ROS_INFO_THROTTLE(1, "dir, thrust: %lf %lf %lf %lf %lf %lf", planner->h_f_direction_(0), planner->h_f_direction_(1), thrust(0), thrust(1), thrust(2), thrust(3));
 
     double average_force = thrust.sum() / thrust.size();
     double variant = 0;
@@ -61,8 +61,8 @@ namespace
     variant = sqrt(variant / thrust.size());
 
     auto tw = robot_model->thrust_wrench_;
-    ROS_INFO_STREAM_THROTTLE(1, "obj func element: " << -0.1*tw(3)*tw(3) << " " << -0.1*tw(4)*tw(4) << " " << planner->h_f_direction_.dot(t_sum));
-    return -planner->getUncontrolledTorqueWeight()*tw(3)*tw(3) + -planner->getUncontrolledTorqueWeight()*tw(4)*tw(4) + planner->h_f_direction_.dot(t_sum);
+    //ROS_INFO_STREAM_THROTTLE(1, "obj func element: " << -0.1*tw(3)*tw(3) << " " << -0.1*tw(4)*tw(4) << " " << planner->h_f_direction_.dot(t_sum));
+    return -planner->getUncontrolledTorqueWeight()*tw(3)*tw(3) + -planner->getUncontrolledTorqueWeight()*tw(4)*tw(4)/* + planner->h_f_direction_.dot(t_sum)*/;
     //return planner->getForceNormWeight() * robot_model->getMass() / thrust.norm()  + planner->getForceVariantWeight() / variant + planner->h_f_direction_.dot(t_sum);
   }
 
@@ -157,7 +157,7 @@ namespace
 
     variant = sqrt(variant / thrust.size());
 
-    ROS_INFO_STREAM_THROTTLE(1, "obj func elem: " << planner->getForceNormWeight() * robot_model->getMass() / thrust.norm() << " " << planner->getForceVariantWeight() / variant);
+    //ROS_INFO_STREAM_THROTTLE(1, "obj func elem: " << planner->getForceNormWeight() * robot_model->getMass() / thrust.norm() << " " << planner->getForceVariantWeight() / variant);
     return planner->getForceNormWeight() * robot_model->getMass() / thrust.norm()  + planner->getForceVariantWeight() / variant;
   }
 
@@ -289,6 +289,9 @@ namespace
     robot_model->updateRobotModel(joints);
     robot_model->calcWrenchMatrixOnRoot();
     auto Q = robot_model->calcWrenchMatrixOnCoG();
+    auto ff = robot_model->getCog<Eigen::Affine3d>().rotation().inverse() * planner->ff_f_xy_baselink_;
+    planner->ff_f_xy_[0] = ff(0);
+    planner->ff_f_xy_[1] = ff(1);
     Eigen::VectorXd thrusts(4), wrench_des(6);
     thrusts << x[4], x[5], x[6], x[7];
     wrench_des << planner->ff_f_xy_[0], planner->ff_f_xy_[1], robot_model->getGravity()[2], 0, 0, 0;
@@ -459,7 +462,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
     last_normal_joint1_angle_ = joint_positions_for_plan_.data[2];
     last_target_yaw_ = getTargetRPY().getZ();
   }
-  ROS_INFO_STREAM_THROTTLE(0.1, "target link1 yaw: " << getTargetRPY().getZ()-joint_positions_for_plan_.data[2]);
+  //ROS_INFO_STREAM_THROTTLE(0.1, "target link1 yaw: " << getTargetRPY().getZ()-joint_positions_for_plan_.data[2]);
 
   if(joint_positions_for_plan_.rows() == 0) return false;
 
@@ -577,7 +580,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
         ROS_INFO_STREAM("sol: " << (Q*thr).transpose() << " obj: " << (robot_model_real_->getMass()*wrench_des).transpose() << "diff: " << (Q*thr-robot_model_real_->getMass()*wrench_des).transpose());*/
       }
       opt_static_thrusts_ = {opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
-      ROS_INFO_STREAM("res: " << int(result) << " maxf: " << max_f << " opt: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3] << " " << opt_static_thrusts_[0] << " " << opt_static_thrusts_[1] << " " << opt_static_thrusts_[2] << " " << opt_static_thrusts_[3]);
+      //ROS_INFO_STREAM("res: " << int(result) << " maxf: " << max_f << " opt: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3] << " " << opt_static_thrusts_[0] << " " << opt_static_thrusts_[1] << " " << opt_static_thrusts_[2] << " " << opt_static_thrusts_[3]);
 
       // Transition
       double thres = 0.1;
@@ -613,7 +616,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
             nl_solver_now->set_lower_bounds(lbh);
             nl_solver_now->set_upper_bounds(ubh);
             result = nl_solver_now->optimize(opt_x_, max_f);
-            ROS_INFO_STREAM("tmp res: " << int(result) << " maxf: " << max_f << " opt: " << opt_x_[0] << " " << opt_x_[1] << " " << opt_x_[2] << " " << opt_x_[3] << " " << opt_x_[4] << " " << opt_x_[5] << " " << opt_x_[6] << " " << opt_x_[7]);
+            //ROS_INFO_STREAM("tmp res: " << int(result) << " maxf: " << max_f << " opt: " << opt_x_[0] << " " << opt_x_[1] << " " << opt_x_[2] << " " << opt_x_[3] << " " << opt_x_[4] << " " << opt_x_[5] << " " << opt_x_[6] << " " << opt_x_[7]);
             opt_gimbal_angles_tmp_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)};
             opt_static_thrusts_ = {opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
         } else {
@@ -683,13 +686,13 @@ bool HydrusXiUnderActuatedNavigator::plan()
 
 void HydrusXiUnderActuatedNavigator::ffWrenchCallback(const geometry_msgs::Vector3ConstPtr& msg)
 {
+  ff_f_xy_baselink_[0] = msg->x;
+  ff_f_xy_baselink_[1] = msg->y;
+  ff_f_xy_baselink_[2] = 0.0;
   auto ff = robot_model_real_->getCog<Eigen::Affine3d>().rotation().inverse() * Eigen::Vector3d(msg->x, msg->y, 0);
   ff_f_xy_[0] = ff(0);
   ff_f_xy_[1] = ff(1);
   ROS_INFO_STREAM("ff_converted: " << ff_f_xy_[0] << " " << ff_f_xy_[1] << " " << robot_model_real_->getCog<Eigen::Affine3d>().rotation().inverse().eulerAngles(0,1,2));
-  double normalize = std::sqrt(std::pow(ff(0), 2)+std::pow(ff(1), 2));
-  h_f_direction_[0] = ff(0) / normalize;
-  h_f_direction_[1] = ff(1) / normalize;
   vectoring_reset_flag_ = true;
 }
 
