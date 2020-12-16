@@ -153,7 +153,7 @@ class HydrusCommander():
     def servo_states_cb(self, msg):
         for i, servo in enumerate(msg.servos):
             if servo.error != 0:
-                print "Servo error, force landing"
+                print "Servo error, force landing, index: %d" % servo.index
                 self.force_landing_pub.publish(Empty())
                 time.sleep(self.WAIT_TIME)
                 self.errors[i] = True
@@ -297,10 +297,10 @@ if __name__ == '__main__':
     hyd = HydrusCommander()
     
     rospy.sleep(rospy.Duration(1.0))
-    hyd.arm_and_takeoff()
-    rospy.sleep(rospy.Duration(15.0))
-    hyd.change_yaw(1.57)
-    rospy.sleep(rospy.Duration(2.0))
+    #hyd.arm_and_takeoff()
+    #rospy.sleep(rospy.Duration(15.0))
+    #hyd.change_yaw(1.57)
+    #rospy.sleep(rospy.Duration(2.0))
     '''
     #J
     hyd.joint_publish([1.4, 1.57, 0])
@@ -315,14 +315,14 @@ if __name__ == '__main__':
     hyd.joint_publish([1.57, 0, 0])
     rospy.sleep(rospy.Duration(3.0))
     hyd.move_to(0,0.4)
-    '''
+    
     #U
     hyd.joint_publish([1.4, 1.57, 0])
     rospy.sleep(rospy.Duration(1.0))
     hyd.joint_publish([1.57, 0, 1.57])
     rospy.sleep(rospy.Duration(3.0))
     hyd.move_to(0,0.4)
-    '''
+    
     #door
     hyd.joint_publish([1.4, 1.57, 0])
     rospy.sleep(rospy.Duration(1.0))
