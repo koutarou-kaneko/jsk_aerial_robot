@@ -82,6 +82,7 @@ namespace sensor_plugin
     /* imu */
     tf::Vector3 euler_; /* the euler angle of both body and cog frame */
     tf::Vector3 omega_; /* the omega both body and cog frame */
+    tf::Vector3 omega_prev_; /* prev omega both body and cog frame */
     tf::Vector3 mag_; /* the magnetometer both body and cog frame */
     /* acc */
     tf::Vector3 acc_b_; /* the acceleration in baselink frame */

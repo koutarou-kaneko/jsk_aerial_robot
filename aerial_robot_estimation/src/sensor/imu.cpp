@@ -98,6 +98,7 @@ namespace sensor_plugin
 
         acc_b_[i] = imu_msg->acc_data[i];
         euler_[i] = imu_msg->angles[i];
+        omega_prev_[i] = omega_[i];
         omega_[i] = imu_msg->gyro_data[i];
         mag_[i] = imu_msg->mag_data[i];
       }
@@ -285,6 +286,17 @@ namespace sensor_plugin
 
                 acc_w_ = orientation * acc_l_;
                 acc_non_bias_w_ = orientation * (acc_l_ - acc_bias_l_);
+
+                // acc_root calc
+                double alpha_z = (omega_[2] / sensor_dt_) - (omega_prev_[2] / sensor_dt_);
+                double joint1_angle = robot_model_->getJointPositions().data[2];
+                auto baselink_on_root = (robot_model_->getCog<Eigen::Affine3d>() * robot_model_->getCog2Baselink<Eigen::Affine3d>()).matrix();
+                ROS_INFO_STREAM_THROTTLE(1, "baselink:\n" << baselink_on_root);
+                tf::Matrix3x3 base_ori;
+                base_ori.setRPY(0, 0, joint1_angle);
+                double raw_acc_root = (base_ori * (acc_l_ - acc_bias_l_))[0];
+                double acc_root = alpha_z*baselink_on_root(1,3) + raw_acc_root;
+                ROS_INFO_STREAM("acc_root: " << acc_root);
 
                 for(auto& fuser : estimator_->getFuser(mode))
                   {
