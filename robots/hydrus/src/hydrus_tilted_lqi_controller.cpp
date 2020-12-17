@@ -86,7 +86,7 @@ void HydrusTiltedLQIController::allocateYawTerm()
   if (horizontal_force_mode_) {
     auto cog = robot_model_->getCog<Eigen::Affine3d>();
     //auto ff_f_cog = cog.rotation().inverse() * Eigen::Vector3d(ff_f_x_, ff_f_y_, 0);
-    double compensate = 0.5 * robot_model_->getMass() * (cog.translation()(1)*ff_f_x_ - (cog.translation()(0)+0.08)*ff_f_y_);
+    double compensate = robot_model_->getMass() * (cog.translation()(1)*ff_f_x_ - (cog.translation()(0)+0.08)*ff_f_y_);
     ROS_INFO_STREAM_THROTTLE(1, "comp: " << compensate);
     p << 0, 0, 0, ff_t_z_ + compensate;
   } else {

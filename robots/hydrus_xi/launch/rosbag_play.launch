@@ -1,0 +1,5 @@
+<launch>
+  <arg name="bag_path" />
+  <node pkg="rosbag" type="play" name="rosbagplay"
+  args="--clock -q -r 1.0 $(arg bag_path)" />
+</launch>
