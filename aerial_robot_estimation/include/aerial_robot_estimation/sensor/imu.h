@@ -64,6 +64,7 @@ namespace sensor_plugin
     inline void treatImuAsGroundTruth(bool flag) { treat_imu_as_ground_truth_ = flag; }
   private:
     ros::Publisher  acc_pub_;
+    ros::Publisher  acc_root_pub_;
     ros::Publisher  imu_pub_;
     ros::Subscriber imu_sub_;
 
@@ -105,6 +106,7 @@ namespace sensor_plugin
     void estimateProcess();
     void publishAccData();
     void publishRosImuData();
+    void publishAccOfRoot(double acc_root, double acc_root_acc);
     void rosParamInit();
   };
 };

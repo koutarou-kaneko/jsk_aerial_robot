@@ -1,5 +1,6 @@
 <launch>
   <node pkg="rviz" type="rviz" name="rviz" args="-d $(find hydrus_xi)/config/quad/hydrus_xi_experiment.rviz"/>
+  <node pkg="hydrus_xi" type="thrust.py" name="thrust_viz" />
   <arg name="bag_path" />
   <param name="hydrus_xi/robot_description" command="$(find xacro)/xacro.py '$(find hydrus_xi)/robots/quad/upboard202007.urdf.xacro'" />
   <include file="$(find timed_roslaunch)/timed_roslaunch.launch">

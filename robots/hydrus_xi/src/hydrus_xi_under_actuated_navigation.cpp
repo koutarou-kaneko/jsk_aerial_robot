@@ -329,10 +329,6 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   rosParamInit();
 
   gimbal_ctrl_pub_ = nh_.advertise<sensor_msgs::JointState>("gimbals_ctrl", 1);
-  gimbal_diff_pub_[0] = nh_.advertise<geometry_msgs::Vector3>("gimbal1_diff", 1);
-  gimbal_diff_pub_[1] = nh_.advertise<geometry_msgs::Vector3>("gimbal2_diff", 1);
-  gimbal_diff_pub_[2] = nh_.advertise<geometry_msgs::Vector3>("gimbal3_diff", 1);
-  gimbal_diff_pub_[3] = nh_.advertise<geometry_msgs::Vector3>("gimbal4_diff", 1);
 
   ff_wrench_sub_ = nh_.subscribe("ff_wrench", 10, &HydrusXiUnderActuatedNavigator::ffWrenchCallback, this);
   joint_fb_sub_ = nh_.subscribe("joint_states", 10, &HydrusXiUnderActuatedNavigator::jointStatesCallback, this);
@@ -594,11 +590,6 @@ bool HydrusXiUnderActuatedNavigator::plan()
           while (gimbal_diff < -M_PI) {
             gimbal_diff = gimbal_diff + 2*M_PI;
           }
-          geometry_msgs::Vector3 diff_to_send;
-          diff_to_send.x=gimbal_diff;
-          diff_to_send.y=opt_gimbal_angles_[i];
-          diff_to_send.z=joint_pos_fb_[i];
-          gimbal_diff_pub_[i].publish(diff_to_send);
           if (std::abs(gimbal_diff) > thres) {
             if (gimbal_diff > 0) {
               lbh.at(i) = joint_pos_fb_.at(i) + 0.5*gimbal_delta_angle_;
@@ -635,7 +626,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
       if (result != 4 and result != 5) {
         vectoring_reset_flag_ = true;
       }
-      ROS_INFO_STREAM_THROTTLE(1, "gimbals: " << joint_positions_for_plan_.data(0) << " " << joint_positions_for_plan_.data(3) << " " << joint_positions_for_plan_.data(6) << " " << joint_positions_for_plan_.data(9));
+      //ROS_INFO_STREAM_THROTTLE(1, "gimbals: " << joint_positions_for_plan_.data(0) << " " << joint_positions_for_plan_.data(3) << " " << joint_positions_for_plan_.data(6) << " " << joint_positions_for_plan_.data(9));
       
       double roll,pitch,yaw;
       robot_model_for_plan_->getCogDesireOrientation<KDL::Rotation>().GetRPY(roll, pitch, yaw);

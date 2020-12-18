@@ -59,16 +59,18 @@ namespace aerial_robot_control
     ros::Publisher desired_baselink_rot_pub_;
     ros::ServiceServer set_horizontal_force_mode_srv_;
     ros::ServiceServer reset_horizontal_force_mode_srv_;
-    ros::Subscriber ff_wrench_sub_;
+    ros::Subscriber ff_wrench_sub_, acc_root_sub_;
 
     boost::shared_ptr<HydrusTiltedRobotModel> tilted_model_;
     boost::shared_ptr<aerial_robot_navigation::BaseNavigator> navigator_;
     double trans_constraint_weight_;
     double att_control_weight_;
-    bool horizontal_force_mode_ = false;
+    bool horizontal_force_mode_ = false, wall_touching_ = false;
     double ff_f_x_ = 0, ff_f_y_ = 0, ff_t_z_ = 0, ff_f_norm_x_ = 0, ff_f_norm_y_ = 0.05;
+    double acc_root_shock_thres_ = 20.0;
 
     void ffWrenchCallback(const geometry_msgs::Vector3ConstPtr& msg);
+    void accRootCallback(const geometry_msgs::Vector3StampedConstPtr& msg);
     void allocateYawTerm() override;
     void controlCore() override;
     bool optimalGain() override;

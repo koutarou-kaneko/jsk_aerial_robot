@@ -81,6 +81,7 @@ namespace sensor_plugin
     imu_sub_ = nh_.subscribe<spinal::Imu>(topic_name, 10, &Imu::ImuCallback, this);
     imu_pub_ = indexed_nhp_.advertise<sensor_msgs::Imu>(string("ros_converted"), 1);
     acc_pub_ = indexed_nhp_.advertise<aerial_robot_msgs::Acc>("acc_only", 2);
+    acc_root_pub_ = indexed_nhp_.advertise<geometry_msgs::Vector3Stamped>("acc_root", 2);
   }
 
   void Imu::ImuCallback(const spinal::ImuConstPtr& imu_msg)
@@ -276,6 +277,7 @@ namespace sensor_plugin
 
     if(bias_calib == calib_count_)
       {
+        double acc_root, acc_root_acc;
         /* fuser for 0: egomotion, 1: experiment */
         for(int mode = 0; mode < 2; mode++)
           {
@@ -293,9 +295,9 @@ namespace sensor_plugin
                 auto baselink_on_root = (robot_model_->getCog<Eigen::Affine3d>() * robot_model_->getCog2Baselink<Eigen::Affine3d>()).matrix();
                 tf::Matrix3x3 base_ori;
                 base_ori.setRPY(0, 0, joint1_angle);
-                double raw_acc_root = (base_ori * (acc_l_ - acc_bias_l_))[0];
-                double acc_root = alpha_z*baselink_on_root(1,3) + raw_acc_root;
-                ROS_INFO_STREAM_THROTTLE(0.005, "acc_root: " << acc_root << " acc_only: " << raw_acc_root);
+                acc_root_acc = (base_ori * (acc_l_ - acc_bias_l_))[0];
+                acc_root = alpha_z*baselink_on_root(1,3) + acc_root_acc;
+                //ROS_INFO_STREAM_THROTTLE(0.005, "acc_root: " << acc_root << " acc_only: " << raw_acc_root);
 
                 for(auto& fuser : estimator_->getFuser(mode))
                   {
@@ -402,7 +404,7 @@ namespace sensor_plugin
                            * (estimator_->getAngularVel(Frame::BASELINK, estimate_mode).cross(cog2baselink_tf.inverse().getOrigin())));
 
         /* no acc, we do not have the angular acceleration */
-
+        publishAccOfRoot(acc_root, acc_root_acc);
         publishAccData();
         publishRosImuData();
 
@@ -457,6 +459,15 @@ namespace sensor_plugin
     tf::vector3TFToMsg(omega_, imu_data.angular_velocity);
     tf::vector3TFToMsg(acc_b_, imu_data.linear_acceleration);
     imu_pub_.publish(imu_data);
+  }
+
+  void Imu::publishAccOfRoot(double acc_root, double acc_root_acc)
+  {
+    geometry_msgs::Vector3Stamped data;
+    data.header.stamp = imu_stamp_;
+    data.vector.x = acc_root;
+    data.vector.y = acc_root_acc;
+    acc_root_pub_.publish(data);
   }
 
   void Imu::rosParamInit()
