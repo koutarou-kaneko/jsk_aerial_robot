@@ -21,6 +21,10 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   ff_wrench_sub_ = nh.subscribe("ff_wrench", 10, &HydrusTiltedLQIController::ffWrenchCallback, this);
   acc_root_sub_ = nh.subscribe("sensor_plugin/imu1/acc_root", 10, &HydrusTiltedLQIController::accRootCallback, this);
 
+  //param
+  ros::NodeHandle control_nh(nh_, "controller");
+  getParam<double>(control_nh, "acc_root_shock_thres", acc_root_shock_thres_, 4.5);
+
   pid_msg_.z.p_term.resize(1);
   pid_msg_.z.i_term.resize(1);
   pid_msg_.z.d_term.resize(1);
@@ -229,6 +233,7 @@ void HydrusTiltedLQIController::rosParamInit()
 bool HydrusTiltedLQIController::setHorizontalForceMode(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
 {
   horizontal_force_mode_ = true;
+  wall_touching_ = false;
   navigator_->horizontal_mode_ = true;
   tilted_model_->horizontal_mode_ = true;
   ROS_INFO("horizontal force mode set");
