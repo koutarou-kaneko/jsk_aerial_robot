@@ -471,12 +471,10 @@ bool HydrusXiUnderActuatedNavigator::plan()
 
       for(int i = 0; i < joint_names.size(); i++)
         {
-#if 0
           if(joint_names.at(i).find("joint") != std::string::npos)
             {
               if(fabs(joint_positions_for_plan_(joint_indices.at(i))) > 0.2) singluar_form = false;
             }
-#endif
         }
 
       for(const auto& name: control_gimbal_names_)
@@ -499,12 +497,17 @@ bool HydrusXiUnderActuatedNavigator::plan()
     {
       double delta_angle = gimbal_delta_angle_;
 
-      if((horizontal_mode_ and vectoring_reset_flag_) or ((not horizontal_mode_) and (!robot_model_for_plan_->stabilityCheck(false))))
+      if(horizontal_mode_ and vectoring_reset_flag_)
         {
           delta_angle = M_PI; // reset
           vectoring_reset_flag_ = false;
           robot_model_real_->transition_flag_ = true;
           ROS_INFO("Vectoring angle optimization reset, transitioning");
+        }
+
+      if((not horizontal_mode_) and (!robot_model_for_plan_->stabilityCheck(false)))
+        {
+          delta_angle = M_PI; // reset
         }
 
       for(int i = 0; i < opt_gimbal_angles_.size(); i++)
