@@ -69,6 +69,8 @@ namespace aerial_robot_control
     bool horizontal_force_mode_ = false, wall_touching_ = false;
     double acc_root_shock_thres_ = 20.0;
 
+    double z_limit_;
+
     void accRootCallback(const geometry_msgs::Vector3StampedConstPtr& msg);
     void allocateYawTerm() override;
     void controlCore() override;
