@@ -117,6 +117,7 @@ namespace
 
     robot_model->updateRobotModel(joint_positions);
 
+    /* suppress for debug
     if(!robot_model->stabilityCheck(planner->getPlanVerbose()))
       {
         invalid_cnt ++;
@@ -125,10 +126,12 @@ namespace
         if(planner->getPlanVerbose()) ROS_WARN_STREAM("nlopt, robot stability is invalid with gimbals: " << ss.str() << " (cnt: " << invalid_cnt << ")");
         return 0;
       }
+    */
 
     invalid_cnt = 0;
 
-    Eigen::VectorXd force_v = robot_model->getStaticThrust();
+    Eigen::VectorXd force_v(4);
+    force_v << x_wide[4], x_wide[5], x_wide[6], x_wide[7];
     double average_force = force_v.sum() / force_v.size();
     double variant = 0;
 
@@ -366,7 +369,8 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   
   //vectoring_nl_solver_h_->set_max_objective(maximizeHorizontalForceSquare, this);
   //vectoring_nl_solver_h_->add_inequality_mconstraint(thrustLimitConstraint, this, std::vector<double>(8, 1e-8));
-  vectoring_nl_solver_h_->set_max_objective(maximizeBalanceWide, this);
+  //vectoring_nl_solver_h_->set_max_objective(maximizeBalanceWide, this);
+  vectoring_nl_solver_h_->set_max_objective(maximizeFCTMinWide, this);
   vectoring_nl_solver_h_->add_equality_mconstraint(kinematicsConstraint, this, {0.05, 0.05, 0.1, 0.001, 0.001, 0.001}/*std::vector<double>(6, 1e-2)*/);
 
   vectoring_nl_solver_->set_xtol_rel(1e-4); //1e-4
@@ -580,7 +584,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
         ROS_INFO_STREAM("sol: " << (Q*thr).transpose() << " obj: " << (robot_model_real_->getMass()*wrench_des).transpose() << "diff: " << (Q*thr-robot_model_real_->getMass()*wrench_des).transpose());*/
       }
       opt_static_thrusts_ = {opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
-      //ROS_INFO_STREAM("res: " << int(result) << " maxf: " << max_f << " opt: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3] << " " << opt_static_thrusts_[0] << " " << opt_static_thrusts_[1] << " " << opt_static_thrusts_[2] << " " << opt_static_thrusts_[3]);
+      ROS_INFO_STREAM_THROTTLE(1,"res: " << int(result) << " maxf: " << max_f << " opt: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3] << " " << opt_static_thrusts_[0] << " " << opt_static_thrusts_[1] << " " << opt_static_thrusts_[2] << " " << opt_static_thrusts_[3]);
 
       // Transition
       double thres = 0.1;

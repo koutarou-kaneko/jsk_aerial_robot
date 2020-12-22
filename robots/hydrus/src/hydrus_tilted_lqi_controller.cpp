@@ -88,8 +88,8 @@ void HydrusTiltedLQIController::allocateYawTerm()
   if (horizontal_force_mode_ and wall_touching_) {
     auto cog = robot_model_->getCog<Eigen::Affine3d>();
     //auto ff_f_cog = cog.rotation().inverse() * Eigen::Vector3d(ff_f_x_, ff_f_y_, 0);
-    double compensate = 1 * robot_model_->getMass() * (cog.translation()(1)*tilted_model_->ff_f_x_ - (cog.translation()(0)+0.08)*tilted_model_->ff_f_y_);
-    ROS_INFO_STREAM_THROTTLE(0.1, "comp+ff: " << tilted_model_->ff_t_z_ + compensate);
+    double compensate = robot_model_->getMass() * (cog.translation()(1)*tilted_model_->ff_f_x_ - (cog.translation()(0)+0.08)*tilted_model_->ff_f_y_);
+    ROS_INFO_STREAM_THROTTLE(0.2, "comp+ff:" << tilted_model_->ff_t_z_ + compensate);
     p << 0, 0, 0, tilted_model_->ff_t_z_ + compensate;
   } else {
     p << 0, 0, 0, 0;
@@ -234,9 +234,13 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
     //ff_wrench_noreset_pub_.publish(ff_msg);
     ros::Duration(0.1).sleep();
   }
-  for (; approach_force > -1.0; approach_force-=0.1) {
+  for (int i=0; approach_force > -1.0; approach_force-=0.1, i++) {
     ff_msg.x = approach_force;
-    ff_msg.z = -1.0 - approach_force;
+    if (i==0) {
+      ff_msg.z = -1.0;
+    } else {
+      ff_msg.z = 0;
+    }
     ff_wrench_noreset_pub_.publish(ff_msg);
     ros::Duration(0.3).sleep();
   }
