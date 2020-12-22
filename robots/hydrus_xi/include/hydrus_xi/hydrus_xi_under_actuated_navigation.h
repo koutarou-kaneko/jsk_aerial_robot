@@ -80,7 +80,7 @@ namespace aerial_robot_navigation
     bool vectoring_reset_flag_ = false;
   private:
     ros::Publisher gimbal_ctrl_pub_;
-    ros::Subscriber ff_wrench_sub_, joint_fb_sub_;
+    ros::Subscriber ff_wrench_sub_, ff_wrench_noreset_sub_, joint_fb_sub_;
     std::thread plan_thread_;
     boost::shared_ptr<HydrusTiltedRobotModel> robot_model_for_plan_;
     OsqpEigen::Solver yaw_range_lp_solver_;
@@ -107,6 +107,8 @@ namespace aerial_robot_navigation
 
     void sanitizeJoints(std::vector<double>& joints);
     void ffWrenchCallback(const geometry_msgs::Vector3ConstPtr& msg);
+    void ffWrenchNoResetCallback(const geometry_msgs::Vector3ConstPtr& msg);
+    void ffWrenchUpdate(double x, double y, double z);
     void jointStatesCallback(const sensor_msgs::JointStateConstPtr& msg);
     void threadFunc();
     bool plan();

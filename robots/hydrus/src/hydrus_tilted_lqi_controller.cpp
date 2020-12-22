@@ -12,13 +12,15 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   HydrusLQIController::initialize(nh, nhp, robot_model, estimator, navigator, ctrl_loop_rate);
 
   desired_baselink_rot_pub_ = nh_.advertise<spinal::DesireCoord>("desire_coordinate", 1);
+  start_wall_touching_srv_ = nh.advertiseService("start_wall_touching", &HydrusTiltedLQIController::startWallTouching, this);
   set_horizontal_force_mode_srv_ = nh.advertiseService("set_horizontal_force_mode", &HydrusTiltedLQIController::setHorizontalForceMode, this);
   reset_horizontal_force_mode_srv_ = nh.advertiseService("reset_horizontal_force_mode", &HydrusTiltedLQIController::resetHorizontalForceMode, this);
   tilted_model_ = boost::dynamic_pointer_cast<HydrusTiltedRobotModel>(robot_model);
   navigator_ = navigator;
 
-  //subscriber
-  ff_wrench_sub_ = nh.subscribe("ff_wrench", 10, &HydrusTiltedLQIController::ffWrenchCallback, this);
+  //additional
+  ff_wrench_pub_ = nh_.advertise<geometry_msgs::Vector3>("ff_wrench", 1);
+  ff_wrench_noreset_pub_ = nh_.advertise<geometry_msgs::Vector3>("ff_wrench_noreset", 1);
   acc_root_sub_ = nh.subscribe("sensor_plugin/imu1/acc_root", 10, &HydrusTiltedLQIController::accRootCallback, this);
 
   //param
@@ -55,11 +57,6 @@ void HydrusTiltedLQIController::controlCore()
     // Don't calc here when optimize all axis
     //tilted_model_->calc3DoFThrust(ff_f_x_, ff_f_y_);
     f = tilted_model_->get3DoFThrust();
-    if (tilted_model_->transition_flag_) {
-      //target_pitch_ = atan2(ff_f_norm_x_, 1);
-      //target_roll_ = atan2(-ff_f_norm_y_, sqrt(ff_f_norm_x_ * ff_f_norm_x_ + 1));
-      //ROS_WARN_STREAM_THROTTLE(0.1, "Transitioning... roll: " << target_roll_ << " pitch: " << target_pitch_);
-    }
   }
   
   Eigen::VectorXd allocate_scales = f / f.sum() * robot_model_->getMass();
@@ -91,9 +88,9 @@ void HydrusTiltedLQIController::allocateYawTerm()
   if (horizontal_force_mode_ and wall_touching_) {
     auto cog = robot_model_->getCog<Eigen::Affine3d>();
     //auto ff_f_cog = cog.rotation().inverse() * Eigen::Vector3d(ff_f_x_, ff_f_y_, 0);
-    double compensate = 1 * robot_model_->getMass() * (cog.translation()(1)*ff_f_x_ - (cog.translation()(0)+0.08)*ff_f_y_);
-    ROS_INFO_STREAM_THROTTLE(1, "comp: " << compensate);
-    p << 0, 0, 0, ff_t_z_ + compensate;
+    double compensate = 1 * robot_model_->getMass() * (cog.translation()(1)*tilted_model_->ff_f_x_ - (cog.translation()(0)+0.08)*tilted_model_->ff_f_y_);
+    ROS_INFO_STREAM_THROTTLE(0.1, "comp+ff: " << tilted_model_->ff_t_z_ + compensate);
+    p << 0, 0, 0, tilted_model_->ff_t_z_ + compensate;
   } else {
     p << 0, 0, 0, 0;
   }
@@ -133,21 +130,9 @@ void HydrusTiltedLQIController::allocateYawTerm()
     }
 }
 
-void HydrusTiltedLQIController::ffWrenchCallback(const geometry_msgs::Vector3ConstPtr& msg)
-{
-  ff_f_x_ = msg->x;
-  ff_f_y_ = msg->y;
-  ff_t_z_ = msg->z;
-  auto ff = robot_model_->getCog<Eigen::Affine3d>().rotation().inverse() * Eigen::Vector3d(msg->x, msg->y, 0);
-  double normalize = 20.0*std::sqrt(std::pow(ff(0), 2)+std::pow(ff(1), 2));
-  ff_f_norm_x_ = ff(0) / normalize;
-  ff_f_norm_y_ = ff(1) / normalize;
-  ROS_INFO_STREAM("ff_norm: " << ff_f_norm_x_ << " " << ff_f_norm_y_ << " normala" << normalize << " ff: " << ff << ", rotinv:\n" << robot_model_->getCog<Eigen::Affine3d>().rotation().inverse());
-}
-
 void HydrusTiltedLQIController::accRootCallback(const geometry_msgs::Vector3StampedConstPtr& msg)
 {
-  if (horizontal_force_mode_ and msg->vector.y > acc_root_shock_thres_) {
+  if ((not wall_touching_) and horizontal_force_mode_ and msg->vector.y > acc_root_shock_thres_) {
     wall_touching_ = true;
     ROS_INFO("Collided with the wall");
   }
@@ -230,6 +215,36 @@ void HydrusTiltedLQIController::rosParamInit()
   getParam<double>(lqi_nh, "att_control_weight", att_control_weight_, 1.0);
 }
 
+bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
+{
+  horizontal_force_mode_ = true;
+  wall_touching_ = false;
+  navigator_->horizontal_mode_ = true;
+  tilted_model_->horizontal_mode_ = true;
+  ROS_INFO("start wall touching");
+  double approach_force = -0.3;
+  geometry_msgs::Vector3 ff_msg;
+  ff_msg.x = approach_force;
+  ff_msg.y = 0;
+  ff_msg.z = 0;
+  ff_wrench_pub_.publish(ff_msg);
+  while (not wall_touching_) {
+    // dist srv no nakade update mendoksuai
+    //ff_msg.x = -0.5*(wall_dist_now / wall_dist_start);
+    //ff_wrench_noreset_pub_.publish(ff_msg);
+    ros::Duration(0.1).sleep();
+  }
+  for (; approach_force > -1.0; approach_force-=0.1) {
+    ff_msg.x = approach_force;
+    ff_msg.z = -1.0 - approach_force;
+    ff_wrench_noreset_pub_.publish(ff_msg);
+    ros::Duration(0.3).sleep();
+  }
+  ROS_INFO("finish wall touching");
+  
+  return true;
+}
+
 bool HydrusTiltedLQIController::setHorizontalForceMode(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
 {
   horizontal_force_mode_ = true;
@@ -246,7 +261,7 @@ bool HydrusTiltedLQIController::resetHorizontalForceMode(std_srvs::Empty::Reques
   wall_touching_ = false;
   navigator_->horizontal_mode_ = false;
   tilted_model_->horizontal_mode_ = false;
-  ROS_INFO("horizontal force mode reset");
+  ROS_INFO("came back to normal control mode");
   return true;
 }
 

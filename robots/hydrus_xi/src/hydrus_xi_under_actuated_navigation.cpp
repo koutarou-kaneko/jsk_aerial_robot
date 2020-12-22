@@ -331,6 +331,7 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   gimbal_ctrl_pub_ = nh_.advertise<sensor_msgs::JointState>("gimbals_ctrl", 1);
 
   ff_wrench_sub_ = nh_.subscribe("ff_wrench", 10, &HydrusXiUnderActuatedNavigator::ffWrenchCallback, this);
+  ff_wrench_noreset_sub_ = nh_.subscribe("ff_wrench_noreset", 10, &HydrusXiUnderActuatedNavigator::ffWrenchNoResetCallback, this);
   joint_fb_sub_ = nh_.subscribe("joint_states", 10, &HydrusXiUnderActuatedNavigator::jointStatesCallback, this);
   ff_f_xy_[0] = 0.01;
   ff_f_xy_[1] = 0.0;
@@ -680,14 +681,28 @@ bool HydrusXiUnderActuatedNavigator::plan()
 
 void HydrusXiUnderActuatedNavigator::ffWrenchCallback(const geometry_msgs::Vector3ConstPtr& msg)
 {
-  ff_f_xy_baselink_[0] = msg->x;
-  ff_f_xy_baselink_[1] = msg->y;
+  ffWrenchUpdate(msg->x, msg->y, msg->z);
+  //ROS_INFO_STREAM("ff_converted: " << ff_f_xy_[0] << " " << ff_f_xy_[1] << " " << robot_model_real_->getCog<Eigen::Affine3d>().rotation().inverse().eulerAngles(0,1,2));
+  
+  vectoring_reset_flag_ = true;
+}
+
+void HydrusXiUnderActuatedNavigator::ffWrenchNoResetCallback(const geometry_msgs::Vector3ConstPtr& msg)
+{
+  ffWrenchUpdate(msg->x, msg->y, msg->z);
+}
+
+void HydrusXiUnderActuatedNavigator::ffWrenchUpdate(double x, double y, double z)
+{
+  ff_f_xy_baselink_[0] = x;
+  ff_f_xy_baselink_[1] = y;
   ff_f_xy_baselink_[2] = 0.0;
-  auto ff = robot_model_real_->getCog<Eigen::Affine3d>().rotation().inverse() * Eigen::Vector3d(msg->x, msg->y, 0);
+  robot_model_real_->ff_f_x_ = x;
+  robot_model_real_->ff_f_y_ = y;
+  robot_model_real_->ff_t_z_ = z;
+  auto ff = robot_model_real_->getCog<Eigen::Affine3d>().rotation().inverse() * Eigen::Vector3d(x, y, 0);
   ff_f_xy_[0] = ff(0);
   ff_f_xy_[1] = ff(1);
-  ROS_INFO_STREAM("ff_converted: " << ff_f_xy_[0] << " " << ff_f_xy_[1] << " " << robot_model_real_->getCog<Eigen::Affine3d>().rotation().inverse().eulerAngles(0,1,2));
-  vectoring_reset_flag_ = true;
 }
 
 void HydrusXiUnderActuatedNavigator::jointStatesCallback(const sensor_msgs::JointStateConstPtr& msg)
