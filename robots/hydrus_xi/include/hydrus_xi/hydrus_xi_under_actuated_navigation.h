@@ -41,6 +41,7 @@
 #include <hydrus/hydrus_tilted_robot_model.h>
 #include <nlopt.hpp>
 #include <OsqpEigen/OsqpEigen.h>
+#include <tf/transform_datatypes.h>
 
 namespace aerial_robot_navigation
 {
@@ -73,10 +74,11 @@ namespace aerial_robot_navigation
 
     const bool getPlanVerbose() const { return plan_verbose_; }
 
+    void ffWrenchUpdate(double x, double y, double z);
     void setMaxMinYaw(const double max_min_yaw) { max_min_yaw_ = max_min_yaw;}
-    Eigen::Vector2d ff_f_xy_;
-    Eigen::Vector3d ff_f_xy_baselink_;
+    Eigen::Vector3d ff_f_xy_, ff_f_xy_world_, ff_f_xy_root_;
     boost::shared_ptr<HydrusTiltedRobotModel> robot_model_real_;
+    boost::shared_ptr<aerial_robot_estimation::StateEstimator> estimator_;
     bool vectoring_reset_flag_ = false;
   private:
     ros::Publisher gimbal_ctrl_pub_;
@@ -108,7 +110,6 @@ namespace aerial_robot_navigation
     void sanitizeJoints(std::vector<double>& joints);
     void ffWrenchCallback(const geometry_msgs::Vector3ConstPtr& msg);
     void ffWrenchNoResetCallback(const geometry_msgs::Vector3ConstPtr& msg);
-    void ffWrenchUpdate(double x, double y, double z);
     void jointStatesCallback(const sensor_msgs::JointStateConstPtr& msg);
     void threadFunc();
     bool plan();

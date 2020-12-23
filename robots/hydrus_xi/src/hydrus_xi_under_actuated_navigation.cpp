@@ -292,13 +292,14 @@ namespace
     robot_model->updateRobotModel(joints);
     robot_model->calcWrenchMatrixOnRoot();
     auto Q = robot_model->calcWrenchMatrixOnCoG();
-    auto ff = robot_model->getCog<Eigen::Affine3d>().rotation().inverse() * planner->ff_f_xy_baselink_;
-    planner->ff_f_xy_[0] = ff(0);
-    planner->ff_f_xy_[1] = ff(1);
+    //auto ff = robot_model->getCog<Eigen::Affine3d>().rotation().inverse() * planner->ff_f_xy_root_;
+    //planner->ff_f_xy_[0] = ff(0);
+    //planner->ff_f_xy_[1] = ff(1);
+    planner->ffWrenchUpdate(planner->ff_f_xy_world_[0], planner->ff_f_xy_world_[1], planner->robot_model_real_->ff_t_z_);
     Eigen::VectorXd thrusts(4), wrench_des(6);
     thrusts << x[4], x[5], x[6], x[7];
     wrench_des << planner->ff_f_xy_[0], planner->ff_f_xy_[1], robot_model->getGravity()[2], 0, 0, 0;
-    auto res = Q*thrusts-3.61453*wrench_des;
+    auto res = Q*thrusts-robot_model->getMass()*wrench_des;
     //ROS_INFO_STREAM("EqConstDiff: " << res.transpose());
     for (int i=0; i<6; i++) {
       result[i] = res[i];
@@ -328,6 +329,7 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
 
   robot_model_for_plan_ = boost::make_shared<HydrusTiltedRobotModel>(); // for planning, not the real robot model
   robot_model_real_ = boost::dynamic_pointer_cast<HydrusTiltedRobotModel>(robot_model);
+  estimator_ = estimator;
 
   rosParamInit();
 
@@ -698,15 +700,18 @@ void HydrusXiUnderActuatedNavigator::ffWrenchNoResetCallback(const geometry_msgs
 
 void HydrusXiUnderActuatedNavigator::ffWrenchUpdate(double x, double y, double z)
 {
-  ff_f_xy_baselink_[0] = x;
-  ff_f_xy_baselink_[1] = y;
-  ff_f_xy_baselink_[2] = 0.0;
-  robot_model_real_->ff_f_x_ = x;
-  robot_model_real_->ff_f_y_ = y;
+  ff_f_xy_world_[0] = x;
+  ff_f_xy_world_[1] = y;
+  ff_f_xy_world_[2] = aerial_robot_estimation::G;
+  auto world2base = estimator_->getOrientation(Frame::BASELINK, aerial_robot_estimation::GROUND_TRUTH);
+  auto base = world2base.inverse()*tf::Vector3(x,y,aerial_robot_estimation::G);
+  ff_f_xy_[0] = base.x();
+  ff_f_xy_[1] = base.y();
+  ff_f_xy_[2] = 0.0;
+  ff_f_xy_root_ = robot_model_real_->getCog<Eigen::Affine3d>().rotation() * ff_f_xy_;
+  robot_model_real_->ff_f_x_ = ff_f_xy_root_[0];
+  robot_model_real_->ff_f_y_ = ff_f_xy_root_[1];
   robot_model_real_->ff_t_z_ = z;
-  auto ff = robot_model_real_->getCog<Eigen::Affine3d>().rotation().inverse() * Eigen::Vector3d(x, y, 0);
-  ff_f_xy_[0] = ff(0);
-  ff_f_xy_[1] = ff(1);
 }
 
 void HydrusXiUnderActuatedNavigator::jointStatesCallback(const sensor_msgs::JointStateConstPtr& msg)
