@@ -134,7 +134,7 @@ void HydrusTiltedLQIController::allocateYawTerm()
 
 void HydrusTiltedLQIController::accRootCallback(const geometry_msgs::Vector3StampedConstPtr& msg)
 {
-  if ((not wall_touching_) and horizontal_force_mode_ and msg->vector.y > acc_root_shock_thres_) {
+  if ((not wall_touching_) and horizontal_force_mode_ and msg->vector.x > acc_root_shock_thres_) {
     wall_touching_ = true;
     ROS_INFO("Collided with the wall");
   }

@@ -303,11 +303,11 @@ if __name__ == '__main__':
     rospy.sleep(rospy.Duration(2.0))
     '''
     #J
-    hyd.joint_publish([1.4, 1.57, 0])
-    rospy.sleep(rospy.Duration(1.0))
-    hyd.joint_publish([1.57, 1.57, 0])
+    hyd.ik_target([-0.2, 0.5, 0.5],100,0)
     rospy.sleep(rospy.Duration(2.0))
-    hyd.move_to(-0.2,0.2)
+    hyd.change_yaw(1)
+    rospy.sleep(rospy.Duration(2.0))
+    hyd.move_to(0.2,0.2)
     
     #L
     hyd.joint_publish([1.4, 1.57, 0])
