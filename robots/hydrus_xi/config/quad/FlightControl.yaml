@@ -48,7 +48,7 @@ controller:
     r3: 1.0
     r4: 1.0
 
-    trans_constraint_weight: 100
+    trans_constraint_weight: 50
     att_control_weight: 1
 
-  acc_root_shock_thres: 15.0
+  acc_root_shock_thres: 4.5
