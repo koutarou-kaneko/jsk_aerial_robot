@@ -35,19 +35,20 @@ def thrust_cb(msg):
 if __name__ == '__main__':
     rospy.init_node('thrust_viz')
     pub = rospy.Publisher('hydrus_xi/thrust_wrench', WrenchStamped, queue_size=1)
+    pub_debug = rospy.Publisher('hydrus_xi/debug/thrust_root', WrenchStamped, queue_size=1)
     sub = rospy.Subscriber('hydrus_xi/four_axes/command', FourAxisCommand, thrust_cb)
-    rospy.sleep(1.0)
+    rospy.sleep(0.2)
     buf = tf2_ros.Buffer()
     tfl = tf2_ros.TransformListener(buf)
     r=rospy.Rate(10.0)
-    rospy.sleep(1.0)
+    rospy.sleep(2)
 
     while (not rospy.is_shutdown()):
         try:
-            q1 = buf.lookup_transform('hydrus_xi/thrust1', 'hydrus_xi/cog', rospy.Time()).transform.rotation
-            q2 = buf.lookup_transform('hydrus_xi/thrust2', 'hydrus_xi/cog', rospy.Time()).transform.rotation
-            q3 = buf.lookup_transform('hydrus_xi/thrust3', 'hydrus_xi/cog', rospy.Time()).transform.rotation
-            q4 = buf.lookup_transform('hydrus_xi/thrust4', 'hydrus_xi/cog', rospy.Time()).transform.rotation
+            q1 = buf.lookup_transform('hydrus_xi/rotor_parent1', 'hydrus_xi/cog', rospy.Time()).transform.rotation
+            q2 = buf.lookup_transform('hydrus_xi/rotor_parent2', 'hydrus_xi/cog', rospy.Time()).transform.rotation
+            q3 = buf.lookup_transform('hydrus_xi/rotor_parent3', 'hydrus_xi/cog', rospy.Time()).transform.rotation
+            q4 = buf.lookup_transform('hydrus_xi/rotor_parent4', 'hydrus_xi/cog', rospy.Time()).transform.rotation
             th1=quat_mul_vec(q1, v1)
             th2=quat_mul_vec(q2, v2)
             th3=quat_mul_vec(q3, v3)
@@ -57,5 +58,20 @@ if __name__ == '__main__':
             sumz=th1[2]+th2[2]+th3[2]+th4[2]
             pub.publish(WrenchStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/cog') ,wrench=Wrench(force=Vector3(x=sumx, y=sumy, z=sumz))))
         except:
-            rospy.loginfo_throttle(1, 'exception thrown')
+            rospy.loginfo_throttle(1, 'tf lookup failed')
+        try:
+            q1 = buf.lookup_transform('hydrus_xi/rotor_parent1', 'hydrus_xi/root', rospy.Time()).transform.rotation
+            q2 = buf.lookup_transform('hydrus_xi/rotor_parent2', 'hydrus_xi/root', rospy.Time()).transform.rotation
+            q3 = buf.lookup_transform('hydrus_xi/rotor_parent3', 'hydrus_xi/root', rospy.Time()).transform.rotation
+            q4 = buf.lookup_transform('hydrus_xi/rotor_parent4', 'hydrus_xi/root', rospy.Time()).transform.rotation
+            th1=quat_mul_vec(q1, v1)
+            th2=quat_mul_vec(q2, v2)
+            th3=quat_mul_vec(q3, v3)
+            th4=quat_mul_vec(q4, v4)
+            sumx=th1[0]+th2[0]+th3[0]+th4[0]
+            sumy=th1[1]+th2[1]+th3[1]+th4[1]
+            sumz=th1[2]+th2[2]+th3[2]+th4[2]
+            pub_debug.publish(WrenchStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/root') ,wrench=Wrench(force=Vector3(x=sumx, y=sumy, z=sumz))))
+        except:
+            rospy.loginfo_throttle(1, 'tf lookup failed')
         r.sleep()
