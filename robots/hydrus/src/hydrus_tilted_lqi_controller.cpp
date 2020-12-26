@@ -226,19 +226,29 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
   ROS_INFO("start wall touching");
   double approach_force = 0.3;
   geometry_msgs::Vector3 ff_msg;
-  ff_msg.y = approach_force;
   ff_msg.x = 0;
+  ff_msg.y = approach_force;
+  //ff_msg.x = -approach_force;
+  //ff_msg.y = 0;
   ff_msg.z = 0;
   ff_wrench_pub_.publish(ff_msg);
+  int timeout = 0;
   while (not wall_touching_) {
-    // dist srv no nakade update mendoksuai
-    //ff_msg.x = -0.5*(wall_dist_now / wall_dist_start);
-    //ff_wrench_noreset_pub_.publish(ff_msg);
+    if (timeout++ > 30) {
+      ROS_ERROR("timeout");
+      horizontal_force_mode_ = false;
+      wall_touching_ = false;
+      navigator_->horizontal_mode_ = false;
+      tilted_model_->horizontal_mode_ = false;
+      return false;
+    }
     ros::Duration(0.1).sleep();
   }
   for (int i=0; approach_force < 1.0; approach_force+=0.1, i++) {
     ff_msg.y = approach_force;
+    //ff_msg.x = -approach_force;
     if (i==0) {
+      // tesaki hidarini nobashiterubaai gyaku
       ff_msg.z = -1.0;
     } else {
       ff_msg.z = 0;

@@ -284,7 +284,6 @@ namespace
     KDL::JntArray joints = planner->getJointPositionsForPlan();
     //for(int i = 0; i < x.size(); i++)
     //  joint_positions(planner->getControlIndices().at(i)) = x.at(i);
-    //auto joints = robot_model->getJointPositions();
     joints.data[0] = x[0];
     joints.data[3] = x[1];
     joints.data[6] = x[2];
@@ -292,15 +291,11 @@ namespace
     robot_model->updateRobotModel(joints);
     robot_model->calcWrenchMatrixOnRoot();
     auto Q = robot_model->calcWrenchMatrixOnCoG();
-    //auto ff = robot_model->getCog<Eigen::Affine3d>().rotation().inverse() * planner->ff_f_xy_root_;
-    //planner->ff_f_xy_[0] = ff(0);
-    //planner->ff_f_xy_[1] = ff(1);
     planner->ffWrenchUpdate(planner->ff_f_xy_world_[0], planner->ff_f_xy_world_[1], planner->robot_model_real_->ff_t_z_);
     Eigen::VectorXd thrusts(4), wrench_des(6);
     thrusts << x[4], x[5], x[6], x[7];
     wrench_des << planner->ff_f_xy_[0], planner->ff_f_xy_[1], robot_model->getGravity()[2], 0, 0, 0;
     auto res = Q*thrusts-robot_model->getMass()*wrench_des;
-    //ROS_INFO_STREAM("EqConstDiff: " << res.transpose());
     for (int i=0; i<6; i++) {
       result[i] = res[i];
     }
@@ -572,18 +567,6 @@ bool HydrusXiUnderActuatedNavigator::plan()
         opt_x_ = {opt_gimbal_angles_.at(0), opt_gimbal_angles_.at(1), opt_gimbal_angles_.at(2), opt_gimbal_angles_.at(3), opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
         result = nl_solver_now->optimize(opt_x_, max_f);
         opt_gimbal_angles_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)};
-        /*auto jnt = robot_model_for_plan_->getJointPositions();
-        jnt.data[0] = opt_x_.at(0);
-        jnt.data[3] = opt_x_.at(1);
-        jnt.data[6] = opt_x_.at(2);
-        jnt.data[9] = opt_x_.at(3);
-        robot_model_for_plan_->updateRobotModel(jnt);
-        robot_model_for_plan_->calcWrenchMatrixOnRoot();
-        auto Q = robot_model_for_plan_->calcWrenchMatrixOnCoG();
-        Eigen::Vector4d thr(opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7));
-        Eigen::VectorXd wrench_des(6);
-        wrench_des << ff_f_xy_[0], ff_f_xy_[1], robot_model_real_->getGravity()[2], 0, 0, 0;
-        ROS_INFO_STREAM("sol: " << (Q*thr).transpose() << " obj: " << (robot_model_real_->getMass()*wrench_des).transpose() << "diff: " << (Q*thr-robot_model_real_->getMass()*wrench_des).transpose());*/
       }
       opt_static_thrusts_ = {opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
       //ROS_INFO_STREAM_THROTTLE(1,"res: " << int(result) << " maxf: " << max_f << " opt: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3] << " " << opt_static_thrusts_[0] << " " << opt_static_thrusts_[1] << " " << opt_static_thrusts_[2] << " " << opt_static_thrusts_[3]);
@@ -627,6 +610,9 @@ bool HydrusXiUnderActuatedNavigator::plan()
         }
       }
       robot_model_real_->set3DoFThrust(opt_static_thrusts_);
+      robot_model_real_->calcCoGMomentumJacobian();
+      robot_model_real_->calcJointTorque();
+      ROS_INFO_STREAM_THROTTLE(1, "torque: " << robot_model_real_->getJointTorque().inverse());
       /* debug print to make sure that optimization is to blame
       robot_model_real_->calcWrenchMatrixOnRoot();
       auto Q = robot_model_real_->calcWrenchMatrixOnCoG();
@@ -636,7 +622,6 @@ bool HydrusXiUnderActuatedNavigator::plan()
       if (result != 4 and result != 5) {
         vectoring_reset_flag_ = true;
       }
-      //ROS_INFO_STREAM_THROTTLE(1, "gimbals: " << joint_positions_for_plan_.data(0) << " " << joint_positions_for_plan_.data(3) << " " << joint_positions_for_plan_.data(6) << " " << joint_positions_for_plan_.data(9));
       
       double roll,pitch,yaw;
       robot_model_for_plan_->getCogDesireOrientation<KDL::Rotation>().GetRPY(roll, pitch, yaw);
