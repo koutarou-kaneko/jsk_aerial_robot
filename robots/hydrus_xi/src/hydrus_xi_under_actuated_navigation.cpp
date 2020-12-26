@@ -329,6 +329,7 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   rosParamInit();
 
   gimbal_ctrl_pub_ = nh_.advertise<sensor_msgs::JointState>("gimbals_ctrl", 1);
+  joints_torque_pub_ = nh_.advertise<geometry_msgs::Vector3>("joints_torque", 1);
 
   ff_wrench_sub_ = nh_.subscribe("ff_wrench", 10, &HydrusXiUnderActuatedNavigator::ffWrenchCallback, this);
   ff_wrench_noreset_sub_ = nh_.subscribe("ff_wrench_noreset", 10, &HydrusXiUnderActuatedNavigator::ffWrenchNoResetCallback, this);
@@ -612,7 +613,13 @@ bool HydrusXiUnderActuatedNavigator::plan()
       robot_model_real_->set3DoFThrust(opt_static_thrusts_);
       robot_model_real_->calcCoGMomentumJacobian();
       robot_model_real_->calcJointTorque();
-      ROS_INFO_STREAM_THROTTLE(1, "torque: " << robot_model_real_->getJointTorque().inverse());
+      auto jt = robot_model_real_->getJointTorque();
+      //ROS_INFO_STREAM_THROTTLE(1, "torque:" << robot_model_real_->getJointTorque().transpose());
+      geometry_msgs::Vector3 joints_t_to_send;
+      joints_t_to_send.x = jt[1];
+      joints_t_to_send.y = jt[3];
+      joints_t_to_send.z = jt[5];
+      joints_torque_pub_.publish(joints_t_to_send);
       /* debug print to make sure that optimization is to blame
       robot_model_real_->calcWrenchMatrixOnRoot();
       auto Q = robot_model_real_->calcWrenchMatrixOnCoG();

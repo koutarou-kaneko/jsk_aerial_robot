@@ -70,67 +70,30 @@
     </model>
 
     <!-- door -->
-    <model name="door_stopper">
-      <static>true</static>
-      <link name="door_stopper">
-        <pose>-0.5 1.9 0.1 0 0 0</pose>
-        <collision name="col">
-          <pose>0 0 0 0 0 0</pose>
-          <geometry>
-            <sphere>
-              <radius>0.1</radius>
-            </sphere>
-          </geometry>
-        </collision>
-
-        <visual name="vis">
-          <pose>0 0 0 0 0 0</pose>
-          <geometry>
-            <sphere>
-              <radius>0.1</radius>
-            </sphere>
-          </geometry>
-        </visual>
-
-        <inertial>
-          <pose>0 0 0 0 0 0</pose>
-          <mass>1</mass>
-          <inertia>
-            <ixx>1</ixx>
-            <ixy>0</ixy>
-            <ixz>0</ixz>
-            <iyy>1</iyy>
-            <iyz>0</iyz>
-            <izz>1</izz>
-          </inertia>
-        </inertial>
-      </link>
-    </model>
-
     <model name="slidoor">
       <self_collide>true</self_collide>
       <link name="slidoor_base">
-        <pose>0.75 -1 1 0 0 0</pose>
+        <pose>1.0 -1.5 1 0 0 0</pose>
         <collision name="col1">
-          <pose>0 0.16 0 0 0 0</pose>
+          <pose>0 0 0 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.5 0.1 2.0</size>
+              <size>1.0 0.9 2.0</size>
             </box>
           </geometry>
         </collision>
 
         <visual name="vis1">
-          <pose>0 0.16 0 0 0 0</pose>
+          <pose>0 0 0 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.5 0.1 2.0</size>
+              <size>1.0 0.9 2.0</size>
             </box>
           </geometry>
         </visual>
 
         <inertial>
-          <pose>0 0.16 0 0 0 0</pose>
+          <pose>0 0 0 0 0 0</pose>
           <mass>10</mass>
           <inertia>
             <ixx>1</ixx>
@@ -144,7 +107,7 @@
       </link>
 
       <link name="slidoor">
-        <pose>0 -1 1 0 0 0</pose>
+        <pose>0 -2.1 1 0 0 0</pose>
         <collision name="col2">
           <pose>0 0.05 0 0 0 0</pose>
           <geometry>
@@ -246,7 +209,7 @@
       </link>
 
       <link name="slidoor_knob">
-        <pose>-0.4 -0.9 1 0 0 0</pose>
+        <pose>-0.4 -2.0 1 0 0 0</pose>
         <collision name="col2">
           <pose>0 0 0 0 0 0</pose>
           <geometry>
@@ -357,4 +320,3 @@
     </model>
   </world>
 </sdf>
-

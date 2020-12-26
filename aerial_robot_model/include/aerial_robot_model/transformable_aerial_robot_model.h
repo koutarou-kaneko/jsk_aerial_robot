@@ -252,20 +252,14 @@ namespace aerial_robot_model {
     Eigen::MatrixXd l_momentum_jacobian_; //angular_momemtum jacobian
 
     // statics (static thrust, joint torque)
-    std::vector<Eigen::MatrixXd> cog_coord_jacobians_;
-    Eigen::VectorXd gravity_;
     Eigen::VectorXd gravity_3d_;
-    Eigen::VectorXd joint_torque_;
     Eigen::MatrixXd joint_torque_jacobian_; // joint torque
     Eigen::MatrixXd lambda_jacobian_; //thrust force
     double m_f_rate_; //moment / force rate
     Eigen::MatrixXd q_mat_;
     std::map<int, int> rotor_direction_;
-    Eigen::VectorXd static_thrust_;
-    std::vector<Eigen::MatrixXd> thrust_coord_jacobians_;
     double thrust_max_;
     double thrust_min_;
-    std::vector<Eigen::VectorXd> thrust_wrench_units_;
     std::vector<Eigen::MatrixXd> thrust_wrench_allocations_;
 
     // control stability
@@ -326,7 +320,13 @@ namespace aerial_robot_model {
 
   protected:
 
-    // folllowing functions can be only accessed from derived class
+    Eigen::VectorXd joint_torque_;
+    std::vector<Eigen::MatrixXd> cog_coord_jacobians_;
+    Eigen::VectorXd gravity_;
+    std::vector<Eigen::VectorXd> thrust_wrench_units_;
+    Eigen::VectorXd static_thrust_;
+    std::vector<Eigen::MatrixXd> thrust_coord_jacobians_;
+    // following functions can be only accessed from derived class
     void setCOGCoordJacobians(const std::vector<Eigen::MatrixXd> cog_coord_jacobians) {cog_coord_jacobians_ = cog_coord_jacobians;}
     void setCOGJacobian(const Eigen::MatrixXd cog_jacobian) {cog_jacobian_ = cog_jacobian;}
     void setJointTorque(const Eigen::VectorXd joint_torque) {joint_torque_ = joint_torque;}

@@ -81,7 +81,7 @@ namespace aerial_robot_navigation
     boost::shared_ptr<aerial_robot_estimation::StateEstimator> estimator_;
     bool vectoring_reset_flag_ = false;
   private:
-    ros::Publisher gimbal_ctrl_pub_;
+    ros::Publisher gimbal_ctrl_pub_, joints_torque_pub_;
     ros::Subscriber ff_wrench_sub_, ff_wrench_noreset_sub_, joint_fb_sub_;
     std::thread plan_thread_;
     boost::shared_ptr<HydrusTiltedRobotModel> robot_model_for_plan_;

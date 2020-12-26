@@ -17,6 +17,41 @@ void HydrusTiltedRobotModel::calcStaticThrust()
   setStaticThrust(static_thrust);
 }
 
+void HydrusTiltedRobotModel::calcJointTorque(const bool update_jacobian)
+{
+  const auto& sigma = getRotorDirection();
+  const auto& joint_positions = getJointPositions();
+  const auto& inertia_map = getInertiaMap();
+  const int joint_num = getJointNum();
+  const int rotor_num = getRotorNum();
+  const double m_f_rate = getMFRate();
+
+  if(update_jacobian)
+    calcBasicKinematicsJacobian(); // update thrust_coord_jacobians_
+
+  joint_torque_ = Eigen::VectorXd::Zero(joint_num);
+
+  // update coord jacobians for cog point and convert to joint torque
+  int seg_index = 0;
+  for(const auto& inertia : inertia_map)
+    {
+      cog_coord_jacobians_.at(seg_index) = RobotModel::getJacobian(joint_positions, inertia.first, inertia.second.getCOG());
+      joint_torque_ -= cog_coord_jacobians_.at(seg_index).rightCols(joint_num).transpose() * inertia.second.getMass() * (-gravity_);
+      seg_index ++;
+    }
+
+  // thrust
+  for (int i = 0; i < rotor_num; ++i) {
+    Eigen::VectorXd wrench;
+    if (not horizontal_mode_) {
+      wrench = thrust_wrench_units_.at(i) * static_thrust_(i);
+    } else {
+      wrench = thrust_wrench_units_.at(i) * get3DoFThrust()(i);
+    }
+    joint_torque_ -= thrust_coord_jacobians_.at(i).rightCols(joint_num).transpose() * wrench;
+  }
+}
+
 void HydrusTiltedRobotModel::calc3DoFThrust(double ff_f_x, double ff_f_y)
 {
   calcWrenchMatrixOnRoot(); // update Q matrix
