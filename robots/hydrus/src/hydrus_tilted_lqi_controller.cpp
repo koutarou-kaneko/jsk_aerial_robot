@@ -97,7 +97,7 @@ void HydrusTiltedLQIController::allocateYawTerm()
     p << 0, 0, 0, 0;
   }
   auto ff_yaw_collective_thrust = p_mat_pseudo_inv_ * p;
-  //ROS_INFO_STREAM_THROTTLE(0.1, "Feedforward term of thrust: " << ff_yaw_collective_thrust.transpose());
+  ROS_INFO_STREAM_THROTTLE(1, "ff_yaw recalc wrench: " << (tilted_model_->calcWrenchMatrixOnCoG() * ff_yaw_collective_thrust).transpose());
   for(int i = 0; i < motor_num_; i++)
     {
       double p_term = yaw_gains_.at(i)[0] * pid_controllers_.at(YAW).getErrP();
@@ -122,6 +122,7 @@ void HydrusTiltedLQIController::allocateYawTerm()
   double max_yaw_scale = 0; // for reconstruct yaw control term in spinal
   for(int i = 0; i < motor_num_; i++)
     {
+      tilted_model_->thrusts_yaw_term_(i) = target_thrust_yaw_term(i);
       pid_msg_.yaw.total.at(i) =  target_thrust_yaw_term(i);
 
       if(yaw_gains_[i][2] > max_yaw_scale)

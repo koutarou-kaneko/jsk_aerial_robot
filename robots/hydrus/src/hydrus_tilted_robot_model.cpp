@@ -17,7 +17,7 @@ void HydrusTiltedRobotModel::calcStaticThrust()
   setStaticThrust(static_thrust);
 }
 
-void HydrusTiltedRobotModel::calcJointTorque(const bool update_jacobian)
+void HydrusTiltedRobotModel::calcJointTorque(Eigen::VectorXd horizontal_mode_thrust)
 {
   const auto& sigma = getRotorDirection();
   const auto& joint_positions = getJointPositions();
@@ -26,8 +26,8 @@ void HydrusTiltedRobotModel::calcJointTorque(const bool update_jacobian)
   const int rotor_num = getRotorNum();
   const double m_f_rate = getMFRate();
 
-  if(update_jacobian)
-    calcBasicKinematicsJacobian(); // update thrust_coord_jacobians_
+  //Always
+  calcBasicKinematicsJacobian(); // update thrust_coord_jacobians_
 
   joint_torque_ = Eigen::VectorXd::Zero(joint_num);
 
@@ -46,7 +46,7 @@ void HydrusTiltedRobotModel::calcJointTorque(const bool update_jacobian)
     if (not horizontal_mode_) {
       wrench = thrust_wrench_units_.at(i) * static_thrust_(i);
     } else {
-      wrench = thrust_wrench_units_.at(i) * get3DoFThrust()(i);
+      wrench = thrust_wrench_units_.at(i) * horizontal_mode_thrust(i);
     }
     joint_torque_ -= thrust_coord_jacobians_.at(i).rightCols(joint_num).transpose() * wrench;
   }
@@ -54,6 +54,7 @@ void HydrusTiltedRobotModel::calcJointTorque(const bool update_jacobian)
 
 void HydrusTiltedRobotModel::calc3DoFThrust(double ff_f_x, double ff_f_y)
 {
+  ROS_WARN_THROTTLE(1, "Deprecated: HydrusTiltedRobotModel::calc3DoFThrust()");
   calcWrenchMatrixOnRoot(); // update Q matrix
   /* calculate the static thrust on CoG frame */
   /* note: can not calculate in root frame, since the projected f_x, f_y is different in CoG and root */

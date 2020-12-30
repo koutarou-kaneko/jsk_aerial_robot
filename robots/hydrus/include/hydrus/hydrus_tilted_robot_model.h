@@ -46,11 +46,12 @@ public:
   virtual ~HydrusTiltedRobotModel() = default;
 
   virtual void calcStaticThrust() override;
-  void calcJointTorque(const bool update_jacobian = true) override;
+  void calcJointTorque(Eigen::VectorXd horizontal_mode_thrust);
   void calc3DoFThrust(double, double);
   Eigen::VectorXd get3DoFThrust();
   void set3DoFThrust(std::vector<double> thrust_vector);
   Eigen::VectorXd thrust_wrench_ = Eigen::VectorXd::Zero(6);
+  Eigen::VectorXd thrusts_yaw_term_ = Eigen::VectorXd::Zero(4);
   bool horizontal_mode_ = false, transition_flag_ = false;
   double ff_f_x_ = 0, ff_f_y_ = 0, ff_t_z_ = 0;
 private:

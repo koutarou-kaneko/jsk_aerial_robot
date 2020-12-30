@@ -70,6 +70,8 @@ Visualization Manager:
           Value: false
         hydrus_xi/bat4:
           Value: false
+        hydrus_xi/camera:
+          Value: true
         hydrus_xi/cog:
           Value: true
         hydrus_xi/fc:
@@ -153,6 +155,8 @@ Visualization Manager:
                         {}
                   hydrus_xi/link4:
                     hydrus_xi/bat4:
+                      {}
+                    hydrus_xi/camera:
                       {}
                     hydrus_xi/gimbal_link4:
                       hydrus_xi/rotor_parent4:
@@ -322,7 +326,7 @@ Visualization Manager:
       Shaft Length: 0.10000000149011612
       Shaft Radius: 0.019999999552965164
       Shape: Arrow
-      Topic: /hydrus_xi/manipulation_end
+      Topic: /hydrus_xi/manipulation_target
       Unreliable: false
       Value: true
   Enabled: true
@@ -365,8 +369,8 @@ Visualization Manager:
       Scale: 448.559326171875
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
-      X: 0.026028938591480255
-      Y: 0.31344467401504517
+      X: 0.2845321297645569
+      Y: 0.24838264286518097
     Saved: ~
 Window Geometry:
   Displays:
