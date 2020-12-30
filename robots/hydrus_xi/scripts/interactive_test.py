@@ -37,7 +37,7 @@ class HydrusCommander():
         self.servo_states_sub = rospy.Subscriber('/hydrus_xi/servo/states', ServoStates, self.servo_states_cb)
 
         self.buf = tf2_ros.Buffer()
-        self.tfl = tf2_ros.TransformListener(buf)
+        self.tfl = tf2_ros.TransformListener(self.buf)
 
         self.test_mode = rospy.get_param('~test_mode', default='no')
         print "Test Mode: %s" % self.test_mode
@@ -215,7 +215,7 @@ class HydrusCommander():
                 joints[2]=self.joint_sanitize(des_yaw+i*d-np.pi-joints[0]-joints[1])
                 if (joints < 1.57).all() and (joints > -1.57).all():
                     q=tf.transformations.quaternion_about_axis(des_yaw+i*d+np.pi, (0,0,1))
-                    self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
+                    #self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
                     print "Found solution: tol +%d" % i
                     self.last_pose = [des_x, des_y, des_yaw+i*d]
                     break
@@ -226,7 +226,7 @@ class HydrusCommander():
                 joints[2]=self.joint_sanitize(des_yaw+i*d-np.pi-joints[0]-joints[1])
                 if (joints < 1.57).all() and (joints > -1.57).all():
                     q=tf.transformations.quaternion_about_axis(des_yaw+i*d+np.pi, (0,0,1))
-                    self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
+                    #self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
                     print "Found solution: tol +%d" % i
                     self.last_pose = [des_x, des_y, des_yaw+i*d]
                     break
@@ -240,7 +240,7 @@ class HydrusCommander():
                 joints[2]=self.joint_sanitize(des_yaw-i*d-np.pi-joints[0]-joints[1])
                 if (joints < 1.57).all() and (joints > -1.57).all():
                     q=tf.transformations.quaternion_about_axis(des_yaw-i*d+np.pi, (0,0,1))
-                    self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
+                    #self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
                     print "Found solution: tol -%d" % i
                     self.last_pose = [des_x, des_y, des_yaw-i*d]
                     break
@@ -251,7 +251,7 @@ class HydrusCommander():
                 joints[2]=self.joint_sanitize(des_yaw-i*d-np.pi-joints[0]-joints[1])
                 if (joints < 1.57).all() and (joints > -1.57).all():
                     q=tf.transformations.quaternion_about_axis(des_yaw-i*d+np.pi, (0,0,1))
-                    self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
+                    #self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
                     print "Found solution: tol -%d" % i
                     self.last_pose = [des_x, des_y, des_yaw-i*d]
                     break
@@ -275,7 +275,7 @@ class HydrusCommander():
         self.ik_array(self.last_pose, target, n, dt)
 
     def manip_cb(self, msg):
-        manip_from_root = tf2_geometry_msgs.do_transform_pose(msg.Pose, self.buf.lookup_transform('hydrus_xi/camera', 'hydrus_xi/root', rospy.Time()))
+        manip_from_root = tf2_geometry_msgs.do_transform_pose(msg, self.buf.lookup_transform('hydrus_xi/camera', 'hydrus_xi/root', rospy.Time()))
         pos_now = self.fk(self.joint_angles_now)
         diff = ((manip_from_root.pose.position.x - pos_now[0])**2 + (manip_from_root.pose.position.y - pos_now[1])**2)**0.5 
         self.ik_target([manip_from_root.pose.position.x, manip_from_root.pose.position.y, tf.transformations.euler_from_quaternion(manip_from_root.pose.orientation)[2]], int(diff/0.6*100))
