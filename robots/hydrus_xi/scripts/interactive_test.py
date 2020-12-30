@@ -29,7 +29,7 @@ class HydrusCommander():
         self.force_landing_pub = rospy.Publisher("/hydrus_xi/teleop_command/force_landing", Empty,  queue_size=1)
         self.halt_pub = rospy.Publisher("/hydrus_xi/teleop_command/halt", Empty, queue_size=1)
         #self.manip_pub = rospy.Publisher("/hydrus_xi/manipulation_end", PoseStamped, queue_size=1)
-        self.manip_sub = rospy.Subscriber('/hydrus_xi/manipulation_target', Pose, self.manip_cb)
+        self.manip_sub = rospy.Subscriber('/hydrus_xi/manipulation_target', PoseStamped, self.manip_cb)
 
         self.set_joint_torque_client = rospy.ServiceProxy("/hydrus_xi/joints/torque_enable", SetBool)
         self.extra_servos_ctrl_pub = rospy.Publisher("/hydrus_xi/extra_servos_ctrl", JointState, queue_size=1)
@@ -272,13 +272,17 @@ class HydrusCommander():
             rospy.sleep(rospy.Duration(dt))
     
     def ik_target(self, target, n, dt=0):
+        print "ik target: %lf %lf %lf" % (target[0], target[1], target[2])
         self.ik_array(self.last_pose, target, n, dt)
 
     def manip_cb(self, msg):
-        manip_from_root = tf2_geometry_msgs.do_transform_pose(msg, self.buf.lookup_transform('hydrus_xi/camera', 'hydrus_xi/root', rospy.Time()))
+        manip_from_root = tf2_geometry_msgs.do_transform_pose(msg, self.buf.lookup_transform('hydrus_xi/root', 'hydrus_xi/camera', rospy.Time()))
+        manip_from_root.pose.position.x+=0.08
         pos_now = self.fk(self.joint_angles_now)
-        diff = ((manip_from_root.pose.position.x - pos_now[0])**2 + (manip_from_root.pose.position.y - pos_now[1])**2)**0.5 
-        self.ik_target([manip_from_root.pose.position.x, manip_from_root.pose.position.y, tf.transformations.euler_from_quaternion(manip_from_root.pose.orientation)[2]], int(diff/0.6*100))
+        print "pos now: %lf %lf %lf" % (pos_now[0], pos_now[1], pos_now[2])
+        q=manip_from_root.pose.orientation
+        diff = float((manip_from_root.pose.position.x - pos_now[0])**2 + (manip_from_root.pose.position.y - pos_now[1])**2)**0.5
+        self.ik_target([manip_from_root.pose.position.x, manip_from_root.pose.position.y, self.joint_sanitize(tf.transformations.euler_from_quaternion([q.x,q.y,q.z,q.w])[2])], 1+int(diff/0.6*100))
 
 def sendFFWrench(pub, fx, fy, tz):
     pub.publish(Vector3(x=fx, y=fy, z=tz))
