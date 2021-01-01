@@ -48,8 +48,6 @@ class HydrusCommander():
         self.errors = [False, False, False]
         self.joint_angles_now = [1.4, 1.57, 1.57]
         self.last_pose = [0.05, -0.25, 1.57]
-        self.ik_force_next = False
-        self.ik_working = False
 
         # constants
         self.WAIT_TIME = 0.5
@@ -271,24 +269,21 @@ class HydrusCommander():
         if solfound:
             self.joint_publish([joints[0], joints[1], joints[2]], short_waittime=True)
         
-    def ik_array(self, start, end, n, dt=0):
-        self.ik_working = True
+    def ik_array(self, start, end, n, dt=0, timeout=10):
+        stime = rospy.Time.now()
         dx   = (end[0]-start[0])/n
         dy   = (end[1]-start[1])/n
         dyaw = (end[2]-start[2])/n
         for i in range(n+1):
-            if self.ik_force_next:
-                print "force next"
-                self.ik_force_next = False
-                self.ik_working = False
+            if (rospy.Time.now()-stime).to_sec() > timeout:
+                print "timeout"
                 return
             self.ik(start[0]+i*dx, start[1]+i*dy, start[2]+i*dyaw)
             rospy.sleep(rospy.Duration(dt))
-        self.ik_working = False
     
-    def ik_target(self, target, n, dt=0):
+    def ik_target(self, target, n, dt=0, timeout=10):
         print "ik target: %lf %lf %lf" % (target[0], target[1], target[2])
-        self.ik_array(self.fk(self.joint_angles_now), target, n, dt)
+        self.ik_array(self.fk(self.joint_angles_now), target, n, dt, timeout)
 
     def manip_cb(self, msg):
         manip_from_root = tf2_geometry_msgs.do_transform_pose(msg, self.buf.lookup_transform('hydrus_xi/root', 'hydrus_xi/camera', rospy.Time()))
@@ -297,9 +292,7 @@ class HydrusCommander():
         print "pos now: %lf %lf %lf" % (pos_now[0], pos_now[1], pos_now[2])
         q=manip_from_root.pose.orientation
         diff = float((manip_from_root.pose.position.x - pos_now[0])**2 + (manip_from_root.pose.position.y - pos_now[1])**2)**0.5
-        if self.ik_working:
-            self.ik_force_next = True
-        self.ik_target([manip_from_root.pose.position.x, manip_from_root.pose.position.y, self.joint_sanitize(tf.transformations.euler_from_quaternion([q.x,q.y,q.z,q.w])[2])], 1+int(diff/0.6*100))
+        self.ik_target([manip_from_root.pose.position.x, manip_from_root.pose.position.y, self.joint_sanitize(tf.transformations.euler_from_quaternion([q.x,q.y,q.z,q.w])[2])], 1+int(diff*50), timeout=0.9)
 
 def sendFFWrench(pub, fx, fy, tz):
     pub.publish(Vector3(x=fx, y=fy, z=tz))
