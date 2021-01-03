@@ -129,16 +129,6 @@ namespace
     */
     invalid_cnt = 0;
 
-    // Joint Torque
-    Eigen::VectorXd hori_thrust(4);
-    for (int i=0; i<4; i++) {
-      hori_thrust(i) = x_wide[i+4] + planner->robot_model_real_->thrusts_yaw_term_(i);
-    }
-    robot_model->calcCoGMomentumJacobian();
-    robot_model->calcJointTorque(hori_thrust);
-    auto jt = robot_model->getJointTorque();
-    //ROS_INFO_STREAM_THROTTLE(0.1, jt.transpose());
-
     // Thrust norm/var
     Eigen::VectorXd force_v(4);
     force_v << x_wide[4], x_wide[5], x_wide[6], x_wide[7];
@@ -150,8 +140,22 @@ namespace
 
     variant = sqrt(variant / force_v.size());
 
+    if (planner->getJointTorqueWeight() > 0) {
+      // Joint Torque
+      Eigen::VectorXd hori_thrust(4);
+      for (int i=0; i<4; i++) {
+        hori_thrust(i) = x_wide[i+4] + planner->robot_model_real_->thrusts_yaw_term_(i);
+      }
+      robot_model->calcCoGMomentumJacobian();
+      robot_model->calcJointTorque(hori_thrust);
+      auto jt = robot_model->getJointTorque();
+      //ROS_INFO_STREAM_THROTTLE(0.1, jt.transpose());
+
+      return -planner->getJointTorqueWeight() * (jt[1]*jt[1]+jt[3]*jt[3]+jt[5]*jt[5]) + planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + planner->getForceVariantWeight() / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
+    } else {
+      return planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + planner->getForceVariantWeight() / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
+    }
     //ROS_INFO_STREAM_THROTTLE(1, "obj func elem: " << planner->getForceNormWeight() * robot_model->getMass() / force_v.norm() << " " << planner->getForceVariantWeight() / variant << " " << planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin());
-    return -0.3 * (jt[1]*jt[1]+jt[3]*jt[3]+jt[5]*jt[5]) + planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + planner->getForceVariantWeight() / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
   }
 
   double maximizeBalanceWide(const std::vector<double> &x_wide, std::vector<double> &grad, void *planner_ptr)
@@ -310,6 +314,7 @@ namespace
       result[i] = res[i];
     }
   }
+
 };
 
 HydrusXiUnderActuatedNavigator::HydrusXiUnderActuatedNavigator():
@@ -738,6 +743,7 @@ void HydrusXiUnderActuatedNavigator::rosParamInit()
   getParam<double>(navi_nh, "yaw_torque_weight", yaw_torque_weight_, 1.0);
   getParam<double>(navi_nh, "fc_t_min_weight", fc_t_min_weight_, 1.0);
   getParam<double>(navi_nh, "uncontrolled_torque_weight", uncontrolled_torque_weight_, 0.1);
+  getParam<double>(navi_nh, "joint_torque_weight", joint_torque_weight_, 0.0);
   getParam<double>(navi_nh, "baselink_rot_thresh", baselink_rot_thresh_, 0.02);
   getParam<double>(navi_nh, "fc_t_min_thresh", fc_t_min_thresh_, 2.0);
 }

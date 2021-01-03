@@ -282,6 +282,7 @@ class HydrusCommander():
             rospy.sleep(rospy.Duration(dt))
     
     def ik_target(self, target, n, dt=0, timeout=10):
+        target[2]=self.joint_sanitize(target[2])
         print "ik target: %lf %lf %lf" % (target[0], target[1], target[2])
         self.ik_array(self.fk(self.joint_angles_now), target, n, dt, timeout)
 
@@ -292,7 +293,7 @@ class HydrusCommander():
         print "pos now: %lf %lf %lf" % (pos_now[0], pos_now[1], pos_now[2])
         q=manip_from_root.pose.orientation
         diff = float((manip_from_root.pose.position.x - pos_now[0])**2 + (manip_from_root.pose.position.y - pos_now[1])**2)**0.5
-        self.ik_target([manip_from_root.pose.position.x, manip_from_root.pose.position.y, self.joint_sanitize(tf.transformations.euler_from_quaternion([q.x,q.y,q.z,q.w])[2])], 1+int(diff*50), timeout=0.9)
+        self.ik_target([manip_from_root.pose.position.x, manip_from_root.pose.position.y, self.joint_sanitize(tf.transformations.euler_from_quaternion([q.x,q.y,q.z,q.w])[2])], 1+int(diff*50), timeout=0.3)
 
 def sendFFWrench(pub, fx, fy, tz):
     pub.publish(Vector3(x=fx, y=fy, z=tz))
