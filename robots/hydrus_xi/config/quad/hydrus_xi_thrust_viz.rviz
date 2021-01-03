@@ -11,6 +11,7 @@ Panels:
         - /RobotModel1
         - /WrenchStamped1
         - /Pose1
+        - /Pose2
       Splitter Ratio: 0.5
     Tree Height: 1086
   - Class: rviz/Selection
@@ -96,6 +97,8 @@ Visualization Manager:
           Value: false
         hydrus_xi/link4:
           Value: false
+        hydrus_xi/manipulation_target:
+          Value: true
         hydrus_xi/pc:
           Value: false
         hydrus_xi/root:
@@ -125,6 +128,8 @@ Visualization Manager:
       Show Names: true
       Tree:
         world:
+          hydrus_xi/manipulation_target:
+            {}
           hydrus_xi/root:
             hydrus_xi/cog:
               {}
@@ -329,6 +334,21 @@ Visualization Manager:
       Topic: /hydrus_xi/manipulation_target
       Unreliable: false
       Value: true
+    - Alpha: 1
+      Axes Length: 1
+      Axes Radius: 0.10000000149011612
+      Class: rviz/Pose
+      Color: 255; 25; 0
+      Enabled: true
+      Head Length: 0.05000000074505806
+      Head Radius: 0.05000000074505806
+      Name: Pose
+      Shaft Length: 0.10000000149011612
+      Shaft Radius: 0.019999999552965164
+      Shape: Arrow
+      Topic: /hydrus_xi/manipulation_end
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -369,8 +389,8 @@ Visualization Manager:
       Scale: 448.559326171875
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
-      X: 0.2845321297645569
-      Y: 0.24838264286518097
+      X: 0.00877069216221571
+      Y: 0.6768567562103271
     Saved: ~
 Window Geometry:
   Displays:
