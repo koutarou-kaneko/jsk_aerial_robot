@@ -154,8 +154,8 @@ namespace
       ROS_INFO_STREAM_THROTTLE(1, "obj func elem: " << -planner->getJointTorqueWeight() * (jt[1]*jt[1]+jt[3]*jt[3]) << " " << planner->getForceNormWeight() * robot_model->getMass() / force_v.norm() << " " << planner->getForceVariantWeight() / variant << " " << planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin());
       return -planner->getJointTorqueWeight() * (jt[1]*jt[1]+jt[3]*jt[3]) + planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + planner->getForceVariantWeight() / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
     } else {
-      ROS_INFO_STREAM_THROTTLE(1, "obj func elem: " << planner->getForceNormWeight() * robot_model->getMass() / force_v.norm() << " " << /*planner->getForceVariantWeight()*/1.0 / variant << " " << planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin());
-      return planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + /*planner->getForceVariantWeight()*/1.0 / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
+      ROS_INFO_STREAM_THROTTLE(1, "obj func elem: " << planner->getForceNormWeight() * robot_model->getMass() / force_v.norm() << " " << planner->getForceVariantWeight() / variant << " " << planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin());
+      return planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + planner->getForceVariantWeight() / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
     }
   }
 
@@ -285,7 +285,7 @@ namespace
     robot_model->calc3DoFThrust(planner->ff_f_xy_[0], planner->ff_f_xy_[1]);
     auto thrust = robot_model->get3DoFThrust();
     Eigen::VectorXd ret_e(8);
-    ret_e << thrust-Eigen::VectorXd::Constant(4, robot_model->getThrustUpperLimit()), Eigen::VectorXd::Constant(4, robot_model->getThrustLowerLimit())-thrust;
+    ret_e << thrust-Eigen::VectorXd::Constant(4, robot_model->getThrustUpperLimit()), Eigen::VectorXd::Constant(4, 8.9)-thrust;
 
     for (int i=0; i<m; i++) {
       result[i] = ret_e(i);
@@ -417,7 +417,7 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   linear_cons.resize(rotor_num, rotor_num);
   for(int i = 0; i < linear_cons.cols(); i++) linear_cons.insert(i,i) = 1;
 
-  Eigen::VectorXd lower_bound = Eigen::VectorXd::Ones(rotor_num) * robot_model->getThrustLowerLimit();
+  Eigen::VectorXd lower_bound = Eigen::VectorXd::Ones(rotor_num) * 8.9;
   Eigen::VectorXd upper_bound = Eigen::VectorXd::Ones(rotor_num) * robot_model->getThrustUpperLimit();
 
   yaw_range_lp_solver_.data()->setHessianMatrix(hessian);
@@ -508,7 +508,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
   std::vector<double> ubh(2*control_gimbal_indices_.size(), M_PI);
 
   for (int i=0; i<opt_gimbal_angles_.size(); i++) {
-    lbh.at(4+i) = robot_model_real_->getThrustLowerLimit();
+    lbh.at(4+i) = 8.9;
     ubh.at(4+i) = robot_model_real_->getThrustUpperLimit();
   }
 

@@ -39,7 +39,7 @@ controller:
     roll_pitch_i: 20
     roll_pitch_d: 150
 
-    yaw_p: 1500 # 100
+    yaw_p: 500 # 100
     yaw_i: 1 # 0.5
     yaw_d: 100 # old: 50
 
@@ -51,4 +51,4 @@ controller:
     trans_constraint_weight: 50
     att_control_weight: 1
 
-  acc_root_shock_thres: 4.5
+  acc_root_shock_thres: 14.5
