@@ -23,7 +23,7 @@ if __name__ == '__main__':
     rospy.sleep(0.2)
     buf = tf2_ros.Buffer()
     tfl = tf2_ros.TransformListener(buf)
-    r=rospy.Rate(3.0)
+    r=rospy.Rate(1.0)
     rospy.sleep(1)
 
     while (not rospy.is_shutdown()):

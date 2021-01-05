@@ -298,7 +298,7 @@ class HydrusCommander():
         q=manip_from_root.pose.orientation
         diff = float((manip_from_root.pose.position.x - pos_now[0])**2 + (manip_from_root.pose.position.y - pos_now[1])**2)**0.5
         #sanitize iranaikamo demo attemo komaranai
-        self.ik_target([manip_from_root.pose.position.x, manip_from_root.pose.position.y, self.joint_sanitize(tf.transformations.euler_from_quaternion([q.x,q.y,q.z,q.w])[2])], 1+int(diff*50), timeout=0.3)
+        self.ik_target([manip_from_root.pose.position.x, manip_from_root.pose.position.y, self.joint_sanitize(tf.transformations.euler_from_quaternion([q.x,q.y,q.z,q.w])[2])], 1+int(diff*50), 0.1, timeout=0.9)
 
 def sendFFWrench(pub, fx, fy, tz):
     pub.publish(Vector3(x=fx, y=fy, z=tz))
@@ -326,6 +326,7 @@ if __name__ == '__main__':
         hyd.joint_publish([1.4, 1.57, 0])
         rospy.sleep(rospy.Duration(1.0))
         hyd.joint_publish([1.5, 0.1, 0])
+        hyd.change_yaw(1.5)
         rospy.sleep(rospy.Duration(3.0))
         hyd.move_to(0.2,0.4)
     elif hyd.test_mode == 'U':

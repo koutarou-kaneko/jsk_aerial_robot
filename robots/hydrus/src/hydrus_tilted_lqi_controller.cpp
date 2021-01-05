@@ -92,12 +92,14 @@ void HydrusTiltedLQIController::allocateYawTerm()
     //auto ff_f_cog = cog.rotation().inverse() * Eigen::Vector3d(ff_f_x_, ff_f_y_, 0);
     double compensate = robot_model_->getMass() * (cog.translation()(1)*tilted_model_->ff_f_x_ - (cog.translation()(0)+0.08)*tilted_model_->ff_f_y_);
     //ROS_INFO_STREAM_THROTTLE(0.2, "comp+ff:" << tilted_model_->ff_t_z_ + compensate);
-    p << 0, 0, 0, tilted_model_->ff_t_z_ + compensate;
+    tilted_model_->yaw_comp_ = compensate;
+    p << 0, 0, 0, tilted_model_->ff_t_z_/* + compensate*/;
   } else {
+    tilted_model_->yaw_comp_ = 0;
     p << 0, 0, 0, 0;
   }
   auto ff_yaw_collective_thrust = p_mat_pseudo_inv_ * p;
-  ROS_INFO_STREAM_THROTTLE(1, "ff_yaw recalc wrench: " << (tilted_model_->calcWrenchMatrixOnCoG() * ff_yaw_collective_thrust).transpose());
+  //ROS_INFO_STREAM_THROTTLE(1, "ff_yaw recalc wrench: " << (tilted_model_->calcWrenchMatrixOnCoG() * ff_yaw_collective_thrust).transpose());
   for(int i = 0; i < motor_num_; i++)
     {
       double p_term = yaw_gains_.at(i)[0] * pid_controllers_.at(YAW).getErrP();

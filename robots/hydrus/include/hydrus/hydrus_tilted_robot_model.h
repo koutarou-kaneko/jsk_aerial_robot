@@ -53,7 +53,7 @@ public:
   Eigen::VectorXd thrust_wrench_ = Eigen::VectorXd::Zero(6);
   Eigen::VectorXd thrusts_yaw_term_ = Eigen::VectorXd::Zero(4);
   bool horizontal_mode_ = false, transition_flag_ = false;
-  double ff_f_x_ = 0, ff_f_y_ = 0, ff_t_z_ = 0;
+  double ff_f_x_ = 0, ff_f_y_ = 0, ff_t_z_ = 0, yaw_comp_ = 0;
 private:
   void updateRobotModelImpl(const KDL::JntArray& joint_positions) override;
   Eigen::VectorXd three_dof_thrust_ = Eigen::VectorXd::Zero(4);

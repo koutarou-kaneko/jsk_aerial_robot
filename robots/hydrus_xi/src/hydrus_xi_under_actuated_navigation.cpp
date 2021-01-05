@@ -154,7 +154,8 @@ namespace
       ROS_INFO_STREAM_THROTTLE(1, "obj func elem: " << -planner->getJointTorqueWeight() * (jt[1]*jt[1]+jt[3]*jt[3]) << " " << planner->getForceNormWeight() * robot_model->getMass() / force_v.norm() << " " << planner->getForceVariantWeight() / variant << " " << planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin());
       return -planner->getJointTorqueWeight() * (jt[1]*jt[1]+jt[3]*jt[3]) + planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + planner->getForceVariantWeight() / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
     } else {
-      return planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + planner->getForceVariantWeight() / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
+      ROS_INFO_STREAM_THROTTLE(1, "obj func elem: " << planner->getForceNormWeight() * robot_model->getMass() / force_v.norm() << " " << /*planner->getForceVariantWeight()*/1.0 / variant << " " << planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin());
+      return planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + /*planner->getForceVariantWeight()*/1.0 / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
     }
   }
 
@@ -306,10 +307,11 @@ namespace
     robot_model->calcWrenchMatrixOnRoot();
     auto Q = robot_model->calcWrenchMatrixOnCoG();
     planner->ffWrenchUpdate(planner->ff_f_xy_world_[0], planner->ff_f_xy_world_[1], planner->robot_model_real_->ff_t_z_);
-    Eigen::VectorXd thrusts(4), wrench_des(6);
+    Eigen::VectorXd thrusts(4), wrench_des(6), yaw_comp(6);
     thrusts << x[4], x[5], x[6], x[7];
     wrench_des << planner->ff_f_xy_[0], planner->ff_f_xy_[1], robot_model->getGravity()[2], 0, 0, 0;
-    auto res = Q*thrusts-robot_model->getMass()*wrench_des;
+    yaw_comp << 0, 0, 0, 0, 0, planner->robot_model_real_->yaw_comp_;
+    auto res = Q*thrusts-robot_model->getMass()*wrench_des - yaw_comp;
     for (int i=0; i<6; i++) {
       result[i] = res[i];
     }
@@ -640,12 +642,14 @@ bool HydrusXiUnderActuatedNavigator::plan()
       joints_t_to_send.y = jt[3];
       joints_t_to_send.z = jt[5];
       joints_torque_pub_.publish(joints_t_to_send);
-      /* debug print to make sure that optimization is to blame
+
+      /*debug print to make sure that optimization is to blame
       robot_model_real_->calcWrenchMatrixOnRoot();
       auto Q = robot_model_real_->calcWrenchMatrixOnCoG();
       Eigen::Vector4d thr(opt_static_thrusts_.at(0), opt_static_thrusts_.at(1), opt_static_thrusts_.at(2), opt_static_thrusts_.at(3));
       ROS_INFO_STREAM("opt thrust wrench recalc: " << Q*thr);
       */
+
       if (result != 4 and result != 5) {
         vectoring_reset_flag_ = true;
       }
