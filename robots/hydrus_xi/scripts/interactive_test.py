@@ -279,7 +279,7 @@ class HydrusCommander():
         dx   = (end[0]-start[0])/n
         dy   = (end[1]-start[1])/n
         dyaw = (end[2]-start[2])/n
-        for i in range(n+1):
+        for i in range(1, n+1):
             if (rospy.Time.now()-stime).to_sec() > timeout:
                 print "timeout"
                 return
