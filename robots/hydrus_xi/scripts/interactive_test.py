@@ -279,7 +279,7 @@ class HydrusCommander():
         dx   = (end[0]-start[0])/n
         dy   = (end[1]-start[1])/n
         dyaw = (end[2]-start[2])/n
-        for i in range(1, n+1):
+        for i in range(2, n+1):
             if (rospy.Time.now()-stime).to_sec() > timeout:
                 print "timeout"
                 return
@@ -298,7 +298,7 @@ class HydrusCommander():
         q=manip_from_root.pose.orientation
         diff = float((manip_from_root.pose.position.x - pos_now[0])**2 + (manip_from_root.pose.position.y - pos_now[1])**2)**0.5
         #sanitize iranaikamo demo attemo komaranai
-        self.ik_target([manip_from_root.pose.position.x, manip_from_root.pose.position.y, self.joint_sanitize(tf.transformations.euler_from_quaternion([q.x,q.y,q.z,q.w])[2])], 1+int(diff*50), 0.1, timeout=0.9)
+        self.ik_target([manip_from_root.pose.position.x, manip_from_root.pose.position.y, self.joint_sanitize(tf.transformations.euler_from_quaternion([q.x,q.y,q.z,q.w])[2])], 2+int(diff*50), 0.1, timeout=0.3)
 
 def sendFFWrench(pub, fx, fy, tz):
     pub.publish(Vector3(x=fx, y=fy, z=tz))
