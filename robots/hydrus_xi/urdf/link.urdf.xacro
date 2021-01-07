@@ -125,7 +125,7 @@
     #### link joint ####
     <xacro:unless value="${self == child}">
       <joint name="joint${self}" type="revolute">
-        <limit effort="3.3" lower="-1.57" upper="1.57" velocity="0.5"/>
+        <limit effort="5" lower="-1.57" upper="1.57" velocity="0.5"/>
         <parent link="link${self}"/>
         <child link="link${child}"/>
         <origin rpy="0 0 0" xyz="${link_length} 0 0"/>
