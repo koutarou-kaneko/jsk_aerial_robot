@@ -247,7 +247,7 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
     }
     ros::Duration(0.1).sleep();
   }
-  for (int i=0; approach_force < 0.8; approach_force+=0.1, i++) {
+  for (int i=0; approach_force < 1.0; approach_force+=0.1, i++) {
     //ff_msg.y = approach_force;
     ff_msg.x = -approach_force;
     ff_wrench_noreset_pub_.publish(ff_msg);
