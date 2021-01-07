@@ -265,11 +265,13 @@ class HydrusCommander():
                 #    print "failed: %lf %lf %lf" % (joints[0], joints[1], joints[2])
             if i==25:
                 print "Could not find solution: (x, y, yaw) = (%f, %f, %f)" % (des_x, des_y, des_yaw)
+                '''
                 if not nested:
                     if 3.5 > des_yaw > 2.5:
                         self.ik(des_x, des_y, des_yaw-2*np.pi, True)
                     elif -2.5 > des_yaw > -3.5:
                         self.ik(des_x, des_y, des_yaw+2*np.pi, True)
+                '''
                 solfound=False
         if solfound:
             self.joint_publish([joints[0], joints[1], joints[2]], short_waittime=True)
@@ -279,6 +281,11 @@ class HydrusCommander():
         dx   = (end[0]-start[0])/n
         dy   = (end[1]-start[1])/n
         dyaw = (end[2]-start[2])/n
+        if end[2]-start[2] < -np.pi:
+            dyaw = (end[2]-start[2]+2*np.pi)/n
+        if end[2]-start[2] > np.pi:
+            dyaw = (end[2]-start[2]-2*np.pi)/n
+
         for i in range(2, n+1):
             if (rospy.Time.now()-stime).to_sec() > timeout:
                 print "timeout"
@@ -291,7 +298,7 @@ class HydrusCommander():
         self.ik_array(self.fk(self.joint_angles_now), target, n, dt, timeout)
 
     def manip_cb(self, msg):
-        manip_from_root = tf2_geometry_msgs.do_transform_pose(msg, self.buf.lookup_transform('hydrus_xi/root', 'hydrus_xi/camera', rospy.Time()))
+        manip_from_root = tf2_geometry_msgs.do_transform_pose(msg, self.buf.lookup_transform('hydrus_xi/root', 'hydrus_xi/camera', rospy.Time.now(), rospy.Duration(0.2)))
         manip_from_root.pose.position.x+=0.08
         pos_now = self.fk(self.joint_angles_now)
         print "pos now: %lf %lf %lf" % (pos_now[0], pos_now[1], pos_now[2])

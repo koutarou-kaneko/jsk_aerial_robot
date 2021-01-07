@@ -227,7 +227,7 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
   navigator_->horizontal_mode_ = true;
   tilted_model_->horizontal_mode_ = true;
   ROS_INFO("start wall touching");
-  double approach_force = 0.3;
+  double approach_force = 0.2;
   geometry_msgs::Vector3 ff_msg;
   //ff_msg.x = 0;
   //ff_msg.y = approach_force;
@@ -250,14 +250,8 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
   for (int i=0; approach_force < 0.8; approach_force+=0.1, i++) {
     //ff_msg.y = approach_force;
     ff_msg.x = -approach_force;
-    if (i==0) {
-      // tesaki hidarini nobashiterubaai gyaku
-      ff_msg.z = 0.0;
-    } else {
-      ff_msg.z = 0;
-    }
     ff_wrench_noreset_pub_.publish(ff_msg);
-    ros::Duration(0.3).sleep();
+    ros::Duration(0.4).sleep();
   }
   ROS_INFO("finish wall touching");
   

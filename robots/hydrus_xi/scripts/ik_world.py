@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     while (not rospy.is_shutdown()):
         try:
-            world_tf = buf.lookup_transform('hydrus_xi/camera', 'hydrus_xi/manipulation_target', rospy.Time()).transform
+            world_tf = buf.lookup_transform('hydrus_xi/camera', 'hydrus_xi/manipulation_target', rospy.Time.now(), rospy.Duration(0.2)).transform
             pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/camera') ,pose=Pose(position=Point(x=world_tf.translation.x, y=world_tf.translation.y, z=world_tf.translation.z), orientation=world_tf.rotation)))
         except:
             rospy.loginfo_throttle(1, 'tf lookup failed')
