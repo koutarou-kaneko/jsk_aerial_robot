@@ -51,4 +51,4 @@ controller:
     trans_constraint_weight: 50
     att_control_weight: 1
 
-  acc_root_shock_thres: 14.5
+  acc_root_shock_thres: 4.5

@@ -229,10 +229,10 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
   ROS_INFO("start wall touching");
   double approach_force = 0.2;
   geometry_msgs::Vector3 ff_msg;
-  //ff_msg.x = 0;
-  //ff_msg.y = approach_force;
-  ff_msg.x = -approach_force;
-  ff_msg.y = 0;
+  ff_msg.x = 0;
+  ff_msg.y = approach_force;
+  //ff_msg.x = -approach_force;
+  //ff_msg.y = 0;
   ff_msg.z = 0;
   ff_wrench_pub_.publish(ff_msg);
   int timeout = 0;
@@ -248,8 +248,8 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
     ros::Duration(0.1).sleep();
   }
   for (int i=0; approach_force < 1.0; approach_force+=0.1, i++) {
-    //ff_msg.y = approach_force;
-    ff_msg.x = -approach_force;
+    ff_msg.y = approach_force;
+    //ff_msg.x = -approach_force;
     ff_wrench_noreset_pub_.publish(ff_msg);
     ros::Duration(0.4).sleep();
   }
