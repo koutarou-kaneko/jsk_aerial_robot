@@ -203,6 +203,7 @@ class HydrusCommander():
         l2=0.6
         l3=0.6
         l4=0.9
+        tol=15
         solfound=True
         joints=np.array([1.57,1.57,1.57])
         link1=np.array([[l1], [0]])
@@ -212,7 +213,7 @@ class HydrusCommander():
         des=np.array([[des_x], [des_y]])
         d=0.02 #[rad]
 
-        for i in range(26):
+        for i in range(tol+1):
             l23=des-RotMat(des_yaw+i*d)*link4-link1
             if (l2+l3)>=np.linalg.norm(l23):
                 theta=np.arccos(np.linalg.norm(l23)/2/l2)
@@ -263,7 +264,7 @@ class HydrusCommander():
                     break
                 #else:
                 #    print "failed: %lf %lf %lf" % (joints[0], joints[1], joints[2])
-            if i==25:
+            if i==tol:
                 print "Could not find solution: (x, y, yaw) = (%f, %f, %f)" % (des_x, des_y, des_yaw)
                 '''
                 if not nested:
@@ -329,6 +330,12 @@ if __name__ == '__main__':
         hyd.change_yaw(1)
         rospy.sleep(rospy.Duration(2.0))
         hyd.move_to(0.2,0.2)
+    elif hyd.test_mode == 'E':
+        hyd.ik_target([0.2, 0.7, 3.2],100,0)
+        rospy.sleep(rospy.Duration(2.0))
+        hyd.change_yaw(0.3)
+        rospy.sleep(rospy.Duration(2.0))
+        hyd.move_to(0.5,0.0)
     elif hyd.test_mode == 'L':
         hyd.joint_publish([1.4, 1.57, 0])
         rospy.sleep(rospy.Duration(1.0))
