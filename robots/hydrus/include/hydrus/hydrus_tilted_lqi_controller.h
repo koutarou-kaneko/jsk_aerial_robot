@@ -56,7 +56,7 @@ namespace aerial_robot_control
 
   protected:
 
-    ros::Publisher desired_baselink_rot_pub_, ff_wrench_pub_, ff_wrench_noreset_pub_;
+    ros::Publisher desired_baselink_rot_pub_, ff_wrench_pub_, ff_wrench_noreset_pub_, nav_msg_pub_;
     ros::ServiceServer start_wall_touching_srv_;
     ros::ServiceServer set_horizontal_force_mode_srv_;
     ros::ServiceServer reset_horizontal_force_mode_srv_;
