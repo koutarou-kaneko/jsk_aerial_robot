@@ -300,9 +300,9 @@ namespace
     //for(int i = 0; i < x.size(); i++)
     //  joint_positions(planner->getControlIndices().at(i)) = x.at(i);
     joints.data[0] = x[0];
-    joints.data[3] = x[1];
-    joints.data[6] = x[2];
-    joints.data[9] = x[3];
+    joints.data[4] = x[1];
+    joints.data[7] = x[2];
+    joints.data[10] = x[3];
     robot_model->updateRobotModel(joints);
     robot_model->calcWrenchMatrixOnRoot();
     auto Q = robot_model->calcWrenchMatrixOnCoG();
@@ -471,11 +471,11 @@ bool HydrusXiUnderActuatedNavigator::plan()
   if (horizontal_mode_) {
     nl_solver_now = vectoring_nl_solver_h_;
     robot_model_for_plan_->horizontal_mode_ = true;
-    setTargetYaw(last_target_yaw_ + joint_positions_for_plan_.data[2] - last_normal_joint1_angle_);
+    setTargetYaw(last_target_yaw_ + joint_positions_for_plan_.data[3] - last_normal_joint1_angle_);
   } else {
     nl_solver_now = vectoring_nl_solver_;
     robot_model_for_plan_->horizontal_mode_ = false;
-    last_normal_joint1_angle_ = joint_positions_for_plan_.data[2];
+    last_normal_joint1_angle_ = joint_positions_for_plan_.data[3];
     last_target_yaw_ = getTargetRPY().getZ();
   }
   //ROS_INFO_STREAM_THROTTLE(0.1, "target link1 yaw: " << getTargetRPY().getZ()-joint_positions_for_plan_.data[2]);

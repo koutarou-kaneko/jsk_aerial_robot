@@ -299,7 +299,7 @@ class HydrusCommander():
         self.ik_array(self.fk(self.joint_angles_now), target, n, dt, timeout)
 
     def manip_cb(self, msg):
-        manip_from_root = tf2_geometry_msgs.do_transform_pose(msg, self.buf.lookup_transform('hydrus_xi/root', 'hydrus_xi/camera', msg.header.stamp, rospy.Duration(0.2)))
+        manip_from_root = tf2_geometry_msgs.do_transform_pose(msg, self.buf.lookup_transform('hydrus_xi/root', 'hydrus_xi/link4', msg.header.stamp, rospy.Duration(0.2)))
         manip_from_root.pose.position.x+=0.08
         pos_now = self.fk(self.joint_angles_now)
         print "pos now: %lf %lf %lf" % (pos_now[0], pos_now[1], pos_now[2])

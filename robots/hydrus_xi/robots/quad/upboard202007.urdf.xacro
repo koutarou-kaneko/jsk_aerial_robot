@@ -19,7 +19,7 @@
   </xacro:extra_module>
 
   #### gripper ####
-  <xacro:extra_module_collision name = "gripper_plane" parent = "link1" visible = "1"
+  <!--xacro:extra_module_collision name = "gripper_plane" parent = "link1" visible = "1"
                       model_url = "package://hydrus_xi/urdf/mesh/mechanical/door_opening_unit_plate.STL">
     <origin xyz="-0.017 -0.016 0.012" rpy="-1.5708 0 1.5708"/>
     <inertial>
@@ -38,7 +38,7 @@
   </xacro:extra_module_collision>
   <gazebo reference="gripper_plane">
     <self_collide>true</self_collide>
-  </gazebo>
+  </gazebo-->
   <xacro:extra_module_collision name = "gripper_rod" parent = "link4" visible = "1"
                       model_url = "package://hydrus_xi/urdf/mesh/mechanical/door_opening_T_long_diff.STL">
     <origin xyz="0.582 0.016 0.012" rpy="-1.5708 0 -1.5708"/>

@@ -235,7 +235,7 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
   nav_msg.pos_xy_nav_mode = 1; //vel
   nav_msg.target_vel_x = 0;
   nav_msg.target_vel_y = 0.35;
-  //nav_msg.target_vel_x = -0.2;
+  //nav_msg.target_vel_x = -0.35;
   //nav_msg.target_vel_y = 0;
   nav_msg_pub_.publish(nav_msg);
   ff_msg.x = 0;
