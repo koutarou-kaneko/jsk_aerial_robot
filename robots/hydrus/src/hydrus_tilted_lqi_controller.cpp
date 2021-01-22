@@ -228,13 +228,13 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
   //navigator_->horizontal_mode_ = true;
   //tilted_model_->horizontal_mode_ = true;
   ROS_INFO("start wall touching");
-  double approach_force = 0.2;
+  double approach_force = 0.3;
   geometry_msgs::Vector3 ff_msg;
   aerial_robot_msgs::FlightNav nav_msg;
   nav_msg.target = nav_msg.COG;
   nav_msg.pos_xy_nav_mode = 1; //vel
   nav_msg.target_vel_x = 0;
-  nav_msg.target_vel_y = 0.2;
+  nav_msg.target_vel_y = 0.35;
   //nav_msg.target_vel_x = -0.2;
   //nav_msg.target_vel_y = 0;
   nav_msg_pub_.publish(nav_msg);
@@ -270,7 +270,7 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
     ff_msg.y = approach_force;
     //ff_msg.x = -approach_force;
     ff_wrench_noreset_pub_.publish(ff_msg);
-    ros::Duration(0.4).sleep();
+    ros::Duration(0.3).sleep();
   }
   nav_msg.target_vel_x = 0;
   nav_msg.target_vel_y = 0;
