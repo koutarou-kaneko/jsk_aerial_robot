@@ -581,7 +581,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
       if (not horizontal_mode_) {
         result = nl_solver_now->optimize(opt_gimbal_angles_, max_f);
         opt_x_ = {opt_gimbal_angles_.at(0), opt_gimbal_angles_.at(1), opt_gimbal_angles_.at(2), opt_gimbal_angles_.at(3), 9.0, 10.0, 10.0, 9.0};
-      } else {
+      } else if (not (robot_model_real_->transition_flag_ and (ub.at(0) - lb.at(0)) < 1.0)) {
         opt_x_ = {opt_gimbal_angles_.at(0), opt_gimbal_angles_.at(1), opt_gimbal_angles_.at(2), opt_gimbal_angles_.at(3), opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
         result = nl_solver_now->optimize(opt_x_, max_f);
         opt_gimbal_angles_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)};

@@ -233,20 +233,20 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
   aerial_robot_msgs::FlightNav nav_msg;
   nav_msg.target = nav_msg.COG;
   nav_msg.pos_xy_nav_mode = 1; //vel
-  nav_msg.target_vel_x = 0;
-  nav_msg.target_vel_y = 0.35;
-  //nav_msg.target_vel_x = -0.35;
-  //nav_msg.target_vel_y = 0;
+  //nav_msg.target_vel_x = 0;
+  //nav_msg.target_vel_y = 0.35;
+  nav_msg.target_vel_x = -0.35;
+  nav_msg.target_vel_y = 0;
   nav_msg_pub_.publish(nav_msg);
-  ff_msg.x = 0;
-  ff_msg.y = approach_force;
-  //ff_msg.x = -approach_force;
-  //ff_msg.y = 0;
+  //ff_msg.x = 0;
+  //ff_msg.y = approach_force;
+  ff_msg.x = -approach_force;
+  ff_msg.y = 0;
   ff_msg.z = 0;
   //ff_wrench_pub_.publish(ff_msg);
   int timeout = 0;
   while (not wall_touching_) {
-    if (timeout++ > 30) {
+    if (timeout++ > 15) {
       ROS_ERROR("timeout");
       horizontal_force_mode_ = false;
       wall_touching_ = false;
@@ -262,13 +262,13 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
   horizontal_force_mode_ = true;
   navigator_->horizontal_mode_ = true;
   tilted_model_->horizontal_mode_ = true;
-  ff_msg.y = approach_force;
-  //ff_msg.x = -approach_force;
+  //ff_msg.y = approach_force;
+  ff_msg.x = -approach_force;
   ff_wrench_pub_.publish(ff_msg);
   ros::Duration(1).sleep();
   for (int i=0; approach_force < 1.0; approach_force+=0.1, i++) {
-    ff_msg.y = approach_force;
-    //ff_msg.x = -approach_force;
+    //ff_msg.y = approach_force;
+    ff_msg.x = -approach_force;
     ff_wrench_noreset_pub_.publish(ff_msg);
     ros::Duration(0.3).sleep();
   }
