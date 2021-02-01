@@ -232,9 +232,9 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
   geometry_msgs::Vector3 ff_msg;
   aerial_robot_msgs::FlightNav nav_msg;
   nav_msg.target = nav_msg.COG;
-  nav_msg.pos_xy_nav_mode = 1; //vel
-  nav_msg.target_vel_x = 0;
-  nav_msg.target_vel_y = 0.35;
+  nav_msg.pos_xy_nav_mode = 2; //pos
+  nav_msg.target_pos_x = 0.25;
+  nav_msg.target_pos_y = 0.4;
   //nav_msg.target_vel_x = -0.2;
   //nav_msg.target_vel_y = 0;
   nav_msg_pub_.publish(nav_msg);
@@ -246,14 +246,14 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
   //ff_wrench_pub_.publish(ff_msg);
   int timeout = 0;
   while (not wall_touching_) {
-    if (timeout++ > 30) {
+    if (timeout++ > 70) {
       ROS_ERROR("timeout");
       horizontal_force_mode_ = false;
       wall_touching_ = false;
       navigator_->horizontal_mode_ = false;
       tilted_model_->horizontal_mode_ = false;
-      nav_msg.target_vel_x = 0;
-      nav_msg.target_vel_y = 0;
+      nav_msg.target_pos_x = 0.25;
+      nav_msg.target_pos_y = 0;
       nav_msg_pub_.publish(nav_msg);
       return false;
     }
@@ -272,9 +272,9 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
     ff_wrench_noreset_pub_.publish(ff_msg);
     ros::Duration(0.3).sleep();
   }
-  nav_msg.target_vel_x = 0;
-  nav_msg.target_vel_y = 0;
-  nav_msg_pub_.publish(nav_msg);
+  //nav_msg.target_vel_x = 0;
+  //nav_msg.target_vel_y = 0;
+  //nav_msg_pub_.publish(nav_msg);
   ROS_INFO("finish wall touching");
   
   return true;
