@@ -149,10 +149,20 @@ namespace
       robot_model->calcCoGMomentumJacobian();
       robot_model->calcJointTorque(hori_thrust);
       auto jt = robot_model->getJointTorque();
-      //ROS_INFO_STREAM_THROTTLE(0.1, jt.transpose());
+      int name_index = 0, j1_index, j2_index, j3_index;
+      for(const auto& name: robot_model->getJointNames()) {
+        if(name.find("joint1") != std::string::npos)
+          j1_index = name_index;
+        if(name.find("joint2") != std::string::npos)
+          j2_index = name_index;
+        if(name.find("joint3") != std::string::npos)
+          j3_index = name_index;
+        name_index++;
+      }
+      //ROS_INFO_STREAM_THROTTLE(0.1, "torque: " << jt.transpose());
 
-      ROS_INFO_STREAM_THROTTLE(1, "obj func elem: " << -planner->getJointTorqueWeight() * (jt[1]*jt[1]+jt[3]*jt[3]) << " " << planner->getForceNormWeight() * robot_model->getMass() / force_v.norm() << " " << planner->getForceVariantWeight() / variant << " " << planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin());
-      return -planner->getJointTorqueWeight() * (jt[1]*jt[1]+jt[3]*jt[3]) + planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + planner->getForceVariantWeight() / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
+      ROS_INFO_STREAM_THROTTLE(1, "obj func elem: " << -planner->getJointTorqueWeight() * (jt[j1_index]*jt[j1_index]+jt[j2_index]*jt[j2_index]) << " " << planner->getForceNormWeight() * robot_model->getMass() / force_v.norm() << " " << planner->getForceVariantWeight() / variant << " " << planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin());
+      return -planner->getJointTorqueWeight() * (jt[j1_index]*jt[j1_index]+jt[j2_index]*jt[j2_index]) + planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + planner->getForceVariantWeight() / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
     } else {
       ROS_INFO_STREAM_THROTTLE(1, "obj func elem: " << planner->getForceNormWeight() * robot_model->getMass() / force_v.norm() << " " << planner->getForceVariantWeight() / variant << " " << planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin());
       return planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + planner->getForceVariantWeight() / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
@@ -297,12 +307,8 @@ namespace
     HydrusXiUnderActuatedNavigator *planner = reinterpret_cast<HydrusXiUnderActuatedNavigator*>(planner_ptr);
     auto robot_model = planner->getRobotModelForPlan();
     KDL::JntArray joints = planner->getJointPositionsForPlan();
-    //for(int i = 0; i < x.size(); i++)
-    //  joint_positions(planner->getControlIndices().at(i)) = x.at(i);
-    joints.data[0] = x[0];
-    joints.data[4] = x[1];
-    joints.data[7] = x[2];
-    joints.data[10] = x[3];
+    for(int i = 0; i < planner->getControlIndices().size(); i++)
+      joints(planner->getControlIndices().at(i)) = x[i];
     robot_model->updateRobotModel(joints);
     robot_model->calcWrenchMatrixOnRoot();
     auto Q = robot_model->calcWrenchMatrixOnCoG();
@@ -466,16 +472,18 @@ void HydrusXiUnderActuatedNavigator::sanitizeJoints(std::vector<double>& joints)
 bool HydrusXiUnderActuatedNavigator::plan()
 {
   joint_positions_for_plan_ = robot_model_->getJointPositions(); // real
+  int j1_index = robot_model_->getJointIndexMap().at("joint1");
+  ROS_INFO_STREAM_THROTTLE(1, "joint1:" << j1_index);
 
   boost::shared_ptr<nlopt::opt> nl_solver_now;
   if (horizontal_mode_) {
     nl_solver_now = vectoring_nl_solver_h_;
     robot_model_for_plan_->horizontal_mode_ = true;
-    setTargetYaw(last_target_yaw_ + joint_positions_for_plan_.data[3] - last_normal_joint1_angle_);
+    setTargetYaw(last_target_yaw_ + joint_positions_for_plan_(j1_index) - last_normal_joint1_angle_);
   } else {
     nl_solver_now = vectoring_nl_solver_;
     robot_model_for_plan_->horizontal_mode_ = false;
-    last_normal_joint1_angle_ = joint_positions_for_plan_.data[3];
+    last_normal_joint1_angle_ = joint_positions_for_plan_(j1_index);
     last_target_yaw_ = getTargetRPY().getZ();
   }
   //ROS_INFO_STREAM_THROTTLE(0.1, "target link1 yaw: " << getTargetRPY().getZ()-joint_positions_for_plan_.data[2]);
@@ -587,7 +595,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
         opt_gimbal_angles_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)};
       }
       opt_static_thrusts_ = {opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
-      ROS_INFO_STREAM("optim: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3]/* << " " << opt_static_thrusts_[0] << " " << opt_static_thrusts_[1] << " " << opt_static_thrusts_[2] << " " << opt_static_thrusts_[3]*/);
+      ROS_INFO_STREAM_THROTTLE(1, "optim: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3]/* << " " << opt_static_thrusts_[0] << " " << opt_static_thrusts_[1] << " " << opt_static_thrusts_[2] << " " << opt_static_thrusts_[3]*/);
 
       // Transition
       double thres = 0.1;
@@ -637,10 +645,20 @@ bool HydrusXiUnderActuatedNavigator::plan()
       robot_model_real_->calcCoGMomentumJacobian();
       robot_model_real_->calcJointTorque(hori_thrust);
       auto jt = robot_model_real_->getJointTorque();
+      int name_index = 0, j1_index, j2_index, j3_index;
+      for(const auto& name: robot_model_real_->getJointNames()) {
+        if(name.find("joint1") != std::string::npos)
+          j1_index = name_index;
+        if(name.find("joint2") != std::string::npos)
+          j2_index = name_index;
+        if(name.find("joint3") != std::string::npos)
+          j3_index = name_index;
+        name_index++;
+      }
       geometry_msgs::Vector3 joints_t_to_send;
-      joints_t_to_send.x = jt[1];
-      joints_t_to_send.y = jt[3];
-      joints_t_to_send.z = jt[5];
+      joints_t_to_send.x = jt[j1_index];
+      joints_t_to_send.y = jt[j2_index];
+      joints_t_to_send.z = jt[j3_index];
       joints_torque_pub_.publish(joints_t_to_send);
 
       /*debug print to make sure that optimization is to blame
