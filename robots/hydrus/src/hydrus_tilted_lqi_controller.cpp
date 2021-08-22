@@ -239,11 +239,12 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
   nav_msg.pos_xy_nav_mode = 2; //pos
   //nav_msg.target_vel_x = 0;
   //nav_msg.target_vel_y = 0.35;
-  nav_msg.target_pos_x = contact_point_x_+0.1*cos(plane_axis_rad_+M_PI);
-  nav_msg.target_vel_y = contact_point_y_+0.1*sin(plane_axis_rad_+M_PI);
+  nav_msg.target_pos_x = contact_point_x_+0.01*cos(plane_axis_rad_+M_PI);
+  nav_msg.target_vel_y = contact_point_y_+0.01*sin(plane_axis_rad_+M_PI);
   nav_msg_pub_.publish(nav_msg);
   int timeout = 0;
-  while (not wall_touching_) {
+  //while (not wall_touching_) {
+  while (true) {
     if (timeout++ > 30) {
       ROS_ERROR("timeout");
       /*
