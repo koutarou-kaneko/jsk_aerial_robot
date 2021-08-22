@@ -51,4 +51,8 @@ controller:
     trans_constraint_weight: 50
     att_control_weight: 1
 
-  acc_root_shock_thres: 14.5
+  wall:
+    acc_root_shock_thres: 14.5
+    plane_axis_rad: 0.0
+    contact_point_x: -0.55
+    contact_point_y: -0.23

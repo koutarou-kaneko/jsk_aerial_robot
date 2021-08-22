@@ -26,7 +26,11 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
 
   //param
   ros::NodeHandle control_nh(nh_, "controller");
-  getParam<double>(control_nh, "acc_root_shock_thres", acc_root_shock_thres_, 4.5);
+  ros::NodeHandle wall_nh(control_nh, "wall");
+  getParam<double>(wall_nh, "acc_root_shock_thres", acc_root_shock_thres_, 4.5);
+  getParam<double>(wall_nh, "plane_axis_rad", plane_axis_rad_, 0);
+  getParam<double>(wall_nh, "contact_point_x", contact_point_x_, 0);
+  getParam<double>(wall_nh, "contact_point_y", contact_point_y_, 0);
 
   pid_msg_.z.p_term.resize(1);
   pid_msg_.z.i_term.resize(1);
@@ -231,23 +235,18 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
   double approach_force = 0.3;
   geometry_msgs::Vector3 ff_msg;
   aerial_robot_msgs::FlightNav nav_msg;
-  nav_msg.target = nav_msg.COG;
-  nav_msg.pos_xy_nav_mode = 1; //vel
+  nav_msg.target = nav_msg.BASELINK;
+  nav_msg.pos_xy_nav_mode = 2; //pos
   //nav_msg.target_vel_x = 0;
   //nav_msg.target_vel_y = 0.35;
-  nav_msg.target_vel_x = -0.35;
-  nav_msg.target_vel_y = 0;
+  nav_msg.target_pos_x = contact_point_x_+0.1*cos(plane_axis_rad_+M_PI);
+  nav_msg.target_vel_y = contact_point_y_+0.1*sin(plane_axis_rad_+M_PI);
   nav_msg_pub_.publish(nav_msg);
-  //ff_msg.x = 0;
-  //ff_msg.y = approach_force;
-  ff_msg.x = -approach_force;
-  ff_msg.y = 0;
-  ff_msg.z = 0;
-  //ff_wrench_pub_.publish(ff_msg);
   int timeout = 0;
   while (not wall_touching_) {
-    if (timeout++ > 15) {
+    if (timeout++ > 30) {
       ROS_ERROR("timeout");
+      /*
       horizontal_force_mode_ = false;
       wall_touching_ = false;
       navigator_->horizontal_mode_ = false;
@@ -256,25 +255,25 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
       nav_msg.target_vel_y = 0;
       nav_msg_pub_.publish(nav_msg);
       return false;
+      */
+      break;
     }
     ros::Duration(0.1).sleep();
   }
   horizontal_force_mode_ = true;
   navigator_->horizontal_mode_ = true;
   tilted_model_->horizontal_mode_ = true;
-  //ff_msg.y = approach_force;
-  ff_msg.x = -approach_force;
+  ff_msg.x = approach_force*cos(plane_axis_rad_+M_PI);
+  ff_msg.y = approach_force*sin(plane_axis_rad_+M_PI);
+  ff_msg.z = 0;
   ff_wrench_pub_.publish(ff_msg);
   ros::Duration(1).sleep();
   for (int i=0; approach_force < 1.0; approach_force+=0.1, i++) {
-    //ff_msg.y = approach_force;
-    ff_msg.x = -approach_force;
+    ff_msg.x = approach_force*cos(plane_axis_rad_+M_PI);
+    ff_msg.y = approach_force*sin(plane_axis_rad_+M_PI);
     ff_wrench_noreset_pub_.publish(ff_msg);
     ros::Duration(0.3).sleep();
   }
-  nav_msg.target_vel_x = 0;
-  nav_msg.target_vel_y = 0;
-  nav_msg_pub_.publish(nav_msg);
   ROS_INFO("finish wall touching");
   
   return true;

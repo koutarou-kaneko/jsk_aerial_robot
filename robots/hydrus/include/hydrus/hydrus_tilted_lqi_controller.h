@@ -68,6 +68,9 @@ namespace aerial_robot_control
     double att_control_weight_;
     bool horizontal_force_mode_ = false, wall_touching_ = false;
     double acc_root_shock_thres_ = 20.0;
+    double plane_axis_rad_ = 0.0;
+    double contact_point_x_ = 0.3;
+    double contact_point_y_ = 0.3;
 
     double z_limit_;
 
