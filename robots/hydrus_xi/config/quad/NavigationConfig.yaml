@@ -34,8 +34,8 @@ navigation:
   plan_verbose: false
   maximize_yaw: false # true: maximize min yaw torque, false: maximize feasible control torque convex
   force_norm_weight: 2.0
-  force_variant_weight: 0.01
-  joint_torque_weight: 0.01
+  force_variant_weight: 0.1
+  joint_torque_weight: 0.0
   plan_freq: 20.0
   baselink_rot_thresh: 0.01
   gimbal_delta_angle: 0.2

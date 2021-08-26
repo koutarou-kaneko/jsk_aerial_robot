@@ -235,12 +235,12 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
   double approach_force = 0.3;
   geometry_msgs::Vector3 ff_msg;
   aerial_robot_msgs::FlightNav nav_msg;
-  nav_msg.target = nav_msg.BASELINK;
+  nav_msg.target = nav_msg.COG;
   nav_msg.pos_xy_nav_mode = 2; //pos
   //nav_msg.target_vel_x = 0;
   //nav_msg.target_vel_y = 0.35;
-  nav_msg.target_pos_x = contact_point_x_+0.01*cos(plane_axis_rad_+M_PI);
-  nav_msg.target_vel_y = contact_point_y_+0.01*sin(plane_axis_rad_+M_PI);
+  nav_msg.target_pos_x = contact_point_x_+0.8*cos(plane_axis_rad_);
+  nav_msg.target_vel_y = contact_point_y_+0.8*sin(plane_axis_rad_);
   nav_msg_pub_.publish(nav_msg);
   int timeout = 0;
   //while (not wall_touching_) {
