@@ -50,10 +50,6 @@
 #include "spinal_ros_bridge/topic_handlers.h"
 #include "spinal_ros_bridge/SerializedMessage.h"
 
-#define BURST_MODE 1
-#define BURST_SIZE 16
-#define BURST_INTERVAL 0.001f
-
 namespace rosserial_server
 {
 
@@ -157,11 +153,12 @@ private:
   // TODO: Total message timeout, implement primarily in ReadBuffer.
   void read_sync_header() {
     // Stop the tx from MCU, not sure whether the process should be here
-    if(terminate_start_flag_ )
+    if(terminate_start_flag_)
       {
+        terminate_start_flag_ = false;
         std::vector<uint8_t> message(0);
         write_message(message, rosserial_msgs::TopicInfo::ID_TX_STOP, client_version);
-        ROS_WARN("stop rosserial communication \n");
+        ROS_WARN("stop rosserial communication");
         ros::shutdown();
         return;
       }
@@ -336,44 +333,8 @@ private:
   // Function which is dispatched onto the io_service thread by write_message, so that
   // write_message may be safely called directly from the ROS background spinning thread.
   void write_buffer(BufferPtr buffer_ptr) {
-#if BURST_MODE
-    int packing_size;
-    if(buffer_ptr->size() % BURST_SIZE > 0) packing_size = buffer_ptr->size() / BURST_SIZE + 1;
-    else packing_size = buffer_ptr->size() / BURST_SIZE;
-    //ROS_WARN("buffer size: %d, packing size: %d", buffer_ptr->size(), packing_size);
-    for(int i = 0; i < packing_size; i++)
-      {
-        BufferPtr seg_buffer_ptr;
-        if(buffer_ptr->size() % BURST_SIZE > 0)
-          {
-            if(i == packing_size -1) seg_buffer_ptr = BufferPtr(new Buffer(buffer_ptr->size() % BURST_SIZE));
-            else seg_buffer_ptr = BufferPtr(new Buffer(BURST_SIZE));
-          }
-        else
-          {
-            seg_buffer_ptr = BufferPtr(new Buffer(BURST_SIZE));
-          }
-
-        for(int j = 0; j < seg_buffer_ptr->size(); j ++)
-          {
-            seg_buffer_ptr->at(j) = buffer_ptr->at(i * BURST_SIZE + j);
-            //ROS_WARN("%d: %x", j, seg_buffer_ptr->at(j));
-          }
-
-         boost::asio::async_write(socket_, boost::asio::buffer(*seg_buffer_ptr),
-                                  boost::bind(&Session::write_cb, this, boost::asio::placeholders::error,seg_buffer_ptr));
-
-         /* delay method */
-         double last_time = ros::Time::now().toSec();
-         while(1)
-           {//1ms delay
-             if(ros::Time::now().toSec() - last_time > BURST_INTERVAL) break;
-           }
-      }
-#else
     boost::asio::async_write(socket_, boost::asio::buffer(*buffer_ptr),
           boost::bind(&Session::write_cb, this, boost::asio::placeholders::error, buffer_ptr));
-#endif
   }
 
   void write_cb(const boost::system::error_code& error,
@@ -410,6 +371,15 @@ private:
     if (error == boost::asio::error::operation_aborted) {
       return;
     }
+
+    if(terminate_start_flag_)
+      {
+        terminate_start_flag_ = false;
+        ROS_WARN("stop rosserial communication");
+        ros::shutdown();
+        return;
+      }
+
     ROS_WARN("Sync with device lost.");
     attempt_sync();
   }

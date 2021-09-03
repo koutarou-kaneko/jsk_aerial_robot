@@ -28,6 +28,8 @@
 #include <Spine/spine.h>
 /* battery status */
 #include "battery_status/battery_status.h"
+/* RTOS */
+#include "cmsis_os.h"
 #endif
 #include "state_estimate/state_estimate.h"
 
@@ -45,7 +47,7 @@
 
 #define MAX_PWM  54000
 #define IDLE_DUTY 0.5f
-#define FORCE_LANDING_INTEGRAL 0.0025f // 500Hz * 0.00005 = 0.025, 1600 -> 1500: 2sec
+#define FORCE_LANDING_INTEGRAL 0.0025f // 500Hz * 0.0025 = 1.25 N / sec
 
 #define MAX_MOTOR_NUMBER 10
 
@@ -74,7 +76,7 @@ public:
 #ifdef SIMULATION
   void init(ros::NodeHandle* nh, StateEstimate* estimator);
 #else
-  void init(TIM_HandleTypeDef* htim1, TIM_HandleTypeDef* htim2, StateEstimate* estimator, BatteryStatus* bat, ros::NodeHandle* nh);
+  void init(TIM_HandleTypeDef* htim1, TIM_HandleTypeDef* htim2, StateEstimate* estimator, BatteryStatus* bat, ros::NodeHandle* nh, osMutexId* mutex = NULL);
 #endif
 
   void baseInit(); // common part in both pc and board
@@ -90,15 +92,7 @@ public:
   void setIntegrateFlag(bool integrate_flag){integrate_flag_ = integrate_flag; }
   bool getForceLandingFlag() {return force_landing_flag_;}
 
-  void setForceLandingFlag(bool force_landing_flag)
-  {
-    force_landing_flag_ = force_landing_flag;
-
-#ifdef NERVE_COMM
-    Spine::setServoControlFlag(!force_landing_flag);
-#endif
-
-  }
+  void setForceLandingFlag(bool force_landing_flag) { force_landing_flag_ = force_landing_flag; }
   float getPwm(uint8_t index) {return target_pwm_[index];}
   float getForce(uint8_t index) {return target_thrust_[index];}
 
@@ -147,6 +141,7 @@ private:
   void setAttitudeControlCallback(const std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) { att_control_flag_ = req.data; }
 
   BatteryStatus* bat_;
+  osMutexId* mutex_;
 #endif
 
   StateEstimate* estimator_;

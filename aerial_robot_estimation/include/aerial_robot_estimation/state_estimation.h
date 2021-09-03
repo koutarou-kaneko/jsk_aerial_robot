@@ -43,6 +43,7 @@
 #include <deque>
 #include <fnmatch.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <geographic_msgs/GeoPoint.h>
 #include <iostream>
 #include <kalman_filter/kf_base_plugin.h>
 #include <map>
@@ -306,7 +307,8 @@ namespace aerial_robot_estimation
 
       if(timestamp > timestamp_qu_.back())
         {
-          ROS_WARN_COND(verbose, "estimation: sensor timestamp %f is later than the latest timestamp %f in queue", timestamp, timestamp_qu_.back());
+          ROS_WARN_COND(verbose, "estimation: sensor timestamp %f is later than the latest timestamp %f in queue",
+                        timestamp, timestamp_qu_.back());
 
           return false;
         }
@@ -396,6 +398,10 @@ namespace aerial_robot_estimation
     /* att control mode is for user to manually control x and y motion by attitude control */
     inline void setForceAttControlFlag (bool flag) {force_att_control_flag_ = flag; }
     inline bool getForceAttControlFlag () {return force_att_control_flag_;}
+    /* latitude & longitude value for GPS based navigation */
+    inline void setCurrGpsPoint(const geographic_msgs::GeoPoint point) {curr_wgs84_poiont_ = point;}
+    inline const geographic_msgs::GeoPoint& getCurrGpsPoint() const {return curr_wgs84_poiont_;}
+
 
     const SensorFuser& getFuser(int mode)
     {
@@ -421,11 +427,13 @@ namespace aerial_robot_estimation
     const vector<boost::shared_ptr<sensor_plugin::SensorBase> >& getAltHandlers() const { return alt_handlers_;}
     const vector<boost::shared_ptr<sensor_plugin::SensorBase> >& getVoHandlers() const { return vo_handlers_;}
     const vector<boost::shared_ptr<sensor_plugin::SensorBase> >& getGpsHandlers() const { return gps_handlers_;}
+    const vector<boost::shared_ptr<sensor_plugin::SensorBase> >& getPlaneDetectionHandlers() const { return plane_detection_handlers_;}
 
     const boost::shared_ptr<sensor_plugin::SensorBase> getImuHandler(int i) const { return imu_handlers_.at(i);}
     const boost::shared_ptr<sensor_plugin::SensorBase> getAltHandlers(int i) const { return alt_handlers_.at(i);}
     const boost::shared_ptr<sensor_plugin::SensorBase> getVoHandlers(int i) const { return vo_handlers_.at(i);}
     const boost::shared_ptr<sensor_plugin::SensorBase> getGpsHandlers(int i) const { return gps_handlers_.at(i);}
+    const boost::shared_ptr<sensor_plugin::SensorBase> getPlaneDetectionHandlers(int i) const { return plane_detection_handlers_.at(i);}
 
   protected:
 
@@ -442,6 +450,7 @@ namespace aerial_robot_estimation
     vector<boost::shared_ptr<sensor_plugin::SensorBase> > alt_handlers_;
     vector<boost::shared_ptr<sensor_plugin::SensorBase> > vo_handlers_;
     vector<boost::shared_ptr<sensor_plugin::SensorBase> > gps_handlers_;
+    vector<boost::shared_ptr<sensor_plugin::SensorBase> > plane_detection_handlers_;
 
     /* mutex */
     boost::mutex state_mutex_;
@@ -479,6 +488,9 @@ namespace aerial_robot_estimation
     bool un_descend_flag_;
     float landing_height_;
     bool force_att_control_flag_;
+
+    /* latitude & longitude point */
+    geographic_msgs::GeoPoint curr_wgs84_poiont_;
 
     void statePublish();
     void rosParamInit();

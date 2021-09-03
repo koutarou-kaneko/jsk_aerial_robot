@@ -69,7 +69,7 @@ public:
   {
   }
 
-  void init(TIM_HandleTypeDef* htim1, TIM_HandleTypeDef* htim2, StateEstimate* estimator, BatteryStatus* bat, ros::NodeHandle* nh)
+  void init(TIM_HandleTypeDef* htim1, TIM_HandleTypeDef* htim2, StateEstimate* estimator, BatteryStatus* bat, ros::NodeHandle* nh, osMutexId* mutex = NULL)
   {
     nh_ = nh;
 
@@ -87,7 +87,9 @@ public:
     pwm_htim1_ = htim1;
     pwm_htim2_ = htim2;
 
-    att_controller_.init(htim1, htim2, estimator, bat, nh);
+    mutex_ = mutex;
+
+    att_controller_.init(htim1, htim2, estimator, bat, nh, mutex);
     //pos_controller_.init(estimator_, &att_controller_, nh_);
 
     start_control_flag_ = false;
@@ -152,6 +154,7 @@ private:
   BatteryStatus* bat_;
   TIM_HandleTypeDef* pwm_htim1_;
   TIM_HandleTypeDef*  pwm_htim2_;
+  osMutexId* mutex_;
 #endif
 
   void flightConfigCallback(const spinal::FlightConfigCmd& config_msg)
@@ -198,6 +201,13 @@ private:
       case spinal::FlightConfigCmd::FORCE_LANDING_CMD:
         force_landing_flag_ = true;
         att_controller_.setForceLandingFlag(force_landing_flag_);
+        config_ack_msg_.data = spinal::FlightConfigCmd::FORCE_LANDING_CMD;
+#ifdef SIMULATION
+        config_ack_pub_.publish(config_ack_msg_);
+#else
+        config_ack_pub_.publish(&config_ack_msg_);
+#endif
+
         break;
       case spinal::FlightConfigCmd::INTEGRATION_CONTROL_ON_CMD:
         integrate_flag_ = true;

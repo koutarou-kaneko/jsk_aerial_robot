@@ -7,5 +7,5 @@ sensor_plugin:
                 sensor_frame: gps
                 ned_flag: true #north(x)-east(y)-down(z) frame
                 time_sync: true
-                delay: -0.4 # -0.15 -> -0.4
+                delay: -0.45 # daylight: -0.45, night: -0.5
                 #only_use_vel: true # debug

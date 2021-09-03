@@ -1,26 +1,26 @@
 # aerial robot third party
 - git:
     local-name: aerial_robot_3rdparty
-    uri: https://github.com/tongtybj/aerial_robot_3rdparty.git
-    version: master
+    uri: https://github.com/JSKAerialRobot/aerial_robot_3rdparty.git
+    version: b936f88
 
 # kalman filter
 - git:
     local-name: kalman_filter
-    uri: https://github.com/tongtybj/kalman_filter.git
-    version: ce58d258
+    uri: https://github.com/JSKAerialRobot/kalman_filter.git
+    version: 24e297d
 
 # the sensor interface
 - git:
     local-name: sensor_interface
-    uri: https://github.com/tongtybj/sensor_interface.git
-    version: 3d24258
+    uri: https://github.com/JSKAerialRobot/sensor_interface.git
+    version: da9c42f
 
-# motion capture(optitrack)
+# RTK-GPS (forked)
 - git:
-    local-name: mocap_optitrack
-    uri: https://github.com/tongtybj/mocap_optitrack.git
-    version: fix_multiple_rigid_bodies_parse_bug
+    local-name: ublox_gps
+    uri: https://github.com/tongtybj/ublox.git
+    version: holybro_rtk_m8p
 
 # realsense
 #- git:

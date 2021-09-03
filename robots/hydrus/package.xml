@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <package>
   <name>hydrus</name>
-  <version>1.2.0</version>
+  <version>1.3.0</version>
   <description>The basic packages for hydrus</description>
 
   <maintainer email="chou@jsk.imi.i.u-tokyo.ac.jp">Bakui Chou</maintainer>
   <license>BSD</license>
-  <url type="website">https://github.com/tongtybj/aerial_robot</url>
+  <url type="website">https://github.com/JSKAerialRobot/aerial_robot</url>
   <author email="chou@jsk.imi.i.u-tokyo.ac.jp">Bakui Chou</author>
 
   <buildtool_depend>catkin</buildtool_depend>

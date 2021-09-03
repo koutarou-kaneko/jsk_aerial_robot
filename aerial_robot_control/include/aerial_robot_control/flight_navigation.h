@@ -67,6 +67,7 @@ namespace aerial_robot_navigation
 
     inline bool getXyVelModePosCtrlTakeoff(){  return xy_vel_mode_pos_ctrl_takeoff_;}
     inline bool getForceLandingFlag() {return force_landing_flag_;}
+    inline double getForceLandingStartTime() {return force_landing_start_time_.toSec();}
 
     inline tf::Vector3 getTargetPos() {return target_pos_;}
     inline tf::Vector3 getTargetVel() {return target_vel_;}
@@ -384,9 +385,6 @@ namespace aerial_robot_navigation
           ROS_INFO("FORCE LANDING MSG From AERIAL ROBOT");
 
           force_landing_flag_ = true;
-
-          /* update the force landing stamp for the halt process*/
-          force_landing_start_time_ = ros::Time::now();
         }
     }
 
@@ -444,13 +442,23 @@ namespace aerial_robot_navigation
         {
           if(msg->data == 0)
             {
+              setTargetXyFromCurrentState();
+              target_vel_.setValue(0, 0, 0);
+              target_acc_.setValue(0, 0, 0);
               xy_control_mode_ = POS_CONTROL_MODE;
               ROS_INFO("x/y position control mode");
             }
           if(msg->data == 1)
             {
+              target_vel_.setValue(0, 0, 0);
+              target_acc_.setValue(0, 0, 0);
               xy_control_mode_ = VEL_CONTROL_MODE;
               ROS_INFO("x/y velocity control mode");
+            }
+          if(msg->data == 2)
+            {
+              xy_control_mode_ = ACC_CONTROL_MODE;
+              ROS_INFO("x/y acceleration control mode");
             }
         }
     }
@@ -474,16 +482,26 @@ namespace aerial_robot_navigation
       tf::Vector3 pos_cog = estimator_->getPos(Frame::COG, estimate_mode_);
       target_pos_.setX(pos_cog.x());
       target_pos_.setY(pos_cog.y());
+
+      // set the velocty to zero
+      target_vel_.setX(0);
+      target_vel_.setY(0);
     }
 
     void setTargetZFromCurrentState()
     {
       target_pos_.setZ(estimator_->getPos(Frame::COG, estimate_mode_).z());
+
+      // set the velocty to zero
+      target_vel_.setZ(0);
     }
 
     void setTargetYawFromCurrentState()
     {
       target_rpy_.setZ(estimator_->getState(State::YAW_COG, estimate_mode_)[0]);
+
+      // set the velocty to zero
+      target_omega_.setZ(0);
     }
 
     template<class T> void getParam(ros::NodeHandle nh, std::string param_name, T& param, T default_value)
