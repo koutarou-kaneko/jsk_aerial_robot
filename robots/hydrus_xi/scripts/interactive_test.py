@@ -321,7 +321,8 @@ if __name__ == '__main__':
         rospy.sleep(rospy.Duration(1.0))
         hyd.arm_and_takeoff()
         rospy.sleep(rospy.Duration(18.0))
-        hyd.change_yaw(1.57)
+        #hyd.change_yaw(1.57)
+	embed()
         rospy.sleep(rospy.Duration(2.0))
     
     if hyd.test_mode == 'J':
@@ -358,11 +359,11 @@ if __name__ == '__main__':
         rospy.sleep(rospy.Duration(2.0))
         hyd.move_to(0.4,-0.3)
     elif hyd.test_mode == 'N':
-        hyd.ik_target([0.1, 0.4, -2.7],100,0)
+        hyd.ik_target([0.1, 0.7, -3.1],50,0)
         rospy.sleep(rospy.Duration(2.0))
         hyd.change_yaw(-1.57)
         rospy.sleep(rospy.Duration(2.0))
         #0.85m away from the wall
-        hyd.move_to(0.0,-0.05)
+        hyd.move_to(0.2,-0.2)
     
     embed()
