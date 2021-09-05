@@ -220,7 +220,7 @@ class HydrusCommander():
                 joints[0]=self.joint_sanitize(np.arctan2(l23[1], l23[0])+theta)
                 joints[1]=self.joint_sanitize(-2*theta)
                 joints[2]=self.joint_sanitize(des_yaw+i*d-joints[0]-joints[1])
-                if (joints < 1.57).all() and (joints > -1.57).all():
+                if (joints < 1.53).all() and (joints > -1.53).all():
                     q=tf.transformations.quaternion_about_axis(des_yaw+i*d, (0,0,1))
                     self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
                     print "Found solution: tol +%d" % i
@@ -231,7 +231,7 @@ class HydrusCommander():
                 joints[0]=self.joint_sanitize(np.arctan2(l23[1], l23[0])-theta)
                 joints[1]=self.joint_sanitize(2*theta)
                 joints[2]=self.joint_sanitize(des_yaw+i*d-joints[0]-joints[1])
-                if (joints < 1.57).all() and (joints > -1.57).all():
+                if (joints < 1.53).all() and (joints > -1.53).all():
                     q=tf.transformations.quaternion_about_axis(des_yaw+i*d, (0,0,1))
                     self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
                     print "Found solution: tol +%d" % i
@@ -245,7 +245,7 @@ class HydrusCommander():
                 joints[0]=self.joint_sanitize(np.arctan2(l23[1], l23[0])+theta)
                 joints[1]=self.joint_sanitize(-2*theta)
                 joints[2]=self.joint_sanitize(des_yaw-i*d-joints[0]-joints[1])
-                if (joints < 1.57).all() and (joints > -1.57).all():
+                if (joints < 1.53).all() and (joints > -1.53).all():
                     q=tf.transformations.quaternion_about_axis(des_yaw-i*d, (0,0,1))
                     self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
                     print "Found solution: tol -%d" % i
@@ -256,7 +256,7 @@ class HydrusCommander():
                 joints[0]=self.joint_sanitize(np.arctan2(l23[1], l23[0])-theta)
                 joints[1]=self.joint_sanitize(2*theta)
                 joints[2]=self.joint_sanitize(des_yaw-i*d-joints[0]-joints[1])
-                if (joints < 1.57).all() and (joints > -1.57).all():
+                if (joints < 1.53).all() and (joints > -1.53).all():
                     q=tf.transformations.quaternion_about_axis(des_yaw-i*d, (0,0,1))
                     self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
                     print "Found solution: tol -%d" % i
@@ -306,7 +306,7 @@ class HydrusCommander():
         q=manip_from_root.pose.orientation
         diff = float((manip_from_root.pose.position.x - pos_now[0])**2 + (manip_from_root.pose.position.y - pos_now[1])**2)**0.5
         #sanitize iranaikamo demo attemo komaranai
-        self.ik_target([manip_from_root.pose.position.x, manip_from_root.pose.position.y, self.joint_sanitize(tf.transformations.euler_from_quaternion([q.x,q.y,q.z,q.w])[2])], 2+int(diff*50), 0.1, timeout=0.3)
+        self.ik_target([manip_from_root.pose.position.x, manip_from_root.pose.position.y, self.joint_sanitize(tf.transformations.euler_from_quaternion([q.x,q.y,q.z,q.w])[2])], 2+int(diff*50), 0.3, timeout=0.3)
 
 def sendFFWrench(pub, fx, fy, tz):
     pub.publish(Vector3(x=fx, y=fy, z=tz))
@@ -325,8 +325,9 @@ if __name__ == '__main__':
         rospy.sleep(rospy.Duration(2.0))
     
     if hyd.test_mode == 'J':
-        #hyd.joint_publish([0.5, 1.57, 1.57])
-        hyd.ik_target([0.1, 0.4, -2.7],100,0)
+        #hyd.joint_publish([0.5, 1.57, 1.57]) #old
+        #hyd.ik_target([0.1, 0.4, -2.7],100,0) #1.57
+        hyd.ik_target([0.1, 0.7, -3.1],10,0)
         rospy.sleep(rospy.Duration(2.0))
         hyd.change_yaw(0)
         rospy.sleep(rospy.Duration(2.0))
