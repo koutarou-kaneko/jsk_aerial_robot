@@ -598,7 +598,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
       ROS_INFO_STREAM_THROTTLE(1, "res:" << result << " optim: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3]/* << " " << opt_static_thrusts_[0] << " " << opt_static_thrusts_[1] << " " << opt_static_thrusts_[2] << " " << opt_static_thrusts_[3]*/);
 
       // Transition
-      double thres = 0.1;
+      double thres = 0.2;
       if (horizontal_mode_ and robot_model_real_->transition_flag_) {
         bool transitioning = false;
         for (int i=0; i<4; i++) {
