@@ -392,7 +392,7 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   //vectoring_nl_solver_h_->add_inequality_mconstraint(thrustLimitConstraint, this, std::vector<double>(8, 1e-8));
   //vectoring_nl_solver_h_->set_max_objective(maximizeBalanceWide, this);
   vectoring_nl_solver_h_->set_max_objective(maximizeFCTMinWide, this);
-  vectoring_nl_solver_h_->add_equality_mconstraint(kinematicsConstraint, this, {0.05, 0.05, 0.1, 0.001, 0.001, 0.001}/*std::vector<double>(6, 1e-2)*/);
+  vectoring_nl_solver_h_->add_equality_mconstraint(kinematicsConstraint, this, {0.05, 0.05, 0.1, 0.05, 0.05, 0.01}/*std::vector<double>(6, 1e-2)*/);
 
   vectoring_nl_solver_->set_xtol_rel(1e-4); //1e-4
   vectoring_nl_solver_h_->set_xtol_rel(1e-4); //1e-4

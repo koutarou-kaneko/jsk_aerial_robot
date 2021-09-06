@@ -273,7 +273,7 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
     ff_msg.x = approach_force*cos(plane_axis_rad_+M_PI);
     ff_msg.y = approach_force*sin(plane_axis_rad_+M_PI);
     ff_wrench_noreset_pub_.publish(ff_msg);
-    ros::Duration(0.5).sleep();
+    ros::Duration(0.3).sleep();
   }
   ROS_INFO("finish wall touching");
   

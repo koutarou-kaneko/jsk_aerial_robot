@@ -328,7 +328,7 @@ if __name__ == '__main__':
     if hyd.test_mode == 'J':
         #hyd.joint_publish([0.5, 1.57, 1.57]) #old
         #hyd.ik_target([0.1, 0.4, -2.7],100,0) #1.57
-        hyd.ik_target([0.1, 0.7, -3.1],10,0)
+        hyd.ik_target([0.1, 0.7, -3.1],50,0)
         rospy.sleep(rospy.Duration(2.0))
         hyd.change_yaw(0)
         rospy.sleep(rospy.Duration(2.0))
