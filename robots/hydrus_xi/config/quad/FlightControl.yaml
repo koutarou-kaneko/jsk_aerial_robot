@@ -56,4 +56,4 @@ controller:
     acc_root_shock_thres: 14.5
     plane_axis_rad: -1.5708
     contact_point_x: 0.2
-    contact_point_y: 1.0
+    contact_point_y: 0.85
