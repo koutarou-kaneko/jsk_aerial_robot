@@ -45,7 +45,7 @@ class HydrusCommander():
         #self.cover_pose = rospy.get_param('~cover_pose')
         #self.close_pose = rospy.get_param('~close_pose')
         self.nav_mode = nav_mode
-        self.errors = [False, False, False]
+        self.errors = [False, False, False, False, False, False, False]
         self.joint_angles_now = [1.4, 1.57, 1.57]
         self.last_pose = [0.05, -0.25, 1.57]
 
@@ -220,7 +220,7 @@ class HydrusCommander():
                 joints[0]=self.joint_sanitize(np.arctan2(l23[1], l23[0])+theta)
                 joints[1]=self.joint_sanitize(-2*theta)
                 joints[2]=self.joint_sanitize(des_yaw+i*d-joints[0]-joints[1])
-                if (joints < 1.53).all() and (joints > -1.53).all():
+                if (joints < 1.48).all() and (joints > -1.48).all():
                     q=tf.transformations.quaternion_about_axis(des_yaw+i*d, (0,0,1))
                     self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
                     print "Found solution: tol +%d" % i
@@ -231,7 +231,7 @@ class HydrusCommander():
                 joints[0]=self.joint_sanitize(np.arctan2(l23[1], l23[0])-theta)
                 joints[1]=self.joint_sanitize(2*theta)
                 joints[2]=self.joint_sanitize(des_yaw+i*d-joints[0]-joints[1])
-                if (joints < 1.53).all() and (joints > -1.53).all():
+                if (joints < 1.48).all() and (joints > -1.48).all():
                     q=tf.transformations.quaternion_about_axis(des_yaw+i*d, (0,0,1))
                     self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
                     print "Found solution: tol +%d" % i
@@ -245,7 +245,7 @@ class HydrusCommander():
                 joints[0]=self.joint_sanitize(np.arctan2(l23[1], l23[0])+theta)
                 joints[1]=self.joint_sanitize(-2*theta)
                 joints[2]=self.joint_sanitize(des_yaw-i*d-joints[0]-joints[1])
-                if (joints < 1.53).all() and (joints > -1.53).all():
+                if (joints < 1.48).all() and (joints > -1.48).all():
                     q=tf.transformations.quaternion_about_axis(des_yaw-i*d, (0,0,1))
                     self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
                     print "Found solution: tol -%d" % i
@@ -256,7 +256,7 @@ class HydrusCommander():
                 joints[0]=self.joint_sanitize(np.arctan2(l23[1], l23[0])-theta)
                 joints[1]=self.joint_sanitize(2*theta)
                 joints[2]=self.joint_sanitize(des_yaw-i*d-joints[0]-joints[1])
-                if (joints < 1.53).all() and (joints > -1.53).all():
+                if (joints < 1.48).all() and (joints > -1.48).all():
                     q=tf.transformations.quaternion_about_axis(des_yaw-i*d, (0,0,1))
                     self.manip_pub.publish(PoseStamped(header=Header(stamp=rospy.Time.now(), frame_id='hydrus_xi/link1'),pose=Pose(position=Point(x=des_x-(l1-l2), y=des_y, z=0), orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))))
                     print "Found solution: tol -%d" % i
@@ -360,9 +360,9 @@ if __name__ == '__main__':
         hyd.move_to(0.4,-0.3)
     elif hyd.test_mode == 'N':
         hyd.ik_target([0.1, 0.7, -3.1],50,0)
-        rospy.sleep(rospy.Duration(2.0))
+        rospy.sleep(rospy.Duration(4.0))
         hyd.change_yaw(-1.57)
-        rospy.sleep(rospy.Duration(2.0))
+        rospy.sleep(rospy.Duration(3.0))
         #0.85m away from the wall
         hyd.move_to(0.2,-0.2)
     
