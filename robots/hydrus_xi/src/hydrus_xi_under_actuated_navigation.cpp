@@ -661,11 +661,11 @@ bool HydrusXiUnderActuatedNavigator::plan()
       joints_t_to_send.z = jt[j3_index];
       joints_torque_pub_.publish(joints_t_to_send);
 
-      /*debug print to make sure that optimization is to blame
       robot_model_real_->calcWrenchMatrixOnRoot();
       auto Q = robot_model_real_->calcWrenchMatrixOnCoG();
       Eigen::Vector4d thr(opt_static_thrusts_.at(0), opt_static_thrusts_.at(1), opt_static_thrusts_.at(2), opt_static_thrusts_.at(3));
-      ROS_INFO_STREAM("opt thrust wrench recalc: " << Q*thr);
+      ROS_INFO_STREAM("recalc: " << (Q*thr).transpose());
+      /*debug print to make sure that optimization is to blame
       */
 
       if (result != 4 and result != 5) {
