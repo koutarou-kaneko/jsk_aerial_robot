@@ -62,6 +62,7 @@ void DynamixelSerial::init(UART_HandleTypeDef* huart, I2C_HandleTypeDef* hi2c, o
 
 	cmdSyncWritePositionGains();
 	cmdSyncWriteProfileVelocity();
+	cmdWriteProfileAcceleration(0); // Set joint servo profile acc into slow value manually
 
 	getHomingOffset(); // This operation always fails after the servo motor is ignited first
 	getHomingOffset(); // So this line is necessary
@@ -832,6 +833,17 @@ void DynamixelSerial::cmdWriteProfileVelocity(uint8_t servo_index)
 	cmdWrite(servo_[servo_index].id_, CTRL_PROFILE_VELOCITY, parameters, PROFILE_VELOCITY_BYTE_LEN);
 }
 
+void DynamixelSerial::cmdWriteProfileAcceleration(uint8_t servo_index)
+{
+	uint16_t acc = 6; // 1300rev/min^2, less reaction torque than default
+	uint8_t parameters[PROFILE_VELOCITY_BYTE_LEN];
+	parameters[0] = (uint8_t)(acc & 0xFF);
+	parameters[1] = (uint8_t)((acc >> 8) & 0xFF);
+	parameters[2] = (uint8_t)((acc >> 16) & 0xFF);
+	parameters[3] = (uint8_t)((acc >> 24) & 0xFF);
+	cmdWrite(servo_[servo_index].id_, CTRL_PROFILE_ACCELERATION, parameters, PROFILE_ACCELERATION_BYTE_LEN);
+}
+
 void DynamixelSerial::cmdWriteStatusReturnLevel(uint8_t id, uint8_t set)
 {
 	uint8_t param = set;
@@ -943,6 +955,21 @@ void DynamixelSerial::cmdSyncWriteProfileVelocity()
 	}
 
 	cmdSyncWrite(CTRL_PROFILE_VELOCITY, parameters, PROFILE_VELOCITY_BYTE_LEN);
+}
+
+void DynamixelSerial::cmdSyncWriteProfileAcceleration()
+{
+	uint8_t parameters[INSTRUCTION_PACKET_SIZE];
+
+	uint16_t acc = 6;
+	for (unsigned int i = 0; i < servo_num_; i++) {
+		parameters[i * 4 + 0] = (uint8_t)(acc & 0xFF);
+		parameters[i * 4 + 1] = (uint8_t)((acc >> 8) & 0xFF);
+		parameters[i * 4 + 2] = (uint8_t)((acc >> 16) & 0xFF);
+		parameters[i * 4 + 3] = (uint8_t)((acc >> 24) & 0xFF);
+	}
+
+	cmdSyncWrite(CTRL_PROFILE_ACCELERATION, parameters, PROFILE_ACCELERATION_BYTE_LEN);
 }
 
 void DynamixelSerial::cmdSyncWriteTorqueEnable()

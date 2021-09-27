@@ -127,6 +127,7 @@
 #define HARDWARE_ERROR_STATUS_BYTE_LEN	1
 #define POSITION_GAINS_BYTE_LEN			6
 #define PROFILE_VELOCITY_BYTE_LEN		4
+#define PROFILE_ACCELERATION_BYTE_LEN		4
 #define CURRENT_LIMIT_BYTE_LEN			2
 
 //#########################################################################
@@ -375,6 +376,7 @@ private:
   inline void cmdWriteHomingOffset(uint8_t servo_index);
   inline void cmdWritePositionGains(uint8_t servo_index);
   inline void cmdWriteProfileVelocity(uint8_t servo_index);
+  inline void cmdWriteProfileAcceleration(uint8_t servo_index);
   inline void cmdWriteStatusReturnLevel(uint8_t id, uint8_t set);
   inline void cmdWriteTorqueEnable(uint8_t servo_index);
   inline void cmdSyncReadCurrentLimit(bool send_all = true);
@@ -390,6 +392,7 @@ private:
   inline void cmdSyncWriteLed();
   inline void cmdSyncWritePositionGains();
   inline void cmdSyncWriteProfileVelocity();
+  inline void cmdSyncWriteProfileAcceleration();
   inline void cmdSyncWriteTorqueEnable();
 
   inline void setStatusReturnLevel();
