@@ -52,7 +52,7 @@ void HydrusTiltedLQIController::controlCore()
   Eigen::VectorXd f;
 
 
-  if (not horizontal_force_mode_) {
+  if (not tilted_model_->flight_mode_ == tilted_model_->FLIGHT_MODE_FULL) {
     target_pitch_ = atan2(target_acc_dash.x(), target_acc_dash.z());
     target_roll_ = atan2(-target_acc_dash.y(), sqrt(target_acc_dash.x() * target_acc_dash.x() + target_acc_dash.z() * target_acc_dash.z()));
 
@@ -92,7 +92,7 @@ void HydrusTiltedLQIController::allocateYawTerm()
 {
   Eigen::VectorXd target_thrust_yaw_term = Eigen::VectorXd::Zero(motor_num_);
   Eigen::Vector4d p;
-  if (horizontal_force_mode_ and wall_touching_) {
+  if (tilted_model_->flight_mode_ == tilted_model_->FLIGHT_MODE_FULL) {
     auto cog = robot_model_->getCog<Eigen::Affine3d>();
     //auto ff_f_cog = cog.rotation().inverse() * Eigen::Vector3d(ff_f_x_, ff_f_y_, 0);
     double compensate = robot_model_->getMass() * (cog.translation()(1)*tilted_model_->ff_f_x_ - (cog.translation()(0)+0.08)*tilted_model_->ff_f_y_);
@@ -227,43 +227,26 @@ void HydrusTiltedLQIController::rosParamInit()
 
 bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
 {
-  //horizontal_force_mode_ = true;
-  wall_touching_ = false;
-  //navigator_->horizontal_mode_ = true;
-  //tilted_model_->horizontal_mode_ = true;
   ROS_INFO("start wall touching");
   double approach_force = 0.3;
   geometry_msgs::Vector3 ff_msg;
   aerial_robot_msgs::FlightNav nav_msg;
   nav_msg.target = nav_msg.COG;
   nav_msg.pos_xy_nav_mode = 2; //pos
-  //nav_msg.target_vel_x = 0;
-  //nav_msg.target_vel_y = 0.35;
   nav_msg.target_pos_x = contact_point_x_+0.7*cos(plane_axis_rad_);
   nav_msg.target_pos_y = contact_point_y_+0.7*sin(plane_axis_rad_);
   nav_msg_pub_.publish(nav_msg);
   int timeout = 0;
-  //while (not wall_touching_) {
   while (true) {
     if (timeout++ > 40) {
       ROS_ERROR("timeout");
-      /*
-      horizontal_force_mode_ = false;
-      wall_touching_ = false;
-      navigator_->horizontal_mode_ = false;
-      tilted_model_->horizontal_mode_ = false;
-      nav_msg.target_vel_x = 0;
-      nav_msg.target_vel_y = 0;
-      nav_msg_pub_.publish(nav_msg);
-      return false;
-      */
-      break;
+        break;
     }
     ros::Duration(0.1).sleep();
   }
   horizontal_force_mode_ = true;
-  navigator_->horizontal_mode_ = true;
-  tilted_model_->horizontal_mode_ = true;
+  navigator_->flight_mode_ = navigator_->FLIGHT_MODE_TRANSITION_FOR;
+  tilted_model_->flight_mode_ = navigator_->FLIGHT_MODE_TRANSITION_FOR;
   ff_msg.x = approach_force*cos(plane_axis_rad_+M_PI);
   ff_msg.y = approach_force*sin(plane_axis_rad_+M_PI);
   ff_msg.z = 0;
@@ -282,8 +265,6 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
 
 bool HydrusTiltedLQIController::setHorizontalForceMode(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
 {
-  horizontal_force_mode_ = true;
-  wall_touching_ = false;
   navigator_->horizontal_mode_ = true;
   tilted_model_->horizontal_mode_ = true;
   ROS_INFO("horizontal force mode set");
@@ -292,8 +273,6 @@ bool HydrusTiltedLQIController::setHorizontalForceMode(std_srvs::Empty::Request&
 
 bool HydrusTiltedLQIController::resetHorizontalForceMode(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
 {
-  horizontal_force_mode_ = false;
-  wall_touching_ = false;
   navigator_->horizontal_mode_ = false;
   tilted_model_->horizontal_mode_ = false;
   ROS_INFO("came back to normal control mode");

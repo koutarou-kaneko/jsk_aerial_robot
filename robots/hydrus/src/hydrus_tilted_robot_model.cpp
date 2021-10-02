@@ -43,7 +43,7 @@ void HydrusTiltedRobotModel::calcJointTorque(Eigen::VectorXd horizontal_mode_thr
   // thrust
   for (int i = 0; i < rotor_num; ++i) {
     Eigen::VectorXd wrench;
-    if (not horizontal_mode_) {
+    if (not flight_mode_ == FLIGHT_MODE_FULL) {
       wrench = thrust_wrench_units_.at(i) * static_thrust_(i);
     } else {
       wrench = thrust_wrench_units_.at(i) * horizontal_mode_thrust(i);
@@ -100,7 +100,8 @@ void HydrusTiltedRobotModel::updateRobotModelImpl(const KDL::JntArray& joint_pos
   Eigen::VectorXd f = cog_rot_inv * wrench_mat_on_cog.topRows(3) * getStaticThrust();
 
   double f_norm_roll, f_norm_pitch;
-  if (not horizontal_mode_) {
+  if (not flight_mode_ == FLIGHT_MODE_FULL) {
+    // Underactuated control mode
     f_norm_roll = atan2(f(1), f(2));
     f_norm_pitch = atan2(-f(0), sqrt(f(1)*f(1) + f(2)*f(2)));
   } else {

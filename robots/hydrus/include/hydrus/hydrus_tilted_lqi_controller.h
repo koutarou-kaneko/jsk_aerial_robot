@@ -66,7 +66,7 @@ namespace aerial_robot_control
     boost::shared_ptr<aerial_robot_navigation::BaseNavigator> navigator_;
     double trans_constraint_weight_;
     double att_control_weight_;
-    bool horizontal_force_mode_ = false, wall_touching_ = false;
+    bool wall_touching_ = false;
     double acc_root_shock_thres_ = 20.0;
     double plane_axis_rad_ = 0.0;
     double contact_point_x_ = 0.3;

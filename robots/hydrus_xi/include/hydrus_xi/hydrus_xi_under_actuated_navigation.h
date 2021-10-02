@@ -80,7 +80,6 @@ namespace aerial_robot_navigation
     Eigen::Vector3d ff_f_xy_, ff_f_xy_world_, ff_f_xy_root_;
     boost::shared_ptr<HydrusTiltedRobotModel> robot_model_real_;
     boost::shared_ptr<aerial_robot_estimation::StateEstimator> estimator_;
-    bool vectoring_reset_flag_ = false;
   private:
     ros::Publisher gimbal_ctrl_pub_, joints_torque_pub_;
     ros::Subscriber ff_wrench_sub_, ff_wrench_noreset_sub_, joint_fb_sub_;
