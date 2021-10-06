@@ -21,7 +21,6 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   //additional
   ff_wrench_pub_ = nh_.advertise<geometry_msgs::Vector3>("ff_wrench", 1);
   nav_msg_pub_ = nh_.advertise<aerial_robot_msgs::FlightNav>("uav/nav", 1);
-  ff_wrench_noreset_pub_ = nh_.advertise<geometry_msgs::Vector3>("ff_wrench_noreset", 1);
   acc_root_sub_ = nh.subscribe("sensor_plugin/imu1/acc_root", 10, &HydrusTiltedLQIController::accRootCallback, this);
 
   //param
@@ -227,8 +226,8 @@ void HydrusTiltedLQIController::rosParamInit()
 
 bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
 {
-  ROS_INFO("start wall touching");
-  double approach_force = 0.3;
+  ROS_INFO("[Wall] start wall touching");
+  double approach_force = 0.5;
   geometry_msgs::Vector3 ff_msg;
   aerial_robot_msgs::FlightNav nav_msg;
   nav_msg.target = nav_msg.COG;
@@ -236,45 +235,50 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
   nav_msg.target_pos_x = contact_point_x_+0.7*cos(plane_axis_rad_);
   nav_msg.target_pos_y = contact_point_y_+0.7*sin(plane_axis_rad_);
   nav_msg_pub_.publish(nav_msg);
-  int timeout = 0;
-  while (true) {
-    if (timeout++ > 40) {
-      ROS_ERROR("timeout");
-        break;
-    }
-    ros::Duration(0.1).sleep();
-  }
-  horizontal_force_mode_ = true;
-  navigator_->flight_mode_ = navigator_->FLIGHT_MODE_TRANSITION_FOR;
-  tilted_model_->flight_mode_ = navigator_->FLIGHT_MODE_TRANSITION_FOR;
+  ros::Duration(3).sleep();
+  ROS_WARN("[Wall] start transition");
   ff_msg.x = approach_force*cos(plane_axis_rad_+M_PI);
   ff_msg.y = approach_force*sin(plane_axis_rad_+M_PI);
   ff_msg.z = 0;
   ff_wrench_pub_.publish(ff_msg);
-  ros::Duration(1).sleep();
+  ros::Duration(0.1).sleep();
+  tilted_model_->flight_mode_ = tilted_model_->FLIGHT_MODE_TRANSITION_FOR;
+  tilted_model_->vectoring_reset_flag_ = true;
+  // Wait for conversion
+  int timeout = 0;
+  while (true) {
+    if (timeout++ > 40) {
+      ROS_ERROR("[Wall] could not converge, timeout");
+      break;
+    } else if (tilted_model_->flight_mode_ == tilted_model_->FLIGHT_MODE_FULL) {
+      ROS_WARN("[Wall] converged");
+      break;
+    }
+    ros::Duration(0.1).sleep();
+  }
+  // Apply force to the wall
   for (int i=0; approach_force < 1.0; approach_force+=0.1, i++) {
     ff_msg.x = approach_force*cos(plane_axis_rad_+M_PI);
     ff_msg.y = approach_force*sin(plane_axis_rad_+M_PI);
-    ff_wrench_noreset_pub_.publish(ff_msg);
+    ff_wrench_pub_.publish(ff_msg);
     ros::Duration(0.3).sleep();
   }
-  ROS_INFO("finish wall touching");
+  ROS_INFO("[Wall] finish wall touching");
   
   return true;
 }
 
 bool HydrusTiltedLQIController::setHorizontalForceMode(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
 {
-  navigator_->horizontal_mode_ = true;
-  tilted_model_->horizontal_mode_ = true;
+  tilted_model_->flight_mode_ = tilted_model_->FLIGHT_MODE_TRANSITION_FOR;
+  tilted_model_->vectoring_reset_flag_ = true;
   ROS_INFO("horizontal force mode set");
   return true;
 }
 
 bool HydrusTiltedLQIController::resetHorizontalForceMode(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
 {
-  navigator_->horizontal_mode_ = false;
-  tilted_model_->horizontal_mode_ = false;
+  tilted_model_->flight_mode_ = tilted_model_->FLIGHT_MODE_HOVERING; // Temporal solution, need implementation of backward transition
   ROS_INFO("came back to normal control mode");
   return true;
 }
