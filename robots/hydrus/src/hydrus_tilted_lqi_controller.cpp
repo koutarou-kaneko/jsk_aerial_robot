@@ -50,7 +50,6 @@ void HydrusTiltedLQIController::controlCore()
   
   Eigen::VectorXd f;
 
-
   if (not tilted_model_->flight_mode_ == tilted_model_->FLIGHT_MODE_FULL) {
     target_pitch_ = atan2(target_acc_dash.x(), target_acc_dash.z());
     target_roll_ = atan2(-target_acc_dash.y(), sqrt(target_acc_dash.x() * target_acc_dash.x() + target_acc_dash.z() * target_acc_dash.z()));

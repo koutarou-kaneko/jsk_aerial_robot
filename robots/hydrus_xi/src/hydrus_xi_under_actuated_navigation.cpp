@@ -606,6 +606,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
           opt_gimbal_angles_tmp_ = {opt_gimbal_angles_.at(0), opt_gimbal_angles_.at(1), opt_gimbal_angles_.at(2), opt_gimbal_angles_.at(3)}; // Store
           opt_gimbal_angles_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)}; // Global solution, not to be passed directly to the real machine
           robot_model_real_->vectoring_reset_flag_ = false;
+          ROS_INFO_STREAM("Global res:" << result << " optim: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3]);
         } else { // Hovering Mode Transition Process
           double thres = 0.1;
           transitioning = false;
@@ -619,12 +620,12 @@ bool HydrusXiUnderActuatedNavigator::plan()
             }
             if (std::abs(gimbal_diff) > thres) {
               if (gimbal_diff > 0) {
-                lb.at(i) = joint_pos_fb_.at(i) + 0.2*gimbal_delta_angle_;
-                ub.at(i) = joint_pos_fb_.at(i) + 1.2*gimbal_delta_angle_;
+                lb.at(i) = joint_pos_fb_.at(i) + 0.5*gimbal_delta_angle_;
+                ub.at(i) = joint_pos_fb_.at(i) + 1.5*gimbal_delta_angle_;
                 opt_gimbal_angles_tmp_[i] = joint_pos_fb_.at(i) + gimbal_delta_angle_;
               } else {
-                lb.at(i) = joint_pos_fb_.at(i) - 1.2*gimbal_delta_angle_;
-                ub.at(i) = joint_pos_fb_.at(i) - 0.2*gimbal_delta_angle_;
+                lb.at(i) = joint_pos_fb_.at(i) - 1.5*gimbal_delta_angle_;
+                ub.at(i) = joint_pos_fb_.at(i) - 0.5*gimbal_delta_angle_;
                 opt_gimbal_angles_tmp_[i] = joint_pos_fb_.at(i) - gimbal_delta_angle_;
               }
               transitioning = true;
@@ -670,12 +671,14 @@ bool HydrusXiUnderActuatedNavigator::plan()
       joints_t_to_send.z = jt[j3_index];
       joints_torque_pub_.publish(joints_t_to_send);
 
-      robot_model_real_->calcWrenchMatrixOnRoot();
-      auto Q = robot_model_real_->calcWrenchMatrixOnCoG();
-      Eigen::Vector4d thr(opt_static_thrusts_.at(0), opt_static_thrusts_.at(1), opt_static_thrusts_.at(2), opt_static_thrusts_.at(3));
-      ROS_INFO_STREAM("recalc: " << (Q*thr).transpose());
-      /*debug print to make sure that optimization is to blame
-      */
+      if (flight_mode == robot_model_real_->FLIGHT_MODE_FULL) {
+        robot_model_real_->calcWrenchMatrixOnRoot();
+        auto Q = robot_model_real_->calcWrenchMatrixOnCoG();
+        Eigen::Vector4d thr(opt_static_thrusts_.at(0), opt_static_thrusts_.at(1), opt_static_thrusts_.at(2), opt_static_thrusts_.at(3));
+        ROS_INFO_STREAM("recalc: " << (Q*thr).transpose());
+        /*debug print to make sure that optimization is to blame
+        */
+      }
 
       if (result != 4 and result != 5) {
         robot_model_real_->vectoring_reset_flag_ = true;
