@@ -50,7 +50,7 @@ void HydrusTiltedLQIController::controlCore()
   
   Eigen::VectorXd f;
 
-  if (not tilted_model_->flight_mode_ == tilted_model_->FLIGHT_MODE_FULL) {
+  if (not (tilted_model_->flight_mode_ == tilted_model_->FLIGHT_MODE_FULL)) {
     target_pitch_ = atan2(target_acc_dash.x(), target_acc_dash.z());
     target_roll_ = atan2(-target_acc_dash.y(), sqrt(target_acc_dash.x() * target_acc_dash.x() + target_acc_dash.z() * target_acc_dash.z()));
 
@@ -58,7 +58,6 @@ void HydrusTiltedLQIController::controlCore()
   } else {
     target_pitch_ = 0;
     target_roll_ = 0;
-
     // Don't calc here when optimize all axis
     //tilted_model_->calc3DoFThrust(ff_f_x_, ff_f_y_);
     f = tilted_model_->get3DoFThrust();
@@ -246,7 +245,7 @@ bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& requ
   // Wait for conversion
   int timeout = 0;
   while (true) {
-    if (timeout++ > 40) {
+    if (timeout++ > 60) {
       ROS_ERROR("[Wall] could not converge, timeout");
       break;
     } else if (tilted_model_->flight_mode_ == tilted_model_->FLIGHT_MODE_FULL) {

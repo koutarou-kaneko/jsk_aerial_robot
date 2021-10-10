@@ -396,7 +396,7 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   vectoring_nl_solver_->set_xtol_rel(1e-4); //1e-4
   vectoring_nl_solver_h_->set_xtol_rel(1e-4); //1e-4
   vectoring_nl_solver_->set_maxeval(1000); // 1000 times
-  vectoring_nl_solver_h_->set_maxeval(1000); // 1000 times
+  vectoring_nl_solver_h_->set_maxeval(3000); // 1000 times
 
   opt_gimbal_angles_tmp_ = {0, 0, 0, 0};
   opt_static_thrusts_ = {0, 0, 0, 0};
@@ -529,7 +529,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
     {
       double delta_angle = gimbal_delta_angle_;
 
-      if((not flight_mode == robot_model_real_->FLIGHT_MODE_FULL) and (!robot_model_for_plan_->stabilityCheck(false)))
+      if((not (flight_mode == robot_model_real_->FLIGHT_MODE_FULL)) and (!robot_model_for_plan_->stabilityCheck(false)))
         {
           delta_angle = M_PI; // reset
         }
