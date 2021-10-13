@@ -322,7 +322,7 @@ if __name__ == '__main__':
         hyd.arm_and_takeoff()
         rospy.sleep(rospy.Duration(18.0))
         #hyd.change_yaw(1.57)
-        embed()
+        #embed()
         rospy.sleep(rospy.Duration(2.0))
     
     if hyd.test_mode == 'J':

@@ -608,7 +608,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
           robot_model_real_->vectoring_reset_flag_ = false;
           ROS_INFO_STREAM("Global res:" << result << " optim: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3]);
         } else { // Hovering Mode Transition Process
-          double thres = 0.1;
+          double thres = gimbal_delta_angle_; // koushinaito shindou surukamo sirenai
           transitioning = false;
           for (int i=0; i<4; i++) {
             auto gimbal_diff = opt_gimbal_angles_[i] - joint_pos_fb_[i];
@@ -620,13 +620,13 @@ bool HydrusXiUnderActuatedNavigator::plan()
             }
             if (std::abs(gimbal_diff) > thres) {
               if (gimbal_diff > 0) {
-                lb.at(i) = joint_pos_fb_.at(i) + 0.5*gimbal_delta_angle_;
-                ub.at(i) = joint_pos_fb_.at(i) + 1.5*gimbal_delta_angle_;
-                opt_gimbal_angles_tmp_[i] = joint_pos_fb_.at(i) + gimbal_delta_angle_;
+                lb.at(i) = joint_pos_fb_.at(i) + 0.4*gimbal_delta_angle_;
+                ub.at(i) = joint_pos_fb_.at(i) + gimbal_delta_angle_;
+                opt_gimbal_angles_tmp_[i] = joint_pos_fb_.at(i) + 0.7*gimbal_delta_angle_;
               } else {
-                lb.at(i) = joint_pos_fb_.at(i) - 1.5*gimbal_delta_angle_;
-                ub.at(i) = joint_pos_fb_.at(i) - 0.5*gimbal_delta_angle_;
-                opt_gimbal_angles_tmp_[i] = joint_pos_fb_.at(i) - gimbal_delta_angle_;
+                lb.at(i) = joint_pos_fb_.at(i) - gimbal_delta_angle_;
+                ub.at(i) = joint_pos_fb_.at(i) - 0.4*gimbal_delta_angle_;
+                opt_gimbal_angles_tmp_[i] = joint_pos_fb_.at(i) - 0.7*gimbal_delta_angle_;
               }
               transitioning = true;
             }
