@@ -98,7 +98,14 @@ namespace
 
     variant = sqrt(variant / force_v.size());
 
-    return planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + planner->getForceVariantWeight() / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
+    double term1 = planner->getForceNormWeight() * robot_model->getMass() / force_v.norm();
+    double term2 = planner->getForceVariantWeight() / variant;
+    double term3 = planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
+    planner->obj_func_elems_[0] = term1+term2+term3;
+    planner->obj_func_elems_[1] = term1;
+    planner->obj_func_elems_[2] = term2;
+    planner->obj_func_elems_[3] = term3;
+    return term1 + term2 + term3;
   }
 
   double maximizeFCTMinWide(const std::vector<double> &x_wide, std::vector<double> &grad, void *planner_ptr)
@@ -164,8 +171,15 @@ namespace
       ROS_INFO_STREAM_THROTTLE(1, "obj func elem: " << -planner->getJointTorqueWeight() * (jt[j1_index]*jt[j1_index]+jt[j2_index]*jt[j2_index]) << " " << planner->getForceNormWeight() * robot_model->getMass() / force_v.norm() << " " << planner->getForceVariantWeight() / variant << " " << planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin());
       return -planner->getJointTorqueWeight() * (jt[j1_index]*jt[j1_index]+jt[j2_index]*jt[j2_index]) + planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + planner->getForceVariantWeight() / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
     } else {
-      ROS_INFO_STREAM_THROTTLE(1, "obj func elem: " << planner->getForceNormWeight() * robot_model->getMass() / force_v.norm() << " " << planner->getForceVariantWeight() / variant << " " << planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin());
-      return planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + planner->getForceVariantWeight() / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
+      //ROS_INFO_STREAM_THROTTLE(1, "obj func elem: " << planner->getForceNormWeight() * robot_model->getMass() / force_v.norm() << " " << planner->getForceVariantWeight() / variant << " " << planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin());
+      double term1 = planner->getForceNormWeight() * robot_model->getMass() / force_v.norm();
+      double term2 = planner->getForceVariantWeight() / variant;
+      double term3 = planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
+      planner->obj_func_elems_[0] = term1+term2+term3;
+      planner->obj_func_elems_[1] = term1;
+      planner->obj_func_elems_[2] = term2;
+      planner->obj_func_elems_[3] = term3;
+      return term1 + term2 + term3;
     }
   }
 
@@ -591,6 +605,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
         opt_x_ = {opt_gimbal_angles_.at(0), opt_gimbal_angles_.at(1), opt_gimbal_angles_.at(2), opt_gimbal_angles_.at(3), opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
         result = nl_solver_now->optimize(opt_x_, max_f);
         opt_gimbal_angles_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)};
+        ROS_INFO_STREAM("obj sum: " << obj_func_elems_[0] << " e: " << obj_func_elems_[1] << " " << obj_func_elems_[2] << " " << obj_func_elems_[3]);
       } else if (flight_mode == robot_model_real_->FLIGHT_MODE_TRANSITION_FOR) {
         if (vectoring_reset_flag) {
           for(int i = 0; i < opt_gimbal_angles_.size(); i++) {
@@ -636,6 +651,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
             nl_solver_now->set_upper_bounds(ub);
             result = nl_solver_now->optimize(opt_gimbal_angles_tmp_, max_f);
             ROS_INFO_STREAM("trans: " << opt_gimbal_angles_tmp_[0] << " " << opt_gimbal_angles_tmp_[1] << " " << opt_gimbal_angles_tmp_[2] << " " << opt_gimbal_angles_tmp_[3]);
+            ROS_INFO_STREAM("obj s: " << obj_func_elems_[0] << " e: " << obj_func_elems_[1] << " " << obj_func_elems_[2] << " " << obj_func_elems_[3]);
           } else {
             // Converged
             ROS_INFO("Converged, transition flag reset");
