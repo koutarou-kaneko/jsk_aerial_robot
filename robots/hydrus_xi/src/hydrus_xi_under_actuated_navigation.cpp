@@ -171,10 +171,10 @@ namespace
       ROS_INFO_STREAM_THROTTLE(1, "obj func elem: " << -planner->getJointTorqueWeight() * (jt[j1_index]*jt[j1_index]+jt[j2_index]*jt[j2_index]) << " " << planner->getForceNormWeight() * robot_model->getMass() / force_v.norm() << " " << planner->getForceVariantWeight() / variant << " " << planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin());
       return -planner->getJointTorqueWeight() * (jt[j1_index]*jt[j1_index]+jt[j2_index]*jt[j2_index]) + planner->getForceNormWeight() * robot_model->getMass() / force_v.norm()  + planner->getForceVariantWeight() / variant + planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
     } else {
-      //ROS_INFO_STREAM_THROTTLE(1, "obj func elem: " << planner->getForceNormWeight() * robot_model->getMass() / force_v.norm() << " " << planner->getForceVariantWeight() / variant << " " << planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin());
       double term1 = planner->getForceNormWeight() * robot_model->getMass() / force_v.norm();
-      double term2 = planner->getForceVariantWeight() / variant;
+      double term2 = planner->getForceVariantWeight() / (variant+planner->getForceVariantWeight()); // Limit to 1.0
       double term3 = planner->getFCTMinWeight() * robot_model->getFeasibleControlTMin();
+      // For debug output
       planner->obj_func_elems_[0] = term1+term2+term3;
       planner->obj_func_elems_[1] = term1;
       planner->obj_func_elems_[2] = term2;
@@ -621,7 +621,8 @@ bool HydrusXiUnderActuatedNavigator::plan()
           opt_gimbal_angles_tmp_ = {opt_gimbal_angles_.at(0), opt_gimbal_angles_.at(1), opt_gimbal_angles_.at(2), opt_gimbal_angles_.at(3)}; // Store
           opt_gimbal_angles_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)}; // Global solution, not to be passed directly to the real machine
           robot_model_real_->vectoring_reset_flag_ = false;
-          ROS_INFO_STREAM("Global res:" << result << " optim: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3]);
+          ROS_INFO_STREAM("Global res:" << result << " optim: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3] << " " << opt_x_.at(4) << " " << opt_x_.at(5) << " " << opt_x_.at(6) << " " << opt_x_.at(7));
+          ROS_INFO_STREAM("glob obj s: " << obj_func_elems_[0] << " e: " << obj_func_elems_[1] << " " << obj_func_elems_[2] << " " << obj_func_elems_[3]);
         } else { // Hovering Mode Transition Process
           double thres = gimbal_delta_angle_; // koushinaito shindou surukamo sirenai
           transitioning = false;

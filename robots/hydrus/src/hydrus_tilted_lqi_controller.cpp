@@ -225,7 +225,7 @@ void HydrusTiltedLQIController::rosParamInit()
 bool HydrusTiltedLQIController::startWallTouching(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
 {
   ROS_INFO("[Wall] start wall touching");
-  double approach_force = 0.8;
+  double approach_force = 0.99;
   geometry_msgs::Vector3 ff_msg;
   aerial_robot_msgs::FlightNav nav_msg;
   nav_msg.target = nav_msg.COG;
