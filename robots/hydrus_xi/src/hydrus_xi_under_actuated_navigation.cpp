@@ -393,6 +393,7 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   /* nonlinear optimization for vectoring angles planner */
   vectoring_nl_solver_ = boost::make_shared<nlopt::opt>(nlopt::LN_COBYLA, control_gimbal_names_.size());
   vectoring_nl_solver_h_ = boost::make_shared<nlopt::opt>(nlopt::LN_COBYLA, 2*control_gimbal_names_.size());
+  vectoring_nl_solver_g_ = boost::make_shared<nlopt::opt>(nlopt::GN_ISRES, 2*control_gimbal_names_.size());
   if(maximize_yaw_) {
     vectoring_nl_solver_->set_max_objective(maximizeMinYawTorque, this);
     vectoring_nl_solver_->add_inequality_constraint(fcTMinConstraint, this, 1e-8);
@@ -411,6 +412,12 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   vectoring_nl_solver_h_->set_xtol_rel(1e-4); //1e-4
   vectoring_nl_solver_->set_maxeval(1000); // 1000 times
   vectoring_nl_solver_h_->set_maxeval(3000); // 1000 times
+
+  vectoring_nl_solver_g_->set_max_objective(maximizeFCTMinWide, this);
+  vectoring_nl_solver_g_->add_equality_mconstraint(kinematicsConstraint, this, {0.05, 0.05, 0.1, 0.02, 0.02, 0.05}/*std::vector<double>(6, 1e-2)*/);
+  vectoring_nl_solver_g_->set_xtol_rel(1e-2); //1e-4
+  vectoring_nl_solver_g_->set_ftol_rel(1e-2); //1e-4
+  vectoring_nl_solver_g_->set_maxeval(10000); // 1000 times
 
   opt_gimbal_angles_tmp_ = {0, 0, 0, 0};
   opt_static_thrusts_ = {0, 0, 0, 0};
@@ -436,7 +443,7 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   linear_cons.resize(rotor_num, rotor_num);
   for(int i = 0; i < linear_cons.cols(); i++) linear_cons.insert(i,i) = 1;
 
-  Eigen::VectorXd lower_bound = Eigen::VectorXd::Ones(rotor_num) * 8.9;
+  Eigen::VectorXd lower_bound = Eigen::VectorXd::Ones(rotor_num) * 8.0;
   Eigen::VectorXd upper_bound = Eigen::VectorXd::Ones(rotor_num) * robot_model->getThrustUpperLimit();
 
   yaw_range_lp_solver_.data()->setHessianMatrix(hessian);
@@ -534,7 +541,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
   std::vector<double> ubh(2*control_gimbal_indices_.size(), M_PI);
 
   for (int i=0; i<opt_gimbal_angles_.size(); i++) {
-    lbh.at(4+i) = 8.9;
+    lbh.at(4+i) = 8.0;
     ubh.at(4+i) = robot_model_real_->getThrustUpperLimit();
   }
 
@@ -607,17 +614,17 @@ bool HydrusXiUnderActuatedNavigator::plan()
         opt_gimbal_angles_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)};
         ROS_INFO_STREAM("obj sum: " << obj_func_elems_[0] << " e: " << obj_func_elems_[1] << " " << obj_func_elems_[2] << " " << obj_func_elems_[3]);
       } else if (flight_mode == robot_model_real_->FLIGHT_MODE_TRANSITION_FOR) {
-        if (vectoring_reset_flag) {
+        if (vectoring_reset_flag) { // Global optimization for once
           for(int i = 0; i < opt_gimbal_angles_.size(); i++) {
-            lbh.at(i) = opt_gimbal_angles_.at(i) - M_PI;
-            ubh.at(i) = opt_gimbal_angles_.at(i) + M_PI;
+            lbh.at(i) = opt_gimbal_angles_.at(i) - 0.9*M_PI;
+            ubh.at(i) = opt_gimbal_angles_.at(i) + 0.9*M_PI;
           }
           ROS_INFO("Vectoring angle optimization reset, transitioning");
 
-          nl_solver_now->set_lower_bounds(lbh);
-          nl_solver_now->set_upper_bounds(ubh);
+          vectoring_nl_solver_g_->set_lower_bounds(lbh);
+          vectoring_nl_solver_g_->set_upper_bounds(ubh);
           opt_x_ = {opt_gimbal_angles_.at(0), opt_gimbal_angles_.at(1), opt_gimbal_angles_.at(2), opt_gimbal_angles_.at(3), opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
-          result = nl_solver_now->optimize(opt_x_, max_f);
+          result = vectoring_nl_solver_g_->optimize(opt_x_, max_f);
           opt_gimbal_angles_tmp_ = {opt_gimbal_angles_.at(0), opt_gimbal_angles_.at(1), opt_gimbal_angles_.at(2), opt_gimbal_angles_.at(3)}; // Store
           opt_gimbal_angles_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)}; // Global solution, not to be passed directly to the real machine
           robot_model_real_->vectoring_reset_flag_ = false;
@@ -625,6 +632,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
           ROS_INFO_STREAM("glob obj s: " << obj_func_elems_[0] << " e: " << obj_func_elems_[1] << " " << obj_func_elems_[2] << " " << obj_func_elems_[3]);
         } else { // Hovering Mode Transition Process
           double thres = gimbal_delta_angle_; // koushinaito shindou surukamo sirenai
+          double min_trans_speed = 0.4;
           transitioning = false;
           for (int i=0; i<4; i++) {
             auto gimbal_diff = opt_gimbal_angles_[i] - joint_pos_fb_[i];
@@ -636,13 +644,13 @@ bool HydrusXiUnderActuatedNavigator::plan()
             }
             if (std::abs(gimbal_diff) > thres) {
               if (gimbal_diff > 0) {
-                lb.at(i) = joint_pos_fb_.at(i) + 0.4*gimbal_delta_angle_;
+                lb.at(i) = joint_pos_fb_.at(i) + min_trans_speed*gimbal_delta_angle_;
                 ub.at(i) = joint_pos_fb_.at(i) + gimbal_delta_angle_;
-                opt_gimbal_angles_tmp_[i] = joint_pos_fb_.at(i) + 0.7*gimbal_delta_angle_;
+                opt_gimbal_angles_tmp_[i] = joint_pos_fb_.at(i) + 0.5*(1.0+min_trans_speed)*gimbal_delta_angle_;
               } else {
                 lb.at(i) = joint_pos_fb_.at(i) - gimbal_delta_angle_;
-                ub.at(i) = joint_pos_fb_.at(i) - 0.4*gimbal_delta_angle_;
-                opt_gimbal_angles_tmp_[i] = joint_pos_fb_.at(i) - 0.7*gimbal_delta_angle_;
+                ub.at(i) = joint_pos_fb_.at(i) - min_trans_speed*gimbal_delta_angle_;
+                opt_gimbal_angles_tmp_[i] = joint_pos_fb_.at(i) - 0.5*(1.0+min_trans_speed)*gimbal_delta_angle_;
               }
               transitioning = true;
             }
@@ -697,7 +705,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
         */
       }
 
-      if (result != 4 and result != 5) {
+      if (result < 0) { // On error
         robot_model_real_->vectoring_reset_flag_ = true;
       }
       
