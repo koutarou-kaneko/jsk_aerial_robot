@@ -179,6 +179,7 @@ namespace
       planner->obj_func_elems_[1] = term1;
       planner->obj_func_elems_[2] = term2;
       planner->obj_func_elems_[3] = term3;
+      //std::cout << term1+term2+term3 << " ";
       return term1 + term2 + term3;
     }
   }
@@ -415,9 +416,9 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
 
   vectoring_nl_solver_g_->set_max_objective(maximizeFCTMinWide, this);
   vectoring_nl_solver_g_->add_equality_mconstraint(kinematicsConstraint, this, {0.05, 0.05, 0.1, 0.02, 0.02, 0.05}/*std::vector<double>(6, 1e-2)*/);
-  vectoring_nl_solver_g_->set_xtol_rel(1e-2); //1e-4
-  vectoring_nl_solver_g_->set_ftol_rel(1e-2); //1e-4
-  vectoring_nl_solver_g_->set_maxeval(10000); // 1000 times
+  vectoring_nl_solver_g_->set_maxtime(5.0); // [sec], See https://nlopt.readthedocs.io/en/latest/NLopt_Introduction/#termination-tests-for-global-optimization
+  vectoring_nl_solver_g_->set_maxeval(20000);
+  vectoring_nl_solver_g_->set_stopval(6.0);
 
   opt_gimbal_angles_tmp_ = {0, 0, 0, 0};
   opt_static_thrusts_ = {0, 0, 0, 0};
