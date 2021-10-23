@@ -96,6 +96,7 @@ namespace aerial_robot_navigation
 
     bool plan_verbose_;
     bool maximize_yaw_;
+    bool use_static_global_opt_;
     double force_norm_weight_; // cost func
     double force_variant_weight_; // cost func
     double yaw_torque_weight_; // cost func
@@ -108,6 +109,7 @@ namespace aerial_robot_navigation
 
     double last_normal_joint1_angle_ = 0, last_target_yaw_ = 0;
     std::vector<double> opt_gimbal_angles_, prev_opt_gimbal_angles_, opt_x_, opt_static_thrusts_, joint_pos_fb_, opt_gimbal_angles_tmp_;
+    double static_global_gimbal1_, static_global_gimbal2_, static_global_gimbal3_, static_global_gimbal4_;
 
     void sanitizeJoints(std::vector<double>& joints);
     void ffWrenchCallback(const geometry_msgs::Vector3ConstPtr& msg);

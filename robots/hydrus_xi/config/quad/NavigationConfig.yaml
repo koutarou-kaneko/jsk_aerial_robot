@@ -40,3 +40,9 @@ navigation:
   baselink_rot_thresh: 0.01
   gimbal_delta_angle: 0.2
   plan_init_sleep: 5.0
+  static_global_opt_gimbal:
+    use: true
+    g1: 5.8
+    g2: -2.9
+    g3: 6.1
+    g4: -3.0

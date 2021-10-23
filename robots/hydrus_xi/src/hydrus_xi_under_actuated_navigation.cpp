@@ -622,15 +622,20 @@ bool HydrusXiUnderActuatedNavigator::plan()
           }
           ROS_INFO("Vectoring angle optimization reset, transitioning");
 
-          vectoring_nl_solver_g_->set_lower_bounds(lbh);
-          vectoring_nl_solver_g_->set_upper_bounds(ubh);
-          opt_x_ = {opt_gimbal_angles_.at(0), opt_gimbal_angles_.at(1), opt_gimbal_angles_.at(2), opt_gimbal_angles_.at(3), opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
-          result = vectoring_nl_solver_g_->optimize(opt_x_, max_f);
           opt_gimbal_angles_tmp_ = {opt_gimbal_angles_.at(0), opt_gimbal_angles_.at(1), opt_gimbal_angles_.at(2), opt_gimbal_angles_.at(3)}; // Store
-          opt_gimbal_angles_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)}; // Global solution, not to be passed directly to the real machine
+          if (use_static_global_opt_) {
+            opt_gimbal_angles_ = {static_global_gimbal1_, static_global_gimbal2_, static_global_gimbal3_, static_global_gimbal4_};
+            ROS_INFO("Using pre-calculated value...");
+          } else {
+            vectoring_nl_solver_g_->set_lower_bounds(lbh);
+            vectoring_nl_solver_g_->set_upper_bounds(ubh);
+            opt_x_ = {opt_gimbal_angles_.at(0), opt_gimbal_angles_.at(1), opt_gimbal_angles_.at(2), opt_gimbal_angles_.at(3), opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
+            result = vectoring_nl_solver_g_->optimize(opt_x_, max_f);
+            opt_gimbal_angles_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)}; // Global solution, not to be passed directly to the real machine
+            ROS_INFO_STREAM("glob res: " << result << " obj s: " << obj_func_elems_[0] << " e: " << obj_func_elems_[1] << " " << obj_func_elems_[2] << " " << obj_func_elems_[3]);
+          }
+          ROS_INFO_STREAM("Global optim: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3] << " " << opt_x_.at(4) << " " << opt_x_.at(5) << " " << opt_x_.at(6) << " " << opt_x_.at(7));
           robot_model_real_->vectoring_reset_flag_ = false;
-          ROS_INFO_STREAM("Global res:" << result << " optim: " << opt_gimbal_angles_[0] << " " << opt_gimbal_angles_[1] << " " << opt_gimbal_angles_[2] << " " << opt_gimbal_angles_[3] << " " << opt_x_.at(4) << " " << opt_x_.at(5) << " " << opt_x_.at(6) << " " << opt_x_.at(7));
-          ROS_INFO_STREAM("glob obj s: " << obj_func_elems_[0] << " e: " << obj_func_elems_[1] << " " << obj_func_elems_[2] << " " << obj_func_elems_[3]);
         } else { // Hovering Mode Transition Process
           double thres = gimbal_delta_angle_; // koushinaito shindou surukamo sirenai
           double min_trans_speed = 0.4;
@@ -802,6 +807,12 @@ void HydrusXiUnderActuatedNavigator::rosParamInit()
   getParam<double>(navi_nh, "joint_torque_weight", joint_torque_weight_, 0.0);
   getParam<double>(navi_nh, "baselink_rot_thresh", baselink_rot_thresh_, 0.02);
   getParam<double>(navi_nh, "fc_t_min_thresh", fc_t_min_thresh_, 2.0);
+  ros::NodeHandle static_nh(navi_nh, "static_global_opt_gimbal");
+  getParam<bool>(static_nh, "use", use_static_global_opt_, false);
+  getParam<double>(static_nh, "g1", static_global_gimbal1_, 5.8);
+  getParam<double>(static_nh, "g2", static_global_gimbal2_, -2.9);
+  getParam<double>(static_nh, "g3", static_global_gimbal3_, 6.1);
+  getParam<double>(static_nh, "g4", static_global_gimbal4_, -3.0);
 }
 
 /* plugin registration */
