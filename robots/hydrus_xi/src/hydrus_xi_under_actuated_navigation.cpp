@@ -638,7 +638,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
           robot_model_real_->vectoring_reset_flag_ = false;
         } else { // Hovering Mode Transition Process
           double thres = gimbal_delta_angle_; // koushinaito shindou surukamo sirenai
-          double min_trans_speed = 0.2;
+          double min_trans_speed = 0.4;
           transitioning = false;
           for (int i=0; i<4; i++) {
             auto gimbal_diff = opt_gimbal_angles_[i] - joint_pos_fb_[i];
