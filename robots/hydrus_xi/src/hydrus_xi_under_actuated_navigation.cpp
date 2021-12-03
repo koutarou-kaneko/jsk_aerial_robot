@@ -681,6 +681,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
       robot_model_real_->set3DoFThrust(opt_static_thrusts_);
 
       // Joint Torque
+      /*
       Eigen::VectorXd hori_thrust(4);
       for (int i=0; i<4; i++) {
         hori_thrust(i) = opt_static_thrusts_[i] + robot_model_real_->thrusts_yaw_term_(i);
@@ -703,15 +704,16 @@ bool HydrusXiUnderActuatedNavigator::plan()
       joints_t_to_send.y = jt[j2_index];
       joints_t_to_send.z = jt[j3_index];
       joints_torque_pub_.publish(joints_t_to_send);
+      */
 
+      /*debug print to make sure that optimization is to blame
       if (flight_mode == robot_model_real_->FLIGHT_MODE_FULL) {
         robot_model_real_->calcWrenchMatrixOnRoot();
         auto Q = robot_model_real_->calcWrenchMatrixOnCoG();
         Eigen::Vector4d thr(opt_static_thrusts_.at(0), opt_static_thrusts_.at(1), opt_static_thrusts_.at(2), opt_static_thrusts_.at(3));
         ROS_INFO_STREAM("recalc: " << (Q*thr).transpose());
-        /*debug print to make sure that optimization is to blame
-        */
       }
+      */
 
       if (result < 0) { // On error
         robot_model_real_->vectoring_reset_flag_ = true;

@@ -30,6 +30,7 @@ servo_controller:
         init_value: 1.5708
 
   gimbals:
+    state_sub_topic: servo/states
     ctrl_pub_topic: servo/target_states
     torque_pub_topic: servo/torque_enable
     angle_sgn: -1
