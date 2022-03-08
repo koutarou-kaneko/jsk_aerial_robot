@@ -391,6 +391,10 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
         }
     }
 
+  ros::NodeHandle control_nh(nh_, "controller");
+  ros::NodeHandle wall_nh(control_nh, "wall");
+  getParam<double>(wall_nh, "plane_axis_rad", plane_axis_rad_, 0);
+
   /* nonlinear optimization for vectoring angles planner */
   vectoring_nl_solver_ = boost::make_shared<nlopt::opt>(nlopt::LN_COBYLA, control_gimbal_names_.size());
   vectoring_nl_solver_h_ = boost::make_shared<nlopt::opt>(nlopt::LN_COBYLA, 2*control_gimbal_names_.size());
@@ -501,16 +505,9 @@ bool HydrusXiUnderActuatedNavigator::plan()
   boost::shared_ptr<nlopt::opt> nl_solver_now;
   if (flight_mode == robot_model_real_->FLIGHT_MODE_FULL or (flight_mode == robot_model_real_->FLIGHT_MODE_TRANSITION_FOR and vectoring_reset_flag)) {
     nl_solver_now = vectoring_nl_solver_h_;
-    /* No need for this if nav is based on root
-    setTargetYaw(last_target_yaw_ + joint_positions_for_plan_(j1_index) - last_normal_joint1_angle_);
-    */
+    setTargetYaw(angles::normalize_angle(plane_axis_rad_ + target_root_angle_ + joint_positions_for_plan_(j1_index)));
   } else {
     nl_solver_now = vectoring_nl_solver_;
-    /* No need for this if nav is based on root
-    last_normal_joint1_angle_ = joint_positions_for_plan_(j1_index);
-    last_target_yaw_ = getTargetRPY().getZ();
-    ROS_INFO_STREAM_THROTTLE(0.1, "target link1 yaw: " << getTargetRPY().getZ()-joint_positions_for_plan_.data[2]);
-    */
   }
   robot_model_for_plan_->flight_mode_ = flight_mode;
 

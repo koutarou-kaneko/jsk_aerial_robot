@@ -107,7 +107,7 @@ namespace aerial_robot_navigation
     double fc_t_min_thresh_; // constraint func
     double gimbal_delta_angle_; // configuration state
 
-    double last_normal_joint1_angle_ = 0, last_target_yaw_ = 0;
+    double last_normal_joint1_angle_ = 0, last_target_yaw_ = 0, target_root_angle_ = -0.6, plane_axis_rad_ = -1.57;
     std::vector<double> opt_gimbal_angles_, prev_opt_gimbal_angles_, opt_x_, opt_static_thrusts_, joint_pos_fb_, opt_gimbal_angles_tmp_;
     double static_global_gimbal1_, static_global_gimbal2_, static_global_gimbal3_, static_global_gimbal4_;
 
