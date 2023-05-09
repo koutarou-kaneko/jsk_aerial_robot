@@ -15,8 +15,8 @@ class CircTrajFollow():
     self.yaw = rospy.get_param("~yaw", True)
     self.loop = rospy.get_param("~loop", False)
 
-    self.nav_pub = rospy.Publisher("uav/nav", FlightNav, queue_size=1)
-    self.control_sub = rospy.Subscriber("debug/pose/pid", PoseControlPid, self.controlCb)
+    self.nav_pub = rospy.Publisher("~uav/nav", FlightNav, queue_size=1)
+    self.control_sub = rospy.Subscriber("~debug/pose/pid", PoseControlPid, self.controlCb)
 
     self.center_pos_x = None
     self.center_pos_y = None
