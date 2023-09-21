@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<launch>
+  ###########  launch config  ###########
+  <arg name="debug" default="false" />
+
+  <arg name="type" default="quad" />
+  <arg name="onboards_model" default="euclid_201709" />
+
+  <group if = "$(arg debug)">
+    <include file="$(find aerial_robot_model)/launch/aerial_robot_model.launch"  >
+      <arg name="headless" value="false" />
+      <arg name="robot_model" value="$(find dragon)/robots/$(arg type)/$(arg onboards_model).urdf.xacro"/>
+      <arg name="robot_ns" value="dragon" />
+      <arg name="rviz_config" value="$(find dragon)/config/rviz_config" />
+      <arg name="rviz_init_pose" value="$(find dragon)/config/$(arg type)/RvizInit.yaml" />
+      <arg name="need_joint_state" value="false" />
+    </include >
+    <node pkg="tf" type="static_transform_publisher" name="static_cast" args="0 0 0 0 0 0 world dragon/root 100" />
+  </group>
+
+  ###### joint angles from real avator ####
+  <include file="$(find dragon)/launch/includes/dynamixel_controllers.launch" />
+  <node pkg="dragon" type="real_avatar_position_control.py" name="real_avatar_position_control" output="screen">
+    <param name="debug" value="$(arg debug)" />
+  </node>
+
+</launch>
+
+
+
