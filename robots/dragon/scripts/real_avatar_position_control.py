@@ -25,7 +25,7 @@ class avatar_control():
         self.att_control_pub = rospy.Publisher("/dragon/final_target_baselink_rot", DesireCoord, queue_size=1)
         self.avatar_sub = rospy.Subscriber("/dynamixel_workbench/joint_states", JointState, self.avatarCb)
         #self.start_sub = rospy.Subscriber("/dragon/start", Empty, self.startCb)
-
+     
         #self.demo_mode = rospy.get_param("~mode", 0)
         self.reset = rospy.get_param("~reset", False)
         self.reverse_reset = rospy.get_param("~reverse_reset", False)
@@ -67,7 +67,7 @@ class avatar_control():
             if self.raw_servo_position is None:
                 continue
 
-            #avoid dengerous situation
+            #avoid over angle 
             desire_joint = copy.deepcopy(self.raw_servo_position)
             for i in range(len(desire_joint.position)):
                 if desire_joint.position[i] > self.angle_limit:
