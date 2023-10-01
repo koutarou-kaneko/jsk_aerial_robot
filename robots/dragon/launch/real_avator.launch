@@ -18,13 +18,28 @@
     <node pkg="tf" type="static_transform_publisher" name="static_cast" args="0 0 0 0 0 0 world dragon/root 100" />
   </group>
 
+  <group unless = "$(arg debug)">
+    <include file="$(find dragon)/launch/bringup.launch"  >
+      <arg name="headless" value="false" />
+      <arg name="real_machine" value="false" />
+      <arg name="simulation" value="true" />
+    </include >
+
+    ###### base position from mocap of real_avatar ####
+    <include file="$(find aerial_robot_base)/launch/external_module/mocap.launch" />
+    <!--
+    <node pkg="dragon" type="real_avatar_mocap_control.py" name="real_avatar_mocap_control" output="screen">
+    </node>
+    -->
+    
+
+  </group>
+
   ###### joint angles from real avator ####
   <include file="$(find dragon)/launch/includes/dynamixel_controllers.launch" />
   <node pkg="dragon" type="real_avatar_position_control.py" name="real_avatar_position_control" output="screen">
     <param name="debug" value="$(arg debug)" />
   </node>
-
+    
 </launch>
-
-
 
