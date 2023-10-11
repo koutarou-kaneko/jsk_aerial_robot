@@ -65,6 +65,7 @@ namespace Dragon
     }
 
     double getMinForceNormalizedWeight() const {return min_force_normalized_weight_;}
+    double getMinTorqueChamp() const {return t_min_champion_;}
     double getMinTorqueNormalizedWeight() const {return min_torque_normalized_weight_;}
     template <class T> std::vector<T> getGimbalRollOriginFromCog() const ; // only for gimbal lock planning
     const std::vector<int>& getRollLockedGimbalForPlan() const { return roll_locked_gimbal_for_plan_; } // only for gimbal lock planning
@@ -94,6 +95,7 @@ namespace Dragon
 
     bool debug_verbose_;
     double gimbal_lock_threshold_;
+    double t_min_champion_;
     std::vector<double> locked_angles_;
     std::vector<int> roll_locked_gimbal_, prev_roll_locked_gimbal_;
     std::vector<int> roll_locked_gimbal_for_plan_;

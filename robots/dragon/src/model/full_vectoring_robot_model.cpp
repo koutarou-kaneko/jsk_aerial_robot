@@ -110,6 +110,7 @@ void FullVectoringRobotModel::getParamFromRos()
 
 void FullVectoringRobotModel::updateRobotModelImpl(const KDL::JntArray& joint_positions)
 {
+  ROS_INFO_STREAM(getMinTorqueChamp());
   KDL::Rotation cog_desire_orientation = getCogDesireOrientation<KDL::Rotation>();
   robot_model_for_plan_->setCogDesireOrientation(cog_desire_orientation); // update the cog orientation
 
@@ -206,7 +207,6 @@ void FullVectoringRobotModel::updateRobotModelImpl(const KDL::JntArray& joint_po
 
   /* 3. calculate the optimized locked gimbal roll angles */
   int gimbal_lock_num = std::accumulate(roll_locked_gimbal.begin(), roll_locked_gimbal.end(), 0);
-
   if(gimbal_lock_num > 0)
     {
       /* case2: the link attitude change more than a threshold  */
@@ -547,6 +547,8 @@ Eigen::VectorXd FullVectoringRobotModel::calcFeasibleControlTDists(const std::ve
         }
     }
 
+  std::cout << t_min.minCoeff() << std::endl;
+
   return t_min;
 }
 
@@ -631,6 +633,7 @@ there is a diffiretial chain about the roll angle. But we here approximate it to
 
   const auto f_min_list = calcFeasibleControlFxyDists(roll_locked_gimbal, opt_locked_angles, rotor_num, link_rot);
   const auto t_min_list = calcFeasibleControlTDists(roll_locked_gimbal, opt_locked_angles, rotor_num, rotor_pos, link_rot);
+  t_min_champion_ = t_min_list.minCoeff();
 
   ROS_DEBUG_NAMED("robot_model", "opt F min: %f, opt T min: %f", f_min_list.minCoeff(), t_min_list.minCoeff());
 
