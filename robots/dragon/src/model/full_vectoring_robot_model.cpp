@@ -436,6 +436,8 @@ void FullVectoringRobotModel::updateRobotModelImpl(const KDL::JntArray& joint_po
   setGimbalProcessedJoint(gimbal_processed_joint);
   setRollLockedGimbal(roll_locked_gimbal);
 
+  max_min_torque_ = calcFeasibleControlTDists(roll_locked_gimbal, locked_angles_, getRotorNum(), robot_model_for_plan_->getRotorsOriginFromCog<Eigen::Vector3d>(), getLinksRotationFromCog<Eigen::Matrix3d>()).minCoeff();
+
   return;
   Eigen::Matrix3d inertia_inv = getInertia<Eigen::Matrix3d>().inverse();
   double mass_inv =  1 / getMass();
