@@ -449,6 +449,7 @@ void FullVectoringRobotModel::updateRobotModelImpl(const KDL::JntArray& joint_po
   for(auto angle: gimbal_nominal_angles_curr) ss << angle << ", ";
   ROS_INFO_STREAM_THROTTLE(1.0, "gimbal nominal angles: \n" << ss.str());
   ROS_INFO_STREAM_THROTTLE(1.0, "hovering force: \n" << hover_vectoring_f_);
+
 }
 
 Eigen::VectorXd FullVectoringRobotModel::calcFeasibleControlFxyDists(const std::vector<int>& roll_locked_gimbal, const std::vector<double>& locked_angles, int rotor_num, const std::vector<Eigen::Matrix3d>& link_rot)

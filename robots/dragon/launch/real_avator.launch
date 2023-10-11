@@ -27,12 +27,11 @@
 
     ###### base position from mocap of real_avatar ####
     <include file="$(find aerial_robot_base)/launch/external_module/mocap.launch" />
-    <!--
-    <node pkg="dragon" type="real_avatar_mocap_control.py" name="real_avatar_mocap_control" output="screen">
-    </node>
-    -->
     
-
+    <node pkg="dragon" type="real_avatar_mocap_control.py" name="real_avatar_mocap_control" output="screen" >
+    </node>
+    
+    
   </group>
 
   ###### joint angles from real avator ####
