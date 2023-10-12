@@ -30,6 +30,7 @@ void DragonFullVectoringController::initialize(ros::NodeHandle nh, ros::NodeHand
   estimate_external_wrench_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("estimated_external_wrench", 1);
   rotor_interfere_wrench_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("rotor_interfere_wrench", 1);
   interfrence_marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("interference_markers", 1);
+  max_min_torque_pub_ = nh_.advertise<std_msgs::Float32>("max_min_torque", 1);
 
   rotor_interfere_comp_wrench_ = Eigen::VectorXd::Zero(6); // reset
   est_external_wrench_ = Eigen::VectorXd::Zero(6);
@@ -886,6 +887,10 @@ void DragonFullVectoringController::sendCmd()
   force_msg.header.stamp.fromSec(estimator_->getImuLatestTimeStamp());
   for(int i = 0; i < rotor_interfere_force_.size(); i++)
     force_msg.axes.push_back(rotor_interfere_force_(i));
+
+  std_msgs::Float32 max_min_torque_msg;
+  max_min_torque_msg.data = dragon_robot_model_->getMaxMinTorque();
+  max_min_torque_pub_.publish(max_min_torque_msg);
 }
 
 void DragonFullVectoringController::rosParamInit()
