@@ -35,7 +35,7 @@ class avatar_control():
 
         self.angle_limit = rospy.get_param("angle_limit", 1.56) # the limitation of the joint
         self.min_yaw_angle = rospy.get_param("min_yaw_angle", 0.3)
-        self.yaw_sum_threshold = rospy.get_param("yaw_sum_threshold", 0.9)
+        self.yaw_sum_threshold = rospy.get_param("yaw_sum_threshold", 1.0)
         self.servo_init_time = 0.5
 
     def servo_switch(self, msg, Switch, Yaw):
@@ -125,26 +125,16 @@ class avatar_control():
                     desire_joint.position[i] = -self.angle_limit
 
             # avoid stright line configuration
-            sum = 0
-            for i, n in enumerate(desire_joint.name):
-                if 'yaw' in n:
-                    '''
-                    if abs(desire_joint.position[i]) < self.min_yaw_angle:
-                        if desire_joint.position[i] >0:
-                            desire_joint.position[i] = self.min_yaw_angle
-                        if desire_joint.position[i] <0:
-                            desire_joint.position[i] = -self.min_yaw_angle
-                    '''
-                    sum += abs(desire_joint.position[i])
-            
-            if sum < self.yaw_sum_threshold:
-                #rospy.loginfo("%f", sum)
-                '''
-                if desire_joint.position[0] >=0:
-                    desire_joint.position[0] = 0.6
-                else:
-                    desire_joint.position[0] = -0.6
-                '''
+            sum = 0.0
+            #for i in range(len(desire_joint.position)):
+                #sum += desire_joint.position[i]
+            sum = desire_joint.position[0] + desire_joint.position[1]
+            if sum < self.yaw_sum_threshold:                
+                rospy.loginfo("caution")
+                desire_joint.position[0] = self.yaw_sum_threshold/2
+                desire_joint.position[1] = self.yaw_sum_threshold/2
+
+                
                 '''
                 for i, n in enumerate(desire_joint.name):
                     if 'yaw' in n:

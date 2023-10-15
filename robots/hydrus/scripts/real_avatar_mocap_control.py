@@ -22,7 +22,7 @@ class mocap_control():
     self.loop = rospy.get_param("~loop", False)
     self.duration = rospy.get_param("~duration", 8)
     self.nav_pub = rospy.Publisher("/hydrus/uav/nav", FlightNav, queue_size=1)
-    #self.att_control_pub = rospy.Publisher("/hydrus/final_target_baselink_rot", DesireCoord, queue_size=1)
+    self.att_control_pub = rospy.Publisher("/hydrus/final_target_baselink_rot", DesireCoord, queue_size=1)
     self.mocap_sub = rospy.Subscriber("mocap/pose", PoseStamped, self.mocapCb)
     self.flight_state_sub = rospy.Subscriber("/hydrus/flight_state", UInt8, self.flight_stateCb)
 
@@ -103,7 +103,7 @@ class mocap_control():
         self.flight_nav.target_yaw = 0.0
         self.flight_nav.target_omega_z = self.omega
         self.nav_pub.publish(self.flight_nav)
-        #self.att_control_pub.publish(self.desire_att)
+        self.att_control_pub.publish(self.desire_att)
 
       time.sleep(self.nav_rate)
 
