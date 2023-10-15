@@ -65,8 +65,8 @@ namespace Dragon
     }
 
     double getMinForceNormalizedWeight() const {return min_force_normalized_weight_;}
-    double getMinTorqueChamp() const {return t_min_champion_;}
     double getMinTorqueNormalizedWeight() const {return min_torque_normalized_weight_;}
+    double getMaxMinTorque() const {return max_min_torque_;}
     template <class T> std::vector<T> getGimbalRollOriginFromCog() const ; // only for gimbal lock planning
     const std::vector<int>& getRollLockedGimbalForPlan() const { return roll_locked_gimbal_for_plan_; } // only for gimbal lock planning
     void setRollLockedGimbalForPlan(const std::vector<int> roll_locked_gimbal_for_plan) { roll_locked_gimbal_for_plan_ = roll_locked_gimbal_for_plan; } // only for gimbal lock planning
@@ -95,7 +95,6 @@ namespace Dragon
 
     bool debug_verbose_;
     double gimbal_lock_threshold_;
-    double t_min_champion_;
     std::vector<double> locked_angles_;
     std::vector<int> roll_locked_gimbal_, prev_roll_locked_gimbal_;
     std::vector<int> roll_locked_gimbal_for_plan_;
@@ -114,6 +113,7 @@ namespace Dragon
     double robot_model_refine_threshold_;
     std::mutex roll_locked_gimbal_mutex_;
     double gimbal_roll_change_threshold_;
+    double max_min_torque_;
 
     std::vector<Eigen::Vector3d> overlap_positions_;
     std::vector<double> overlap_magnitudes_;
