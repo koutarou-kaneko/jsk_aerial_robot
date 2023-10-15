@@ -125,10 +125,12 @@ class avatar_control():
 
             if sum < self.yaw_sum_threshold:
                 #rospy.loginfo("%f", sum)
+                '''
                 if desire_joint.position[1] >=0:
                     desire_joint.position[1] = 1.2
                 else:
                     desire_joint.position[1] = -1.2
+                '''
                 '''
                 for i, n in enumerate(desire_joint.name):
                     if 'yaw' in n:
