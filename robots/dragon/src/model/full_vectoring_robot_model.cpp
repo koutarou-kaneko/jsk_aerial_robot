@@ -110,7 +110,7 @@ void FullVectoringRobotModel::getParamFromRos()
 
 void FullVectoringRobotModel::updateRobotModelImpl(const KDL::JntArray& joint_positions)
 {
-  ROS_INFO_STREAM(getMinTorqueChamp());
+  /*ROS_INFO_STREAM(getMinTorqueChamp());*/
   KDL::Rotation cog_desire_orientation = getCogDesireOrientation<KDL::Rotation>();
   robot_model_for_plan_->setCogDesireOrientation(cog_desire_orientation); // update the cog orientation
 
