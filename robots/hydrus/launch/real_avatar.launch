@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<launch>
+  ###########  launch config  ###########
+  <arg name="debug" default="false" />
+
+  <arg name="type" default="quad" />
+  <arg name="onboards_model" default="default_mode_201907" />
+
+  <group if = "$(arg debug)">
+    <include file="$(find aerial_robot_model)/launch/aerial_robot_model.launch"  >
+      <arg name="headless" value="false" />
+      <arg name="robot_model" value="$(find hydrus)/robots/$(arg type)/$(arg onboards_model)/robot.urdf.xacro"/>
+      <arg name="robot_ns" value="hydrus" />
+      <arg name="rviz_config" value="$(find hydrus)/config/rviz_config" />
+      <arg name="rviz_init_pose" value="$(find hydrus)/config/$(arg type)/RvizInit.yaml" />
+      <arg name="need_joint_state" value="false" />
+    </include >
+    <node pkg="tf" type="static_transform_publisher" name="static_cast" args="0 0 0 0 0 0 world hydrus/root 100" />
+  </group>
+
+  <group unless = "$(arg debug)">
+    <include file="$(find hydrus)/launch/bringup.launch"  >
+      <arg name="headless" value="false" />
+      <arg name="real_machine" value="false" />
+      <arg name="simulation" value="true" />
+    </include >
+
+    ###### base position from mocap of real_avatar ####
+    <include file="$(find aerial_robot_base)/launch/external_module/mocap.launch" />
+    
+    <node pkg="hydrus" type="real_avatar_mocap_control.py" name="real_avatar_mocap_control" output="screen" >
+    </node>
+    
+    
+  </group>
+
+  ###### joint angles from real avator ####
+  <include file="$(find hydrus)/launch/includes/dynamixel_controllers.launch" />
+  <node pkg="hydrus" type="real_avatar_position_control.py" name="real_avatar_position_control" output="screen">
+    <param name="debug" value="$(arg debug)" />
+  </node>
+    
+</launch>
+

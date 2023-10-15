@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="cube_x" default="3.0"/>
+  <arg name="cube_y" default="0.0"/>
+  <arg name="cube_z" default="0.0"/>
+  <arg name="cube_yaw" default="0.0"/>
+
+  <param name="cube/robot_description" command="$(find xacro)/xacro $(find dragon)/urdf/cube.urdf"/>
+
+  <node pkg="gazebo_ros" type="spawn_model" name="cube_spawn" args="-param cube/robot_description -urdf -x $(arg cube_x) -y $(arg cube_y) -z 0 -Y $(arg cube_yaw) -model cube_model" />
+
+
+</launch>

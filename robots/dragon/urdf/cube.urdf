@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<robot
+    xmlns:xacro="http://www.ros.org/wiki/xacro" name="cube_urdf" >
+
+  <link name="cube_link">
+
+    <visual>
+      <origin xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dragon/urdf/mesh/Wall_Plane.STL" scale="0.001 0.001 0.001"/>
+        <!-- <box size="1 1 1" /> -->
+      </geometry>
+    </visual>
+
+    <inertial>
+      <origin xyz="0.0 0.0 0.75"/>
+      <mass value="1.0"/>
+      <inertia
+            ixx="0.01" ixy="0.0" ixz="0.0"
+            iyy="0.01" iyz="0.0"
+            izz="0.01"/>
+    </inertial>
+
+    <collision>
+      <origin xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://dragon/urdf/mesh/Wall_Plane.STL" scale="0.001 0.001 0.001"/>
+        <!-- <box size="1 1 1" /> -->
+      </geometry>
+    </collision>
+
+  </link>
+
+</robot>
+
