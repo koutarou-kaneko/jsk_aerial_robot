@@ -7,7 +7,8 @@ import rospy
 import math
 import copy
 import select, termios, tty
-from std_msgs.msg import UInt8
+import numpy as np
+from std_msgs.msg import UInt8, Float32
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from spinal.msg import DesireCoord
@@ -28,14 +29,17 @@ class avatar_control():
         self.joint_control_pub = rospy.Publisher(topic_name, JointState, queue_size=10)
         self.avatar_sub = rospy.Subscriber('/dynamixel_workbench/joint_states', JointState, self.avatarCb)
         self.flight_state_sub = rospy.Subscriber("/dragon/flight_state", UInt8, self.flight_stateCb)
+        self.max_min_torque_sub = rospy.Subscriber("/dragon/max_min_torque", Float32, self.max_min_torqueCb)
 
         self.raw_servo_position = None
         self.Hovering = False
         self.servo_Switch_state = True
+        self.max_min_torque = np.float32(1.0)
 
         self.angle_limit = rospy.get_param("angle_limit", 1.56) # the limitation of the joint
         self.min_yaw_angle = rospy.get_param("min_yaw_angle", 0.3)
         self.yaw_sum_threshold = rospy.get_param("yaw_sum_threshold", 0.9)
+        self.max_min_torque_limit = rospy.get_param("max_min_torque_limit", np.float32(0.5))
         self.servo_init_time = 0.5
 
     def servo_switch(self, msg, Switch):
@@ -92,6 +96,8 @@ class avatar_control():
         self.raw_servo_position.name = list(self.raw_servo_position.name)
         self.raw_servo_position.position = list(self.raw_servo_position.position)
 
+    def max_min_torqueCb(self,msg):
+        self.max_min_torque = msg.data
 
     def main(self):
 
@@ -122,7 +128,6 @@ class avatar_control():
                     '''
                     sum += abs(desire_joint.position[i])
 
-
             if sum < self.yaw_sum_threshold:
                 #rospy.loginfo("%f", sum)
                 '''
@@ -140,6 +145,8 @@ class avatar_control():
                             desire_joint.position[i] = -self.min_yaw_angle
                 '''
 
+            if self.max_min_torque < self.max_min_torque_limit:
+                rospy.loginfo("DANGEROUS")
             # add gimbal angle if necessary
             if self.debug:
                 desire_joint.name.extend(['gimbal1_roll', 'gimbal1_pitch', 'gimbal2_roll', 'gimbal2_pitch', 'gimbal3_roll', 'gimbal3_pitch', 'gimbal4_roll', 'gimbal4_pitch'])
