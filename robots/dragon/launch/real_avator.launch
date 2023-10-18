@@ -5,6 +5,7 @@
 
   <arg name="type" default="quad" />
   <arg name="onboards_model" default="euclid_201709" />
+  <arg name="headless" default="false" />
 
   <group if = "$(arg debug)">
     <include file="$(find aerial_robot_model)/launch/aerial_robot_model.launch"  >
@@ -20,7 +21,7 @@
 
   <group unless = "$(arg debug)">
     <include file="$(find dragon)/launch/bringup.launch"  >
-      <arg name="headless" value="false" />
+      <arg name="headless" value="$(arg headless)" />
       <arg name="real_machine" value="false" />
       <arg name="simulation" value="true" />
     </include >

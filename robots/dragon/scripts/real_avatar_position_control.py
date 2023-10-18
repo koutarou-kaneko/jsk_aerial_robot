@@ -34,7 +34,7 @@ class avatar_control():
         self.raw_servo_position = None
         self.Hovering = False
         self.servo_Switch_state = True
-        self.max_min_torque = np.float32(1.0)
+        self.max_min_torque = np.float32(0.6)
 
         self.angle_limit = rospy.get_param("angle_limit", 1.56) # the limitation of the joint
         self.min_yaw_angle = rospy.get_param("min_yaw_angle", 0.3)
@@ -144,9 +144,10 @@ class avatar_control():
                         if desire_joint.position[i] <0:
                             desire_joint.position[i] = -self.min_yaw_angle
                 '''
-
+            '''
             if self.max_min_torque < self.max_min_torque_limit:
                 rospy.loginfo("DANGEROUS")
+            '''
             # add gimbal angle if necessary
             if self.debug:
                 desire_joint.name.extend(['gimbal1_roll', 'gimbal1_pitch', 'gimbal2_roll', 'gimbal2_pitch', 'gimbal3_roll', 'gimbal3_pitch', 'gimbal4_roll', 'gimbal4_pitch'])

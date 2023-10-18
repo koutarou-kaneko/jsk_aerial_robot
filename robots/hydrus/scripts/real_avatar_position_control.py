@@ -32,30 +32,19 @@ class avatar_control():
         self.raw_servo_position = None
         self.Hovering = False
         self.servo_Switch_state = True
-
+        self.danger_config = False
         self.angle_limit = rospy.get_param("angle_limit", 1.56) # the limitation of the joint
         self.min_yaw_angle = rospy.get_param("min_yaw_angle", 0.3)
         self.yaw_sum_threshold = rospy.get_param("yaw_sum_threshold", 1.0)
         self.servo_init_time = 0.5
 
-    def servo_switch(self, msg, Switch, Yaw):
+    def servo_Switch(self,msg,Switch,servo_number):
         rospy.wait_for_service('/dynamixel_workbench/dynamixel_command')
-        for i, n in enumerate(msg.name):
-            if Yaw == True:
-                if 'yaw' in n:
-                    try:
-                        client = rospy.ServiceProxy('/dynamixel_workbench/dynamixel_command', DynamixelCommand)
-                        resp = client('', i+1, 'Torque_Enable', Switch)
-                    except rospy.ServiceException as e:
-                        print("Service call failed: {}".format(e))
-            else:
-                if 'pitch' in n:
-                    try:
-                        client = rospy.ServiceProxy('/dynamixel_workbench/dynamixel_command', DynamixelCommand)
-                        resp = client('', i+1, 'Torque_Enable', Switch)
-                    except rospy.ServiceException as e:
-                        print("Service call failed: {}".format(e))
-
+        try:
+            client = rospy.ServiceProxy('/dynamixel_workbench/dynamixel_command', DynamixelCommand)
+            resp = client('', servo_number, 'Torque_Enable', Switch)
+        except rospy.ServiceException as e:
+            print("Service call failed: {}".format(e))
         self.servo_Switch_state = Switch
 
     def set_servo_init(self,msg):
@@ -69,11 +58,8 @@ class avatar_control():
         rospy.sleep(self.servo_init_time * 10)
         rospy.loginfo("joint servo init DONE!")
 
-
     def flight_stateCb(self,msg):
         self.flight_state = msg.data
-        #rospy.loginfo("%s", self.Hovering)
-        #rospy.loginfo("flight_state is %s", self.flight_state)
         if self.flight_state == 5:
             self.Hovering = True 
         '''
@@ -87,17 +73,22 @@ class avatar_control():
         #init
         if self.raw_servo_position is None:
             # set the joint servo on
-            self.servo_switch(msg, Switch=True, Yaw=True)
-            self.servo_switch(msg, Switch=True, Yaw=False)
+            for i , n in enumerate(msg.name):
+                self.servo_Switch(msg, Switch=True, servo_number=i+1)
             # set the joint servo to havering
             self.set_servo_init(msg)
 
         # set the joint servo off
-        if self.debug==False and self.Hovering==True and self.servo_Switch_state==True:
-            self.servo_switch(msg, Switch=False, Yaw=True)
+        if self.debug==False and self.Hovering==True and self.servo_Switch_state==True and self.danger_config==False:
+            for i , n in enumerate(msg.name):
+                if 'yaw' in n:
+                    print('OK')
+                    self.servo_Switch(msg, Switch=False, servo_number=i+1)
             rospy.loginfo("servo off")
         if self.debug==True and self.servo_Switch_state==True:
-            self.servo_switch(msg, Switch=False, Yaw=True)
+            for i , n in enumerate(msg.name):
+                if 'yaw' in n:
+                    self.servo_Switch(msg, Switch=False, servo_number=i+1)
             rospy.loginfo("servo off")
         
         self.raw_servo_position = msg
@@ -129,11 +120,15 @@ class avatar_control():
             #for i in range(len(desire_joint.position)):
                 #sum += desire_joint.position[i]
             sum = desire_joint.position[0] + desire_joint.position[1]
-            if sum < self.yaw_sum_threshold:                
+            if sum < self.yaw_sum_threshold:
                 rospy.loginfo("caution")
+                self.danger_config=True
+                self.servo_Switch(self,Switch=True,servo_number=2)
+                self.servo_Switch(self,Switch=True,servo_number=4)
                 desire_joint.position[0] = self.yaw_sum_threshold/2
                 desire_joint.position[1] = self.yaw_sum_threshold/2
-
+            else:
+                self.danger_config=False
                 
                 '''
                 for i, n in enumerate(desire_joint.name):

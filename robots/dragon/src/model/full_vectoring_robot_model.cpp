@@ -224,6 +224,7 @@ void FullVectoringRobotModel::updateRobotModelImpl(const KDL::JntArray& joint_po
 
       if(roll_lock_status_change)
         {
+          ROS_ERROR("lock angles is updated");
           /* roughly update the CoG and gimbal roll origin based on the level (horizontal) nominal gimbal angles and joints for search the optimiazed locked gimbal roll angles*/
           for(int i = 0; i < getRotorNum(); ++i)
             {
@@ -249,6 +250,7 @@ void FullVectoringRobotModel::updateRobotModelImpl(const KDL::JntArray& joint_po
     }
   else
     {
+      //ROS_ERROR("resized");
       locked_angles_.resize(0);
       prev_roll_locked_gimbal_ = roll_locked_gimbal;
       prev_links_rotation_from_cog_ = links_rotation_from_cog;
@@ -497,10 +499,10 @@ Eigen::VectorXd FullVectoringRobotModel::calcFeasibleControlFxyDists(const std::
 Eigen::VectorXd FullVectoringRobotModel::calcFeasibleControlTDists(const std::vector<int>& roll_locked_gimbal, const std::vector<double>& locked_angles, int rotor_num, const std::vector<Eigen::Vector3d>& rotor_pos, const std::vector<Eigen::Matrix3d>& link_rot)
 {
   std::vector<Eigen::Vector3d> v(0);
-
   int gimbal_lock_index = 0;
   for (int i = 0; i < rotor_num; ++i)
     {
+      std::lock_guard<std::mutex> lock(roll_locked_gimbal_mutex_);
       if(roll_locked_gimbal.at(i) == 0)
         {
           // ominidirectional: 3DoF
@@ -510,14 +512,18 @@ Eigen::VectorXd FullVectoringRobotModel::calcFeasibleControlTDists(const std::ve
         }
       else
         {
+          if(locked_angles.size() == 0) continue;
           // lock gimbal roll: 2DOF
-          Eigen::Matrix3d gimbal_roll_rot =  link_rot.at(i) * aerial_robot_model::kdlToEigen(KDL::Rotation::RPY(locked_angles.at(gimbal_lock_index), 0, 0));
+          Eigen::Matrix3d gimbal_roll_rot =  link_rot.at(i);
+          //ROS_INFO_STREAM("locked_angles_size is "<<locked_angles.size());
+          //ROS_INFO_STREAM("gimbal_lock_index is "<< gimbal_lock_index);
+          gimbal_roll_rot *=  aerial_robot_model::kdlToEigen(KDL::Rotation::RPY(locked_angles.at(gimbal_lock_index), 0, 0));
           v.push_back(rotor_pos.at(i).cross(gimbal_roll_rot * Eigen::Vector3d(1, 0, 0))); // from the x force
           v.push_back(rotor_pos.at(i).cross(gimbal_roll_rot * Eigen::Vector3d(0, 0, 1))); // from the z force
           gimbal_lock_index++;
+
         }
     }
-
   Eigen::VectorXd t_min(v.size() * (v.size() - 1) / 2); // t_min_ij; i in [0, v.size()], i > j
 
   int t_min_index = 0;
@@ -555,6 +561,7 @@ Eigen::VectorXd FullVectoringRobotModel::calcFeasibleControlTDists(const std::ve
 
 std::vector<double> FullVectoringRobotModel::calcBestLockGimbalRoll(const std::vector<int>& roll_locked_gimbal, const std::vector<int>& prev_roll_locked_gimbal, const std::vector<double>& prev_opt_locked_angles)
 {
+  ROS_ERROR("calcbest is called");
   int rotor_num = getRotorNum();
   std::vector<Eigen::Vector3d> rotor_pos = robot_model_for_plan_->getRotorsOriginFromCog<Eigen::Vector3d>();
   std::vector<Eigen::Vector3d> gimbal_roll_pos = getGimbalRollOriginFromCog<Eigen::Vector3d>();
