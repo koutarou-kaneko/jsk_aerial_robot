@@ -15,6 +15,11 @@
                pose2d: mocap/ground_pose
                child_frame_id: baselink
                parent_frame_id: world
+         '2':
+               pose: avator/pose
+               pose2d: avator/ground_pose
+               child_frame_id: baselink
+               parent_frame_id: world
       optitrack_config:
          multicast_address: 239.255.42.99
          command_port: 1510
