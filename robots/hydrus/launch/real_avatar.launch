@@ -2,6 +2,9 @@
 <launch>
   ###########  launch config  ###########
   <arg name="debug" default="false" />
+    <arg name="headless" default="false" />
+    <arg name="real_machine" default="false" />
+    <arg name="simulation" default="true" />
 
   <arg name="type" default="quad" />
   <arg name="onboards_model" default="default_mode_201907" />
@@ -20,9 +23,9 @@
 
   <group unless = "$(arg debug)">
     <include file="$(find hydrus)/launch/bringup.launch"  >
-      <arg name="headless" value="false" />
-      <arg name="real_machine" value="false" />
-      <arg name="simulation" value="true" />
+      <arg name="headless" value="$(arg headless)" />
+      <arg name="real_machine" value="$(arg real_machine)" />
+      <arg name="simulation" value="$(arg simulation)" />
     </include >
 
     ###### base position from mocap of real_avatar ####

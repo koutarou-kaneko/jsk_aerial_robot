@@ -121,12 +121,17 @@ class avatar_control():
                 #sum += desire_joint.position[i]
             sum = desire_joint.position[0] + desire_joint.position[1]
             if sum < self.yaw_sum_threshold:
-                rospy.loginfo("caution")
-                self.danger_config=True
-                self.servo_Switch(self,Switch=True,servo_number=2)
-                self.servo_Switch(self,Switch=True,servo_number=4)
-                desire_joint.position[0] = self.yaw_sum_threshold/2
-                desire_joint.position[1] = self.yaw_sum_threshold/2
+                if desire_joint.position[2]<=self.min_yaw_angle:
+                    rospy.loginfo("caution")
+                    self.danger_config=True
+                    self.servo_Switch(self,Switch=True,servo_number=2)
+                    self.servo_Switch(self,Switch=True,servo_number=4)
+                    desire_joint.position[0] = self.yaw_sum_threshold/2
+                    desire_joint.position[1] = self.yaw_sum_threshold/2
+                else:
+                    self.danger_config=False
+                    self.servo_Switch(self,Switch=False,servo_number=2)
+                    self.servo_Switch(self,Switch=False,servo_number=4)
             else:
                 self.danger_config=False
                 
