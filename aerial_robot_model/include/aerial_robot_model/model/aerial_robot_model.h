@@ -209,6 +209,7 @@ namespace aerial_robot_model {
     double thrust_min_;
     std::vector<Eigen::VectorXd> thrust_wrench_units_;
     std::vector<Eigen::MatrixXd> thrust_wrench_allocations_;
+    bool static_thrust_available_;
 
     // control stability
     double epsilon_;

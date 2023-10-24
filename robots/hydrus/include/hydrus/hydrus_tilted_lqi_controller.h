@@ -55,5 +55,7 @@ namespace aerial_robot_control
 
   protected:
     bool checkRobotModel() override;
+  private:
+    ros::Publisher static_thrust_available_pub_;
   };
 };

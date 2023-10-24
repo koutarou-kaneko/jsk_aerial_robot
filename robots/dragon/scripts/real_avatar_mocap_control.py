@@ -23,7 +23,7 @@ class mocap_control():
     self.duration = rospy.get_param("~duration", 8)
     self.nav_pub = rospy.Publisher("/dragon/uav/nav", FlightNav, queue_size=1)
     self.att_control_pub = rospy.Publisher("/dragon/final_target_baselink_rot", DesireCoord, queue_size=1)
-    self.mocap_sub = rospy.Subscriber("mocap/pose", PoseStamped, self.mocapCb)
+    self.mocap_sub = rospy.Subscriber("/mocap_node/avatar/pose", PoseStamped, self.mocapCb)
     self.flight_state_sub = rospy.Subscriber("/dragon/flight_state", UInt8, self.flight_stateCb)
 
     self.omega = 2 * math.pi / self.period
@@ -33,6 +33,7 @@ class mocap_control():
     self.nav_rate = 1 / self.nav_rate
     self.Hovering = False
     self.mocap_pos = None
+    self.flight_state = 0
 
     self.flight_nav = FlightNav()
     self.flight_nav.target = FlightNav.COG

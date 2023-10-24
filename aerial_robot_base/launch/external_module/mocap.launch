@@ -1,6 +1,7 @@
 <launch>
 
   <arg name="robot_id" default="1"/>
+  <arg name="avatar_id" default="2" />
 
   <node pkg="mocap_optitrack"
     type="mocap_node"
@@ -15,9 +16,9 @@
                pose2d: mocap/ground_pose
                child_frame_id: baselink
                parent_frame_id: world
-         '2':
-               pose: avator/pose
-               pose2d: avator/ground_pose
+         '$(arg avatar_id)':
+               pose: avatar/pose
+               pose2d: avatar/ground_pose
                child_frame_id: baselink
                parent_frame_id: world
       optitrack_config:

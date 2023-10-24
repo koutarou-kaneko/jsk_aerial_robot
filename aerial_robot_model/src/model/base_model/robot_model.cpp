@@ -1,7 +1,7 @@
 #include <aerial_robot_model/model/aerial_robot_model.h>
+#include "std_msgs/String.h"
 
 namespace aerial_robot_model {
-
   RobotModel::RobotModel(bool init_with_rosparam, bool verbose, bool fixed_model, double fc_f_min_thre, double fc_t_min_thre, double epsilon):
     verbose_(verbose),
     fixed_model_(fixed_model),
@@ -15,7 +15,8 @@ namespace aerial_robot_model {
     thrust_max_(0),
     thrust_min_(0),
     mass_(0),
-    initialized_(false)
+    initialized_(false),
+    static_thrust_available_(true)
   {
     if (init_with_rosparam)
       getParamFromRos();
@@ -508,7 +509,12 @@ namespace aerial_robot_model {
     if(static_thrust_.maxCoeff() > thrust_max_ || static_thrust_.minCoeff() < thrust_min_)
       {
         if(verbose)
+          std_msgs::String msg;
+          std::stringstream ss;
+          /*ss = "static_thrust_error";
+          msg.data = ss.str();*/
           ROS_ERROR("Invalid static thrust, max: %f, min: %f", static_thrust_.maxCoeff(), static_thrust_.minCoeff());
+          static_thrust_available_ = false;
         return false;
       }
 

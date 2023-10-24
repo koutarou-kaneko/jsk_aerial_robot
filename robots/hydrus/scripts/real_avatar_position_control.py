@@ -19,6 +19,8 @@ class avatar_control():
     def __init__(self):
 
         self.debug = rospy.get_param("~debug", False)
+        self.gripper = rospy.get_param("~gripper", False)
+
         topic_name = '/hydrus/joints_ctrl'
 
         if self.debug:
@@ -30,6 +32,7 @@ class avatar_control():
         self.flight_state_sub = rospy.Subscriber("/hydrus/flight_state", UInt8, self.flight_stateCb)
 
         self.raw_servo_position = None
+        self.desire_joint = JointState()
         self.Hovering = False
         self.servo_Switch_state = True
         self.danger_config = False
@@ -82,13 +85,19 @@ class avatar_control():
         if self.debug==False and self.Hovering==True and self.servo_Switch_state==True and self.danger_config==False:
             for i , n in enumerate(msg.name):
                 if 'yaw' in n:
-                    print('OK')
                     self.servo_Switch(msg, Switch=False, servo_number=i+1)
+                if self.gripper==True:
+                    self.servo_Switch(msg, Switch=True, servo_number=4)
+                    self.servo_Switch_state = False
+
             rospy.loginfo("servo off")
-        if self.debug==True and self.servo_Switch_state==True:
+        if self.debug==True and self.servo_Switch_state==True and self.danger_config==False:
             for i , n in enumerate(msg.name):
                 if 'yaw' in n:
                     self.servo_Switch(msg, Switch=False, servo_number=i+1)
+                if self.gripper==True:
+                    self.servo_Switch(msg, Switch=True, servo_number=4)
+                    self.servo_Switch_state = False
             rospy.loginfo("servo off")
         
         self.raw_servo_position = msg
@@ -103,46 +112,64 @@ class avatar_control():
 
             if self.raw_servo_position is None:
                 continue
+            # for hydrus
+            if self.gripper==False:
+                self.desire_joint = copy.deepcopy(self.raw_servo_position)
+                rospy.loginfo(self.desire_joint)
+                self.desire_joint.name = ["joint1", "joint2","joint3"]
+                del self.desire_joint.position[0::2]
 
-            desire_joint = copy.deepcopy(self.raw_servo_position)
-            desire_joint.name = ["joint1", "joint2","joint3"]
-            del desire_joint.position[0::2]
-
+            # for hydrus_gripper
+            if self.gripper==True:
+                self.desire_joint = copy.deepcopy(self.raw_servo_position)
+                del self.desire_joint.position[2:5]
+                del self.desire_joint.position[0]
+                #rospy.loginfo(self.desire_joint)
+                self.desire_joint.name = ["joint1", "joint3"]
+                '''
+                self.desire_joint.position[0] = self.raw_servo_position.position[1]
+                self.desire_joint.position[1] = self.raw_servo_position.position[5]
+                # self.desire_joint.position[2] = self.raw_servo_position.position[5]   
+                self.desire_joint.velocity[0] = self.raw_servo_position.velocity[0]
+                self.desire_joint.velocity[1] = self.raw_servo_position.velocity[2]
+                self.desire_joint.velocity[2] = 0
+                '''
             #avoid over angle 
-            for i in range(len(desire_joint.position)):
-                if desire_joint.position[i] > self.angle_limit:
-                    desire_joint.position[i] = self.angle_limit
-                if desire_joint.position[i] < -self.angle_limit:
-                    desire_joint.position[i] = -self.angle_limit
+            for i in range(len(self.desire_joint.position)):
+                if self.desire_joint.position[i] > self.angle_limit:
+                    self.desire_joint.position[i] = self.angle_limit
+                if self.desire_joint.position[i] < -self.angle_limit:
+                    self.desire_joint.position[i] = -self.angle_limit
 
             # avoid stright line configuration
-            sum = 0.0
-            #for i in range(len(desire_joint.position)):
-                #sum += desire_joint.position[i]
-            sum = desire_joint.position[0] + desire_joint.position[1]
-            if sum < self.yaw_sum_threshold:
-                if desire_joint.position[2]<=self.min_yaw_angle:
+            if self.gripper==False:
+                sum = 0.0
+                #for i in range(len(desire_joint.position)):
+                    #sum += desire_joint.position[i]
+                sum = self.desire_joint.position[0] + self.desire_joint.position[1]
+                if sum <= self.yaw_sum_threshold and self.desire_joint.position[2]<=1.5:
                     rospy.loginfo("caution")
                     self.danger_config=True
                     self.servo_Switch(self,Switch=True,servo_number=2)
                     self.servo_Switch(self,Switch=True,servo_number=4)
-                    desire_joint.position[0] = self.yaw_sum_threshold/2
-                    desire_joint.position[1] = self.yaw_sum_threshold/2
+                    self.desire_joint.position[0] = self.yaw_sum_threshold/2
+                    self.desire_joint.position[1] = self.yaw_sum_threshold/2
                 else:
                     self.danger_config=False
-                    self.servo_Switch(self,Switch=False,servo_number=2)
-                    self.servo_Switch(self,Switch=False,servo_number=4)
-            else:
-                self.danger_config=False
-                
-                '''
-                for i, n in enumerate(desire_joint.name):
-                    if 'yaw' in n:
-                        if desire_joint.position[i] >0:
-                            desire_joint.position[i] = self.min_yaw_angle
-                        if desire_joint.position[i] <0:
-                            desire_joint.position[i] = -self.min_yaw_angle
-                '''
+
+            if self.gripper==True:
+                sum = 0.0
+                sum = self.desire_joint.position[0] + self.desire_joint.position[1]
+                if sum <= -2.0:
+                    self.danger_config=True
+                    self.servo_Switch(self,Switch=True,servo_number=2)
+                    self.servo_Switch(self,Switch=True,servo_number=6)
+                    self.desire_joint.position[0] = 0.0
+                    self.desire_joint.position[1] = -2.0
+                else:
+                    self.danger_config=False
+                   
+
 
             '''
             # add gimbal angle if necessary
@@ -152,7 +179,7 @@ class avatar_control():
             '''
 
             # send joint angles
-            self.joint_control_pub.publish(desire_joint)
+            self.joint_control_pub.publish(self.desire_joint)
 
             r.sleep()
 
