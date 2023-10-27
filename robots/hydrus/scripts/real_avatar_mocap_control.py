@@ -15,6 +15,12 @@ from spinal.msg import DesireCoord
 
 class mocap_control():
   def __init__(self):
+
+    self.real_machine = rospy.get_param("~real_machine", False)
+    topic_name = '/mocap_node/avatar/pose'
+    if self.real_machine:
+      topic_name = '/avator_mocap_node/avatar/pose'
+
     
     self.period = rospy.get_param("~period", 40.0)
     self.radius = rospy.get_param("~radius", 1.0)
@@ -24,7 +30,7 @@ class mocap_control():
     self.duration = rospy.get_param("~duration", 8)
     self.nav_pub = rospy.Publisher("/hydrus/uav/nav", FlightNav, queue_size=1)
     self.att_control_pub = rospy.Publisher("/hydrus/final_target_baselink_rot", DesireCoord, queue_size=1)
-    self.mocap_sub = rospy.Subscriber("/mocap_node/avatar/pose", PoseStamped, self.mocapCb)
+    self.mocap_sub = rospy.Subscriber(topic_name, PoseStamped, self.mocapCb)
     self.flight_state_sub = rospy.Subscriber("/hydrus/flight_state", UInt8, self.flight_stateCb)
     self.robot_pos_sub = rospy.Subscriber("/hydrus/mocap/pose",PoseStamped, self.robot_posCb)
 
@@ -39,7 +45,6 @@ class mocap_control():
     self.mocap_init_flag = False
     self.robot_init_flag = False
     self.robot_init_pos = None
-
 
     self.flight_nav = FlightNav() 
     self.flight_nav.target = FlightNav.COG
@@ -61,13 +66,12 @@ class mocap_control():
 
   def flight_stateCb(self, msg):
     self.flight_state = msg.data
-    #rospy.loginfo("flight_state is %s", self.flight_state)
     if self.flight_state == 5:
       #rospy.loginfo("Hovering")
       self.Hovering = True  
   
   def robot_posCb(self,msg):
-    if self.robot_init_flag == False:
+    if self.robot_init_flag == False and self.Hovering == True:
       self.robot_init_pos = msg.pose.position
       self.robot_init_flag = True
       rospy.loginfo("robot_init_pos is [%f, %f, %f]",self.robot_init_pos.x, self.robot_init_pos.y, self.robot_init_pos.z)
@@ -89,29 +93,27 @@ class mocap_control():
           self.mocap_init_flag = False
           continue
       
-      if self.mocap_init_flag == False:
-        mocap_init_position = copy.deepcopy(self.mocap_pos)
-        print(mocap_init_position)
-        rospy.loginfo("mocap init done")
+      if self.mocap_init_flag == False and self.Hovering == True:
+        mocap_init_pos = copy.deepcopy(self.mocap_pos)
+        rospy.loginfo("mocap_init_pos is [%f, %f, %f]",mocap_init_pos.x, mocap_init_pos.y, mocap_init_pos.z)
         self.mocap_init_flag = True
 
       if self.mocap_init_flag==True and self.robot_init_flag==True:
-        self.flight_nav.target_pos_x = self.mocap_pos.x - mocap_init_position.x + self.robot_init_pos.x
-        self.flight_nav.target_pos_y = self.mocap_pos.y - mocap_init_position.y + self.robot_init_pos.y
-        self.flight_nav.target_pos_z = self.mocap_pos.z - mocap_init_position.z + 0.6
+        self.flight_nav.target_pos_x = self.mocap_pos.x - mocap_init_pos.x + self.robot_init_pos.x
+        self.flight_nav.target_pos_y = self.mocap_pos.y - mocap_init_pos.y + self.robot_init_pos.y
+        self.flight_nav.target_pos_z = self.mocap_pos.z - mocap_init_pos.z + self.robot_init_pos.z
+        '''
         self.flight_nav.target_vel_x = self.velocity
         self.flight_nav.target_vel_y = self.velocity
         self.flight_nav.target_vel_z = self.velocity
-        self.desire_att.roll = self.mocap_euler[0]
-        self.desire_att.pitch = self.mocap_euler[1]
+        '''
         self.flight_nav.target_yaw = self.mocap_euler[2]
-        self.flight_nav.target_omega_z = self.omega
+        #self.flight_nav.target_omega_z = self.omega
       #rospy.loginfo("target_pos is [%f, %f, %f]", self.flight_nav.target_pos_x, self.flight_nav.target_pos_y, self.flight_nav.target_pos_z)
-      #rospy.loginfo("target_rot is [%f, %f, %f]", self.desire_att.roll, self.desire_att.pitch, self.flight_nav.target_yaw)
 
-      if self.Hovering == True:
+      if self.mocap_init_flag==True and self.robot_init_flag==True and self.Hovering == True:
         self.nav_pub.publish(self.flight_nav)
-        self.att_control_pub.publish(self.desire_att)
+        #self.att_control_pub.publish(self.desire_att)
 
       if self.flight_state == 4:
         self.flight_nav.target_pos_x = 0.0
@@ -125,7 +127,7 @@ class mocap_control():
         self.flight_nav.target_yaw = 0.0
         self.flight_nav.target_omega_z = self.omega
         self.nav_pub.publish(self.flight_nav)
-        self.att_control_pub.publish(self.desire_att)
+        #self.att_control_pub.publish(self.desire_att)
 
       time.sleep(self.nav_rate)
 

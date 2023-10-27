@@ -95,6 +95,7 @@ private:
   // private functions
   void getParamFromRos();
 
+
 protected:
 
   void setFeasibleControlRollPitchDistsJacobian(const Eigen::MatrixXd fc_rp_dists_jacobian) {fc_rp_dists_jacobian_ = fc_rp_dists_jacobian;}

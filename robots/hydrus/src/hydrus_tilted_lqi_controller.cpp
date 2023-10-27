@@ -21,12 +21,12 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
 
 bool HydrusTiltedLQIController::checkRobotModel()
 {
-  bool flag  = robot_model_->stabilityCheck();
+  bool static_flag  = robot_model_->stabilityCheck();
   std_msgs::Bool static_thrust_available_msg;
-  static_thrust_available_msg.data = flag;
+  static_thrust_available_msg.data = static_flag;
   static_thrust_available_pub_.publish(static_thrust_available_msg);
   
-  ROS_INFO_STREAM(flag);
+  /*ROS_INFO_STREAM(flag);*/
   if(!robot_model_->initialized())
     {
       ROS_DEBUG_NAMED("LQI gain generator", "LQI gain generator: robot model is not initiliazed");

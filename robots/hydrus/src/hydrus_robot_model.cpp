@@ -20,6 +20,7 @@ HydrusRobotModel::HydrusRobotModel(bool init_with_rosparam, bool verbose, double
   if (getJointNum() == 0) {
     updateRobotModel(); // workaround for tilt quadrotor robot model
   }
+
 }
 
 void HydrusRobotModel::calcFeasibleControlRollPitchDists()

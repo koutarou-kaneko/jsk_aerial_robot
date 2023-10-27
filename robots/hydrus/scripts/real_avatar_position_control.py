@@ -7,7 +7,7 @@ import rospy
 import math
 import copy
 import select, termios, tty
-from std_msgs.msg import UInt8
+from std_msgs.msg import UInt8, Bool
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from spinal.msg import DesireCoord
@@ -30,18 +30,20 @@ class avatar_control():
         self.joint_control_pub = rospy.Publisher(topic_name, JointState, queue_size=10)
         self.avatar_sub = rospy.Subscriber('/dynamixel_workbench/joint_states', JointState, self.avatarCb)
         self.flight_state_sub = rospy.Subscriber("/hydrus/flight_state", UInt8, self.flight_stateCb)
+        self.static_thrust_sub = rospy.Subscriber("/hydrus/static_thrust_available", Bool, self.static_thrustCb)
 
         self.raw_servo_position = None
         self.desire_joint = JointState()
         self.Hovering = False
         self.servo_Switch_state = True
         self.danger_config = False
+        self.staric_thrust_available = True
         self.angle_limit = rospy.get_param("angle_limit", 1.56) # the limitation of the joint
         self.min_yaw_angle = rospy.get_param("min_yaw_angle", 0.3)
         self.yaw_sum_threshold = rospy.get_param("yaw_sum_threshold", 1.0)
         self.servo_init_time = 0.5
 
-    def servo_Switch(self,msg,Switch,servo_number):
+    def servo_Switch(self,Switch,servo_number):
         rospy.wait_for_service('/dynamixel_workbench/dynamixel_command')
         try:
             client = rospy.ServiceProxy('/dynamixel_workbench/dynamixel_command', DynamixelCommand)
@@ -49,6 +51,34 @@ class avatar_control():
         except rospy.ServiceException as e:
             print("Service call failed: {}".format(e))
         self.servo_Switch_state = Switch
+
+    def servo_number_to_name_converter(self,servo_number):
+        if servo_number == 1:
+            return("joint1_pitch")
+        if servo_number == 2:
+            return("joint1_yaw")
+        if servo_number == 3:
+            return("joint2_pitch")
+        if servo_number == 4:
+            return("joint2_yaw")
+        if servo_number == 5:
+            return("joint3_pitch")
+        if servo_number == 6:
+            return("joint3_yaw")
+        
+    def move_servo(self,Servo_number,desire_angle):
+        self.servo_Switch(Switch=True, servo_number=Servo_number)
+        self.desire_servo_position = JointTrajectory()
+        self.desire_servo_position.joint_names = [self.servo_number_to_name_converter(Servo_number)]
+        self.desire_servo_position.points = [JointTrajectoryPoint()]
+        self.desire_servo_position.points[0].positions = [desire_angle]
+        self.desire_servo_position.points[0].velocities = [0.1]       
+        self.desire_servo_position.points[0].time_from_start = rospy.Time(1.0)
+        self.joint_servo_pub.publish(self.desire_servo_position)
+        rospy.sleep(3.0)
+        self.servo_Switch(Switch=False, servo_number=Servo_number)
+        rospy.loginfo("move done")
+
 
     def set_servo_init(self,msg):
         # set the joint servo to havering
@@ -67,9 +97,12 @@ class avatar_control():
             self.Hovering = True 
         '''
         if self.flight_state == 4:
-            self.servo_switch(msg, Switch=True)
+            self.servo_switch(Switch=True)
             self.set_servo_init(msg)
         '''
+
+    def static_thrustCb(self,msg):
+        self.staric_thrust_available = msg.data
 
     def avatarCb(self,msg):
         
@@ -77,7 +110,7 @@ class avatar_control():
         if self.raw_servo_position is None:
             # set the joint servo on
             for i , n in enumerate(msg.name):
-                self.servo_Switch(msg, Switch=True, servo_number=i+1)
+                self.servo_Switch(Switch=True, servo_number=i+1)
             # set the joint servo to havering
             self.set_servo_init(msg)
 
@@ -85,18 +118,17 @@ class avatar_control():
         if self.debug==False and self.Hovering==True and self.servo_Switch_state==True and self.danger_config==False:
             for i , n in enumerate(msg.name):
                 if 'yaw' in n:
-                    self.servo_Switch(msg, Switch=False, servo_number=i+1)
+                    self.servo_Switch(Switch=False, servo_number=i+1)
                 if self.gripper==True:
-                    self.servo_Switch(msg, Switch=True, servo_number=4)
+                    self.servo_Switch(Switch=True, servo_number=4)
                     self.servo_Switch_state = False
-
             rospy.loginfo("servo off")
         if self.debug==True and self.servo_Switch_state==True and self.danger_config==False:
             for i , n in enumerate(msg.name):
                 if 'yaw' in n:
-                    self.servo_Switch(msg, Switch=False, servo_number=i+1)
+                    self.servo_Switch(Switch=False, servo_number=i+1)
                 if self.gripper==True:
-                    self.servo_Switch(msg, Switch=True, servo_number=4)
+                    self.servo_Switch(Switch=True, servo_number=4)
                     self.servo_Switch_state = False
             rospy.loginfo("servo off")
         
@@ -150,8 +182,8 @@ class avatar_control():
                 if sum <= self.yaw_sum_threshold and self.desire_joint.position[2]<=1.5:
                     rospy.loginfo("caution")
                     self.danger_config=True
-                    self.servo_Switch(self,Switch=True,servo_number=2)
-                    self.servo_Switch(self,Switch=True,servo_number=4)
+                    self.servo_Switch(Switch=True,servo_number=2)
+                    self.servo_Switch(Switch=True,servo_number=4)
                     self.desire_joint.position[0] = self.yaw_sum_threshold/2
                     self.desire_joint.position[1] = self.yaw_sum_threshold/2
                 else:
@@ -160,6 +192,25 @@ class avatar_control():
             if self.gripper==True:
                 sum = 0.0
                 sum = self.desire_joint.position[0] + self.desire_joint.position[1]
+                
+                if self.staric_thrust_available == False:
+                    self.danger_config = True
+                    if self.desire_joint.position[0] <= self.desire_joint.position[1]:
+                        self.desire_joint.position[0] = 0.0
+                        self.joint_control_pub.publish(self.desire_joint)
+                        self.servo_Switch(Switch=True,servo_number=6)
+                        self.move_servo(Servo_number=2,desire_angle=0.0)
+                        self.servo_Switch(Switch=False,servo_number=6)
+                        self.danger_config = False
+                    if self.desire_joint.position[0] > self.desire_joint.position[1]:
+                        self.desire_joint.position[1] = 0.0
+                        self.joint_control_pub.publish(self.desire_joint)
+                        self.servo_Switch(Switch=True,servo_number=2)
+                        self.move_servo(Servo_number=6,desire_angle=0.0)
+                        self.servo_Switch(Switch=False,servo_number=2)
+                        self.danger_config = False
+                
+                '''
                 if sum <= -2.0:
                     self.danger_config=True
                     self.servo_Switch(self,Switch=True,servo_number=2)
@@ -168,7 +219,7 @@ class avatar_control():
                     self.desire_joint.position[1] = -2.0
                 else:
                     self.danger_config=False
-                   
+                '''
 
 
             '''
