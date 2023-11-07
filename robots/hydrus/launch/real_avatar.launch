@@ -7,6 +7,7 @@
   <arg name="real_machine" default="false" />
   <arg name="simulation" default="true" />
   <arg name="gripper" default="false" />
+  <arg name="torque_control" default="false" />
   
   <arg name="type" default="quad" />
   <arg name="onboards_model" default="default_mode_201907" />
@@ -86,10 +87,17 @@
 
   ###### joint angles from real avator ####
   <include file="$(find hydrus)/launch/includes/dynamixel_controllers.launch" />
-  <node pkg="hydrus" type="real_avatar_position_control.py" name="real_avatar_position_control" output="screen">
-    <param name="debug" value="$(arg debug)" />
-    <param name="gripper" value="$(arg gripper)" />
-  </node>
-    
+  <group if = "$(arg torque_control)">
+    <node pkg="hydrus" type="real_avatar_position_control.py" name="real_avatar_position_control" output="screen">
+      <param name="debug" value="$(arg debug)" />
+      <param name="gripper" value="$(arg gripper)" />
+    </node>
+  </group>
+  <group unless = "$(torque_control)">
+    <node pkg="hydrus" type="real_avatar_torque_control.py" name="real_avatar_torque_control" output="screen">
+      <param name="debug" value="$(arg debug)" />
+      <param name="gripper" value="$(arg gripper)" />
+    </node>
+  </group>
 </launch>
 
