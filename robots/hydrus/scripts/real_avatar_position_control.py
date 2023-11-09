@@ -30,6 +30,7 @@ class avatar_control():
 
         self.joint_servo_pub = rospy.Publisher('/dynamixel_workbench/joint_trajectory', JointTrajectory, queue_size=10)
         self.joint_control_pub = rospy.Publisher(topic_name, JointState, queue_size=10)
+        self.ref_joint_angles_pub = rospy.Publisher('/hydrus/ref_joint_angles', JointState, queue_size=10)
         self.avatar_sub = rospy.Subscriber('/dynamixel_workbench/joint_states', JointState, self.avatarCb)
         self.flight_state_sub = rospy.Subscriber("/hydrus/flight_state", UInt8, self.flight_stateCb)
         self.static_thrust_sub = rospy.Subscriber("/hydrus/static_thrust_available", Bool, self.static_thrustCb)
@@ -221,12 +222,13 @@ class avatar_control():
             '''
             # add gimbal angle if necessary
             if self.debug:
-                desire_joint.name.extend(['gimbal1_roll', 'gimbal1_pitch', 'gimbal2_roll', 'gimbal2_pitch', 'gimbal3_roll', 'gimbal3_pitch', 'gimbal4_roll', 'gimbal4_pitch'])
+                desire_joint.name.extend(['gimbal1_roll', 'gimbal1_pitch', 'gimbal2_roll'opt_joint_an, 'gimbal2_pitch', 'gimbal3_roll', 'gimbal3_pitch', 'gimbal4_roll', 'gimbal4_pitch'])
                 desire_joint.position.extend([0] * 8)
             '''
 
             # send joint angles
-            self.joint_control_pub.publish(self.desire_joint)
+            #self.joint_control_pub.publish(self.desire_joint)
+            self.ref_joint_angles_pub.publish(self.desire_joint)
 
             r.sleep()
 

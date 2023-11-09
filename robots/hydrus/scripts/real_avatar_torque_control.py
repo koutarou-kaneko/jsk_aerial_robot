@@ -12,8 +12,6 @@ import select, termios, tty
 from std_msgs.msg import UInt8, Bool
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-from spinal.msg import DesireCoord
-from std_msgs.msg import Empty
 from dynamixel_workbench_msgs.srv import *
 
 class avatar_control():
@@ -22,22 +20,25 @@ class avatar_control():
 
         self.debug = rospy.get_param("~debug", False)
         self.gripper = rospy.get_param("~gripper", False)
-
+        
         topic_name = '/hydrus/joints_ctrl'
-
         if self.debug:
             topic_name = '/hydrus/joint_states'
-
+        
         self.joint_servo_pub = rospy.Publisher('/dynamixel_workbench/joint_trajectory', JointTrajectory, queue_size=10)
-        self.joint_control_pub = rospy.Publisher(topic_name, JointState, queue_size=10)
-        self.joint_torque_pub = rospy.Publsher('/dynamixel_workbench/cmd_current', JointState, queue_size=10)
+        self.joint_torque_pub = rospy.Publisher('/dynamixel_workbench/cmd_current', JointState, queue_size=10)
+        self.joint_control_pub = rospy.Publisher('/hydrus/avatar_pos', JointState, queue_size=10)
+        self.ref_joint_angles_pub = rospy.Publisher('/hydrus/ref_joint_angles', JointState, queue_size=10)
         self.avatar_sub = rospy.Subscriber('/dynamixel_workbench/joint_states', JointState, self.avatarCb)
         self.flight_state_sub = rospy.Subscriber("/hydrus/flight_state", UInt8, self.flight_stateCb)
         self.static_thrust_sub = rospy.Subscriber("/hydrus/static_thrust_available", Bool, self.static_thrustCb)
+        self.fusion_angles_sub = rospy.Subscriber(topic_name, JointState, self.fusion_anglesCb)
 
         self.raw_servo_position = None
         self.desire_joint = JointState()
         self.desire_torque = JointState()
+        self.target_pos = JointTrajectory()
+        self.fusion_angles = []
         self.Hovering = False
         self.servo_Switch_state = True
         self.danger_config = False
@@ -99,6 +100,12 @@ class avatar_control():
         rospy.sleep(self.servo_init_time * 10)
         rospy.loginfo("joint servo init DONE!")
 
+    def torque_decision(self):
+        self.desire_torque.name = ['joint1_pitch', 'joint1_yaw', 'joint2_pitch', 'joint2_yaw', 'joint3_pitch', 'joint3_yaw']
+        #self.desire_torque.position = self.fusion_angles.position
+        #self.desire_torque.velocity = [0,0]
+        self.desire_torque.effort = [150, 40, 150, 40, 150, 40]
+
     def flight_stateCb(self,msg):
         self.flight_state = msg.data
         if self.flight_state == 5:
@@ -111,6 +118,17 @@ class avatar_control():
 
     def static_thrustCb(self,msg):
         self.staric_thrust_available = msg.data
+
+    def fusion_anglesCb(self,msg):
+        self.fusion_angles = list(msg.position)
+        
+        if self.fusion_angles !=[]:
+            self.target_pos.joint_names = ["joint1_pitch", "joint1_yaw", "joint2_pitch", "joint2_yaw", "joint3_pitch", "joint3_yaw"]
+            self.target_pos.points = [JointTrajectoryPoint()]
+            self.target_pos.points[0].positions = [0.0, self.fusion_angles[0], 0.0, self.fusion_angles[1], 0.0, self.fusion_angles[2]]
+            self.target_pos.points[0].time_from_start = rospy.Time(self.servo_init_time)
+            #print(self.target_pos)
+
 
     def avatarCb(self,msg):
         
@@ -202,6 +220,7 @@ class avatar_control():
                         self.move_servo(Servo_number=[6],desire_angle=[0.0])
                         self.servo_Switch(Switch=False,servo_number=2)
                         self.danger_config = False
+
             '''
             # add gimbal angle if necessary
             if self.debug:
@@ -209,9 +228,19 @@ class avatar_control():
                 desire_joint.position.extend([0] * 8)
             '''
 
+            self.torque_decision()
+
+            cnt = 0
+            if cnt % 2 == 0:
+                self.ref_joint_angles_pub.publish(self.desire_joint)
+                self.joint_control_pub.publish(self.desire_joint)
+                self.joint_torque_pub.publish(self.desire_torque)
+                cnt + 1
+            else:
+                self.joint_servo_pub.publish(self.target_pos)
+                cnt + 1
+
             # send joint angles
-            self.joint_control_pub.publish(self.desire_joint)
-            self.joint_torque_pub.publish(self.desire_torque)
 
             r.sleep()
 

@@ -13,9 +13,10 @@
     <param name="fc_t_min_thresh" value="0.5"/>
     <param name="delta_angle_range" value="0.4"/>
     <param name="robot_model" value="hydrus_tilted_robot_model"/>
-    <remap from="opt_joint_angles" to="joint_states" />
+    <!-- <remap from="opt_joint_angles" to="joint_states" /> -->
   </node>
 
+  <!--
   ###########  Visualization  ###########
   <include file="$(find aerial_robot_model)/launch/aerial_robot_model.launch" >
     <arg name="headless" value="$(arg headless)" />
@@ -25,5 +26,6 @@
     <arg name="rviz_init_pose" value="$(arg config_dir)/RvizInit.yaml" />
     <arg name="need_joint_state" value="false" />
   </include>
+  -->
 
 </launch>

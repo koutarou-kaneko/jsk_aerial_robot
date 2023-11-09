@@ -13,7 +13,7 @@
  *     notice, this list of conditions and the following disclaimer.
  *   * Redistributions in binary form must reproduce the above
  *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/o2r other materials provided
+ *     disclaimer in the documentation and/o2r other materials providedpubli
  *     with the distribution.
  *   * Neither the name of the JSK Lab nor the names of its
  *     contributors may be used to endorse or promote products derived
@@ -201,7 +201,7 @@ void OptimizePosePlanner::plan(const ros::TimerEvent & e)
           opt_joint_angles_ = ref_joint_angles_; // reset
           for (size_t i = 0; i < joint_size; i++)
             {
-              opt_joint_angles_.position.at(i) += delta_angles.at(i);
+              opt_joint_angles_.position.at(i) += delta_angles.at(i); 
             }
         }
       else
