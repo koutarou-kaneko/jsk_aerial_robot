@@ -7,10 +7,12 @@
   <arg name="real_machine" default="false" />
   <arg name="simulation" default="true" />
   <arg name="gripper" default="false" />
-  <arg name="torque_control" default="false" />
+  <arg name="torque_control" default="true" />
   <arg name="type" default="quad" />
   <arg name="onboards_model" default="default_mode_201907" />
+  <arg name="optimize_RollPitchDist" default="true" />
 
+  ###### visualize ####
   <group if = "$(arg debug)">
     <group if = "$(arg gripper)">
       <include file="$(find aerial_robot_model)/launch/aerial_robot_model.launch"  >
@@ -32,10 +34,10 @@
         <arg name="need_joint_state" value="false" />
       </include >
     </group>
-
     <node pkg="tf" type="static_transform_publisher" name="static_cast" args="0 0 0 0 0 0 world hydrus/root 100" />
   </group>
 
+  ###### simulation ####
   <group unless = "$(arg debug)">
     <group unless = "$(arg real_machine)">
       <group if = "$(arg gripper)"> 
@@ -46,7 +48,7 @@
         </include > 
       </group> 
       <group unless = "$(arg gripper)"> 
-        <include file="$(find hydrus)/launch/bringup.launch"  > 
+        <include file="$(find hydrus)/launch/bringup.launch"> 
           <arg name="headless" value="$(arg headless)" /> 
           <arg name="real_machine" value="$(arg real_machine)" /> 
           <arg name="simulation" value="$(arg simulation)" /> 
@@ -83,7 +85,7 @@
     </group>
   </group>
 
-###### joint angles from real avator ####
+  ###### joint angles from real avator ####
   <include file="$(find hydrus)/launch/includes/dynamixel_controllers.launch" />
   <group unless = "$(arg torque_control)">
     <node pkg="hydrus" type="real_avatar_position_control.py" name="real_avatar_position_control" output="screen">
@@ -98,13 +100,23 @@
     </node>
   </group>
 
-###### optimize pose ####
-  <include file="$(find hydrus)/launch/optimize_pose.launch" />
-
-###### fusion avatar_pos and optimized pose ####
+  ###### optimize pose ####
   
-  <node pkg="hydrus" type="real_avatar_fusion_avatar_optimize.py" name="real_avatar_fusion_avatar_optimize" output="screen">
-    <param name="debug" value="$(arg debug)" />
-  </node>
+  <group if = "$(arg torque_control)" >
+    <node pkg="hydrus" type="optimize_pose_sample" name="optimize_pose_sample" ns="hydrus"  >
+      <param name="fc_t_min_thresh" value="0.5"/>
+      <param name="delta_angle_range" value="0.4"/>
+      <param name="robot_model" value="hydrus_tilted_robot_model"/>
+      <param name="optimize_RollPitchDist" value="$(arg optimize_RollPitchDist)" />
+    </node>
+  
+  ###### fusion avatar_pos and optimized pose ####
+  
+    <node pkg="hydrus" type="real_avatar_fusion_avatar_optimize.py" name="real_avatar_fusion_avatar_optimize" output="screen">
+      <param name="debug" value="$(arg debug)" />
+    </node>
+  
+  </group>
+  
   
 </launch>

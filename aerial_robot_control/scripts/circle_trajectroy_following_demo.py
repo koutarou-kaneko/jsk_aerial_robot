@@ -48,6 +48,7 @@ class CircTrajFollow():
 
     self.control_sub.unregister()
 
+  
   def stopRequest(self, signal, frame):
     rospy.loginfo("stop following")
     self.flight_nav.target_vel_x = 0
@@ -80,6 +81,7 @@ class CircTrajFollow():
         self.flight_nav.target_yaw = self.initial_target_yaw + cnt * self.nav_rate * self.omega
         self.flight_nav.target_omega_z = self.omega
 
+      rospy.loginfo("self.flight_nav.target_pos_x: %f", self.flight_nav.target_pos_x)
       self.nav_pub.publish(self.flight_nav)
 
       cnt += 1

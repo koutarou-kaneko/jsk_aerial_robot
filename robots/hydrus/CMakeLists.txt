@@ -61,7 +61,7 @@ add_dependencies(hydrus_controller_pluginlib aerial_robot_msgs_generate_messages
 find_package(NLopt REQUIRED)
 include_directories(${NLOPT_INCLUDE_DIRS})
 add_executable(optimize_pose_sample src/optimize_pose_sample.cpp)
-target_link_libraries(optimize_pose_sample ${catkin_LIBRARIES} ${NLOPT_LIBRARIES})
+target_link_libraries(optimize_pose_sample ${catkin_LIBRARIES} ${NLOPT_LIBRARIES} hydrus_robot_model)
 
 
 # test

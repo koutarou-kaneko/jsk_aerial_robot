@@ -35,6 +35,7 @@
 
 #pragma once
 
+#include <hydrus/hydrus_robot_model.h>
 #include <aerial_robot_control/control/under_actuated_tilted_lqi_controller.h>
 #include <spinal/PMatrixPseudoInverseWithInertia.h>
 #include <thread>
@@ -56,6 +57,14 @@ namespace aerial_robot_control
   protected:
     bool checkRobotModel() override;
   private:
+    boost::shared_ptr<HydrusRobotModel> hydrus_robot_model_;
     ros::Publisher static_thrust_available_pub_;
+    ros::Publisher fc_t_min_pub_;
+    ros::Publisher fc_t_min_thre_pub_;
+    ros::Publisher fc_rp_min_pub_;
+    bool update() override;
+    void controlCore() override;
+    void sendCmd() override;
   };
+
 };

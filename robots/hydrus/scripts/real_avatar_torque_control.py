@@ -9,7 +9,7 @@ import rospy
 import math
 import copy
 import select, termios, tty
-from std_msgs.msg import UInt8, Bool
+from std_msgs.msg import *
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from dynamixel_workbench_msgs.srv import *
@@ -33,12 +33,14 @@ class avatar_control():
         self.flight_state_sub = rospy.Subscriber("/hydrus/flight_state", UInt8, self.flight_stateCb)
         self.static_thrust_sub = rospy.Subscriber("/hydrus/static_thrust_available", Bool, self.static_thrustCb)
         self.fusion_angles_sub = rospy.Subscriber(topic_name, JointState, self.fusion_anglesCb)
+        self.fusion_balance_sub = rospy.Subscriber('/hydrus/fusion_torque_balance', Float64, self.fusion_torque_balanceCb)
 
         self.raw_servo_position = None
         self.desire_joint = JointState()
         self.desire_torque = JointState()
         self.target_pos = JointTrajectory()
         self.fusion_angles = []
+        self.fusion_torque_balance = 0.0
         self.Hovering = False
         self.servo_Switch_state = True
         self.danger_config = False
@@ -100,11 +102,13 @@ class avatar_control():
         rospy.sleep(self.servo_init_time * 10)
         rospy.loginfo("joint servo init DONE!")
 
-    def torque_decision(self):
+    def torque_decision(self,balance):
         self.desire_torque.name = ['joint1_pitch', 'joint1_yaw', 'joint2_pitch', 'joint2_yaw', 'joint3_pitch', 'joint3_yaw']
-        #self.desire_torque.position = self.fusion_angles.position
-        #self.desire_torque.velocity = [0,0]
-        self.desire_torque.effort = [150, 40, 150, 40, 150, 40]
+        if self.Hovering==True or self.debug==True:
+            yaw_torque = (1.0-balance)*100
+        else:
+            yaw_torque = 150
+        self.desire_torque.effort = [150, yaw_torque, 150, yaw_torque*1.5, 150, yaw_torque]
 
     def flight_stateCb(self,msg):
         self.flight_state = msg.data
@@ -129,7 +133,9 @@ class avatar_control():
             self.target_pos.points[0].time_from_start = rospy.Time(self.servo_init_time)
             #print(self.target_pos)
 
-
+    def fusion_torque_balanceCb(self,msg):
+        self.fusion_torque_balance = msg.data
+        
     def avatarCb(self,msg):
         
         #init
@@ -139,25 +145,6 @@ class avatar_control():
                 self.servo_Switch(Switch=True, servo_number=i+1)
             # set the joint servo to havering
             self.set_servo_init(msg)
-        '''
-        # set the joint servo off
-        if self.debug==False and self.Hovering==True and self.servo_Switch_state==True and self.danger_config==False:
-            for i , n in enumerate(msg.name):
-                if 'yaw' in n:
-                    self.servo_Switch(Switch=False, servo_number=i+1)
-                if self.gripper==True:
-                    self.servo_Switch(Switch=True, servo_number=4)
-                    self.servo_Switch_state = False
-            rospy.loginfo("servo off")
-        if self.debug==True and self.servo_Switch_state==True and self.danger_config==False:
-            for i , n in enumerate(msg.name):
-                if 'yaw' in n:
-                    self.servo_Switch(Switch=False, servo_number=i+1)
-                if self.gripper==True:
-                    self.servo_Switch(Switch=True, servo_number=4)
-                    self.servo_Switch_state = False
-            rospy.loginfo("servo off")
-        '''
         self.raw_servo_position = msg
         self.raw_servo_position.name = list(self.raw_servo_position.name)
         self.raw_servo_position.position = list(self.raw_servo_position.position)
@@ -172,8 +159,8 @@ class avatar_control():
                 continue
             # for hydrus
             if self.gripper==False:
+                #print(self.raw_servo_position)
                 self.desire_joint = copy.deepcopy(self.raw_servo_position)
-                #rospy.loginfo(self.desire_joint)
                 self.desire_joint.name = ["joint1", "joint2","joint3"]
                 del self.desire_joint.position[0::2]
 
@@ -192,6 +179,7 @@ class avatar_control():
                     self.desire_joint.position[i] = -self.angle_limit
 
             # avoid stright line configuration
+            '''
             if self.gripper==False:
                 if self.staric_thrust_available == False:
                     self.danger_config = True
@@ -202,6 +190,7 @@ class avatar_control():
                     self.move_servo(Servo_number=[4,6],desire_angle=[1.57,0.0])
                     #self.servo_Switch(Switch=False,servo_number=6)
                     self.danger_config = False
+            '''
 
             if self.gripper==True:
                 if self.staric_thrust_available == False:
@@ -228,8 +217,9 @@ class avatar_control():
                 desire_joint.position.extend([0] * 8)
             '''
 
-            self.torque_decision()
+            self.torque_decision(self.fusion_torque_balance)
 
+            # send joint angles
             cnt = 0
             if cnt % 2 == 0:
                 self.ref_joint_angles_pub.publish(self.desire_joint)
@@ -239,8 +229,6 @@ class avatar_control():
             else:
                 self.joint_servo_pub.publish(self.target_pos)
                 cnt + 1
-
-            # send joint angles
 
             r.sleep()
 
