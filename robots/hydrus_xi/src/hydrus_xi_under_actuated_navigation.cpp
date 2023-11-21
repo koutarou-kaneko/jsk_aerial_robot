@@ -190,12 +190,15 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   vectoring_nl_solver_ = boost::make_shared<nlopt::opt>(nlopt::LN_COBYLA, control_gimbal_names_.size());
   if(maximize_yaw_)
     {
+      std::cout << "maximaize yaw" << std::endl;
       vectoring_nl_solver_->set_max_objective(maximizeMinYawTorque, this);
       vectoring_nl_solver_->add_inequality_constraint(fcTMinConstraint, this, 1e-8);
     }
   else
-    vectoring_nl_solver_->set_max_objective(maximizeFCTMin, this);
-
+    {
+      std::cout << "maximaize FCTMin" << std::endl;
+      vectoring_nl_solver_->set_max_objective(maximizeFCTMin, this);
+    }
   vectoring_nl_solver_->add_inequality_constraint(baselinkRotConstraint, this, 1e-8);
 
   vectoring_nl_solver_->set_xtol_rel(1e-4); //1e-4
