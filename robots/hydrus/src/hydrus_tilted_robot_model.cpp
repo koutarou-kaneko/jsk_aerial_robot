@@ -3,6 +3,8 @@
 HydrusTiltedRobotModel::HydrusTiltedRobotModel(bool init_with_rosparam, bool verbose, double fc_t_min_thre, double epsilon):
   HydrusRobotModel(init_with_rosparam, verbose, fc_t_min_thre, 0, epsilon, 4)
 {
+  root_end_name_ = "link1_end";
+  link_end_name_ = "link4_end";
 }
 
 
@@ -45,6 +47,23 @@ void HydrusTiltedRobotModel::updateRobotModelImpl(const KDL::JntArray& joint_pos
     ROS_INFO_STREAM("f_norm_pitch: " << f_norm_pitch << "; f_norm_roll: " << f_norm_roll);
     ROS_INFO_STREAM("rescaled static thrust: " << getStaticThrust().transpose());
   }
+
+  /* calculate torque in cog frame to compensate force on end-effectors */
+  const auto seg_tf_map = getSegmentsTf();
+  KDL::Frame cog = getCog<KDL::Frame>();
+
+  KDL::Frame root_end = seg_tf_map.at(root_end_name_);
+  Eigen::Vector3d compensate_force_for_root_end_in_cog = aerial_robot_model::kdlToEigen(cog.M.Inverse() * root_end.M) * target_force_in_root_end_;
+  KDL::Frame cog_to_root_end = cog.Inverse() * root_end;
+  Eigen::MatrixXd cog_to_root_end_skew = aerial_robot_model::skew(Eigen::Vector3d(cog_to_root_end.p.x(), cog_to_root_end.p.y(), cog_to_root_end.p.z()));
+  compensate_torque_for_root_end_in_cog_ = cog_to_root_end_skew * compensate_force_for_root_end_in_cog;
+
+  KDL::Frame link_end = seg_tf_map.at(link_end_name_);
+  Eigen::Vector3d compensate_force_for_link_end_in_cog = aerial_robot_model::kdlToEigen(cog.M.Inverse() * link_end.M) * target_force_in_link_end_;
+  KDL::Frame cog_to_link_end = cog.Inverse() * link_end;
+  Eigen::MatrixXd cog_to_link_end_skew = aerial_robot_model::skew(Eigen::Vector3d(cog_to_link_end.p.x(), cog_to_link_end.p.y(), cog_to_link_end.p.z()));
+  compensate_torque_for_link_end_in_cog_ = cog_to_link_end_skew * compensate_force_for_link_end_in_cog;
+
 }
 
 /* plugin registration */
