@@ -6,7 +6,8 @@
 using namespace aerial_robot_control;
 
 HydrusTiltedLQIController::HydrusTiltedLQIController():
-  UnderActuatedTiltedLQIController()
+  UnderActuatedTiltedLQIController(),
+  external_wrench_pid_controllers_(0)
 {
 }
 
@@ -23,6 +24,35 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   fc_t_min_pub_ = nh_.advertise<std_msgs::Float64>("fc_t_min", 1);
   fc_t_min_thre_pub_  = nh_.advertise<std_msgs::Float64>("fc_t_min_thre", 1);
   fc_rp_min_pub_ = nh_.advertise<std_msgs::Float64>("fc_rp_min", 1);
+  target_wrench_sub_ = nh_.subscribe("target_wrench", 1, &HydrusTiltedLQIController::TargetWrenchCallback, this);
+
+  double limit_sum=1.0e6, limit_p=1.0e6, limit_i=1.0e6, limit_d=1.0e6;
+  double limit_err_p=1.0e6, limit_err_i=1.0e6, limit_err_d=1.0e6;
+  double p_gain=1.0e6, i_gain=1.0e6, d_gain=1.0e6;
+
+  nh_.getParam("limit_sum", limit_sum);
+  nh_.getParam("limit_p", limit_p);
+  nh_.getParam("limit_i", limit_i);
+  nh_.getParam("limit_d", limit_d);
+  nh_.getParam("limit_err_p", limit_err_p);
+  nh_.getParam("limit_err_i", limit_err_i);
+  nh_.getParam("limit_err_d", limit_err_d);
+  nh_.getParam("p_gain", p_gain);
+  nh_.getParam("i_gain", i_gain);
+  nh_.getParam("d_gain", d_gain);
+
+  external_wrench_pid_controllers_.push_back(PID("force_x", p_gain, i_gain, d_gain, limit_sum, limit_p, limit_i, limit_d, limit_err_p, limit_err_i, limit_err_d));
+  external_wrench_pid_controllers_.push_back(PID("force_y", p_gain, i_gain, d_gain, limit_sum, limit_p, limit_i, limit_d, limit_err_p, limit_err_i, limit_err_d));
+  external_wrench_pid_controllers_.push_back(PID("force_z", p_gain, i_gain, d_gain, limit_sum, limit_p, limit_i, limit_d, limit_err_p, limit_err_i, limit_err_d));
+  external_wrench_pid_controllers_.push_back(PID("torque_x", p_gain, i_gain, d_gain, limit_sum, limit_p, limit_i, limit_d, limit_err_p, limit_err_i, limit_err_d));
+  external_wrench_pid_controllers_.push_back(PID("torque_y", p_gain, i_gain, d_gain, limit_sum, limit_p, limit_i, limit_d, limit_err_p, limit_err_i, limit_err_d));
+  external_wrench_pid_controllers_.push_back(PID("torque_z", p_gain, i_gain, d_gain, limit_sum, limit_p, limit_i, limit_d, limit_err_p, limit_err_i, limit_err_d));
+
+}
+
+void HydrusTiltedLQIController::TargetWrenchCallback(geometry_msgs::WrenchStamped msg)
+{
+  target_wrench_ = msg;
 }
 
 bool HydrusTiltedLQIController::update()
@@ -55,6 +85,16 @@ bool HydrusTiltedLQIController::update()
 void HydrusTiltedLQIController::controlCore()
 {
   UnderActuatedTiltedLQIController::controlCore();
+  double du = ros::Time::now().toSec() - control_timestamp_;
+  external_wrench_pid_controllers_.at(X).update(target_wrench_.wrench.force.x - estimate_wrench_.wrench.force.x, du, 0, 0);
+  external_wrench_pid_controllers_.at(Y).update(target_wrench_.wrench.force.y - estimate_wrench_.wrench.force.y, du, 0, 0);
+  external_wrench_pid_controllers_.at(Z).update(target_wrench_.wrench.force.z - estimate_wrench_.wrench.force.z, du, 0, 0);
+  external_wrench_pid_controllers_.at(ROLL).update(target_wrench_.wrench.torque.x - estimate_wrench_.wrench.torque.x, du, 0, 0);
+  external_wrench_pid_controllers_.at(PITCH).update(target_wrench_.wrench.torque.y - estimate_wrench_.wrench.torque.y, du, 0, 0);
+  external_wrench_pid_controllers_.at(YAW).update(target_wrench_.wrench.torque.z - estimate_wrench_.wrench.torque.z, du, 0, 0);
+
+  control_timestamp_ = ros::Time::now().toSec();
+
 }
 
 void HydrusTiltedLQIController::sendCmd()

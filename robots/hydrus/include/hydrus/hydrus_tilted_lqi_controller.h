@@ -38,6 +38,7 @@
 #include <hydrus/hydrus_robot_model.h>
 #include <aerial_robot_control/control/under_actuated_tilted_lqi_controller.h>
 #include <spinal/PMatrixPseudoInverseWithInertia.h>
+#include <aerial_robot_control/control/utils/pid.h>
 #include <thread>
 
 namespace aerial_robot_control
@@ -62,9 +63,15 @@ namespace aerial_robot_control
     ros::Publisher fc_t_min_pub_;
     ros::Publisher fc_t_min_thre_pub_;
     ros::Publisher fc_rp_min_pub_;
+    ros::Subscriber target_wrench_sub_;
+    std::vector<PID> external_wrench_pid_controllers_;
+    geometry_msgs::WrenchStamped target_wrench_;
+    geometry_msgs::WrenchStamped estimate_wrench_;
     bool update() override;
     void controlCore() override;
     void sendCmd() override;
+
+    void TargetWrenchCallback(geometry_msgs::WrenchStamped msg);
   };
 
 };
