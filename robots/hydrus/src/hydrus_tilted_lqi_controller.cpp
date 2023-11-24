@@ -84,6 +84,7 @@ bool HydrusTiltedLQIController::update()
 
 void HydrusTiltedLQIController::controlCore()
 {
+  // external wrench  pid controller
   UnderActuatedTiltedLQIController::controlCore();
   double du = ros::Time::now().toSec() - control_timestamp_;
   external_wrench_pid_controllers_.at(X).update(target_wrench_.wrench.force.x - estimate_wrench_.wrench.force.x, du, 0, 0);
@@ -92,8 +93,23 @@ void HydrusTiltedLQIController::controlCore()
   external_wrench_pid_controllers_.at(ROLL).update(target_wrench_.wrench.torque.x - estimate_wrench_.wrench.torque.x, du, 0, 0);
   external_wrench_pid_controllers_.at(PITCH).update(target_wrench_.wrench.torque.y - estimate_wrench_.wrench.torque.y, du, 0, 0);
   external_wrench_pid_controllers_.at(YAW).update(target_wrench_.wrench.torque.z - estimate_wrench_.wrench.torque.z, du, 0, 0);
-
   control_timestamp_ = ros::Time::now().toSec();
+
+  // target wrench 
+  tf::Matrix3x3 uav_rot = estimator_->getOrientation(Frame::COG, estimate_mode_);
+  tf::Vector3 target_acc_w(pid_controllers_.at(X).result(),
+                           pid_controllers_.at(Y).result(),
+                           pid_controllers_.at(Z).result());
+  tf::Vector3 target_acc_cog = uav_rot.inverse() * target_acc_w;
+  Eigen::VectorXd target_wrench_acc_cog = Eigen::VectorXd::Zero(6);
+  target_wrench_acc_cog.head(3) = Eigen::Vector3d(target_acc_cog.x(), target_acc_cog.y(), target_acc_cog.z());
+
+  double target_ang_acc_x = pid_controllers_.at(ROLL).result();
+  double target_ang_acc_y = pid_controllers_.at(PITCH).result();
+  double target_ang_acc_z = pid_controllers_.at(YAW).result();
+  target_wrench_acc_cog.tail(3) = Eigen::Vector3d(target_ang_acc_x, target_ang_acc_y, target_ang_acc_z);
+
+  setTargetWrenchAccCog(target_wrench_acc_cog);
 
 }
 
@@ -120,6 +136,27 @@ bool HydrusTiltedLQIController::checkRobotModel()
     }
   return true;
 }
+/*
+void HydrusTiltedLQIController::controlCore()
+{
+  UnderActuatedTiltedLQIController::controlCore();
+  tf::Matrix3x3 uav_rot = estimator_->getOrientation(Frame::COG, estimate_mode_);
+  tf::Vector3 target_acc_w(pid_controllers_.at(X).result(),
+                           pid_controllers_.at(Y).result(),
+                           pid_controllers_.at(Z).result());
+  tf::Vector3 target_acc_cog = uav_rot.inverse() * target_acc_w;
+  Eigen::VectorXd target_wrench_acc_cog = Eigen::VectorXd::Zero(6);
+  target_wrench_acc_cog.head(3) = Eigen::Vector3d(target_acc_cog.x(), target_acc_cog.y(), target_acc_cog.z());
+
+  double target_ang_acc_x = pid_controllers_.at(ROLL).result();
+  double target_ang_acc_y = pid_controllers_.at(PITCH).result();
+  double target_ang_acc_z = pid_controllers_.at(YAW).result();
+  target_wrench_acc_cog.tail(3) = Eigen::Vector3d(target_ang_acc_x, target_ang_acc_y, target_ang_acc_z);
+
+  setTargetWrenchAccCog(target_wrench_acc_cog);
+}
+*/
+
 
 /* plugin registration */
 #include <pluginlib/class_list_macros.h>
