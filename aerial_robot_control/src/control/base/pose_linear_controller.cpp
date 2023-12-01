@@ -46,6 +46,7 @@ namespace aerial_robot_control
     vel_(0,0,0), target_vel_(0,0,0),
     rpy_(0,0,0), target_rpy_(0,0,0),
     target_acc_(0,0,0),
+    target_acc_ang_(0,0,0),
     start_rp_integration_(false)
   {
     pid_msg_.x.total.resize(1);
@@ -298,7 +299,7 @@ namespace aerial_robot_control
       {
         err_omega_z = target_omega_.z(); // part of the control in spinal
       }
-    pid_controllers_.at(YAW).update(err_yaw, du, err_omega_z);
+    pid_controllers_.at(YAW).update(err_yaw, du, err_omega_z, target_acc_ang_.z());
 
     // update
     control_timestamp_ = ros::Time::now().toSec();

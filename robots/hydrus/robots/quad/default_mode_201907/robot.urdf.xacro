@@ -108,4 +108,39 @@
     </inertial>
   </xacro:extra_module>
   <!-- end: gps -->
+
+
+  #### virtual links for end effectors ####
+  <link name="link1_end">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.00001"/>
+      <inertia
+          ixx="0.000001" ixy="0.0" ixz="0.0"
+          iyy="0.000001" iyz="0.0"
+          izz="0.000001"/>
+    </inertial>
+  </link>
+  <joint name="link1_end_joint" type="fixed">
+    <parent link="link1"/>
+    <child link="link1_end"/>
+    <origin xyz="0 0 0" rpy="0 0 ${pi}"/>
+  </joint>
+
+  <link name="link4_end">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.00001"/>
+      <inertia
+          ixx="0.000001" ixy="0.0" ixz="0.0"
+          iyy="0.000001" iyz="0.0"
+          izz="0.000001"/>
+    </inertial>
+  </link>
+  <joint name="link4_end_joint" type="fixed">
+    <parent link="link4"/>
+    <child link="link4_end"/>
+    <origin xyz="${link_length} 0 0" rpy="0 0 0"/>
+  </joint>
+
 </robot>

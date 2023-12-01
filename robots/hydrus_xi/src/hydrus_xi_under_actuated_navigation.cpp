@@ -141,7 +141,34 @@ namespace
     return planner->getFCTMinThresh() - planner->getRobotModelForPlan()->getFeasibleControlTMin();
   }
 
+  void kinematicsConstraint(unsigned m, double* result, unsigned n, const double* x, double *gradient, void *planner_ptr)
+  {
+    HydrusXiUnderActuatedNavigator *planner = reinterpret_cast<HydrusXiUnderActuatedNavigator*>(planner_ptr);
+    auto robot_model = planner->getRobotModelForPlan();
+    KDL::JntArray joints = planner->getJointPositionsForPlan();
+    //for(int i = 0; i < x.size(); i++)
+    //  joint_positions(planner->getControlIndices().at(i)) = x.at(i);
+    joints.data[0] = x[0];
+    joints.data[3] = x[1];
+    joints.data[6] = x[2];
+    joints.data[9] = x[3];
+    robot_model->updateRobotModel(joints);
+    robot_model->calcWrenchMatrixOnRoot();
+    auto Q = robot_model->calcWrenchMatrixOnCoG();
+    //planner->ffWrenchUpdate(planner->ff_f_xy_world_[0], planner->ff_f_xy_world_[1], planner->robot_model_real_->ff_t_z_);
+    Eigen::VectorXd thrusts(4), wrench_des(6), yaw_comp(6);
+    thrusts << x[4], x[5], x[6], x[7];
+    wrench_des << 0, 0, robot_model->getGravity()[2], 0, 0, 0;
+    yaw_comp << 0, 0, 0, 0, 0, 0;
+    auto res = Q*thrusts-robot_model->getMass()*wrench_des - yaw_comp;
+    for (int i=0; i<6; i++) {
+      result[i] = res[i];
+    }
+  }
+
 };
+
+
 
 HydrusXiUnderActuatedNavigator::HydrusXiUnderActuatedNavigator():
     opt_gimbal_angles_(0),

@@ -35,7 +35,7 @@
 
 #pragma once
 
-#include <hydrus/hydrus_robot_model.h>
+#include <hydrus/hydrus_tilted_robot_model.h>
 #include <aerial_robot_control/control/under_actuated_tilted_lqi_controller.h>
 #include <spinal/PMatrixPseudoInverseWithInertia.h>
 #include <aerial_robot_control/control/utils/pid.h>
@@ -58,20 +58,23 @@ namespace aerial_robot_control
   protected:
     bool checkRobotModel() override;
   private:
-    boost::shared_ptr<HydrusRobotModel> hydrus_robot_model_;
+    boost::shared_ptr<HydrusTiltedRobotModel> hydrus_robot_model_;
+    std::vector<PID> external_wrench_pid_controllers_;
+    std::vector<boost::shared_ptr<PidControlDynamicConfig> > external_wrench_pid_reconf_servers_;
     ros::Publisher static_thrust_available_pub_;
     ros::Publisher fc_t_min_pub_;
     ros::Publisher fc_t_min_thre_pub_;
     ros::Publisher fc_rp_min_pub_;
-    ros::Subscriber target_wrench_sub_;
-    std::vector<PID> external_wrench_pid_controllers_;
-    geometry_msgs::WrenchStamped target_wrench_;
-    geometry_msgs::WrenchStamped estimate_wrench_;
+    ros::Publisher feedforward_wrench_pub_;
+    ros::Subscriber desire_wrench_sub_;
+    Eigen::VectorXd desire_wrench_;
+    Eigen::VectorXd target_wrench_cog_;
+    Eigen::VectorXd p_wrench_stamp_;
     bool update() override;
     void controlCore() override;
     void sendCmd() override;
-
-    void TargetWrenchCallback(geometry_msgs::WrenchStamped msg);
+    void cfgWrenchPidCallback(aerial_robot_control::PIDConfig &config, uint32_t level, std::vector<int> controller_indices);
+    void DesireWrenchCallback(geometry_msgs::WrenchStamped msg);
   };
 
 };
