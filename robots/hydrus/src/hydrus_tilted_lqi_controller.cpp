@@ -300,9 +300,8 @@ void HydrusTiltedLQIController::controlCore()
   target_acc_.setY(p_wrench_diff[1] * mass_inv);
   target_acc_.setZ(p_wrench_diff[2] * mass_inv);
   target_acc_ang_.setZ(des_acc_ang[2]);
-
+  
   setTargetWrenchAccCog(target_wrench_acc_cog);
-
 
 }
 
