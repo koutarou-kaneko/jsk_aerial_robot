@@ -70,6 +70,7 @@ namespace aerial_robot_navigation
     const std::vector<std::string>& getControlNames() const { return control_gimbal_names_; }
     const std::vector<int>& getControlIndices() const { return control_gimbal_indices_; }
     const Eigen::VectorXd getDesireWrench() const { return desire_wrench_; }
+    const Eigen::VectorXd getEstExternalWrench() const { return est_external_wrench_; }
 
     const bool getPlanVerbose() const { return plan_verbose_; }
 
@@ -78,6 +79,7 @@ namespace aerial_robot_navigation
   private:
     ros::Publisher gimbal_ctrl_pub_;
     ros::Subscriber desire_wrench_sub_;
+    ros::Subscriber estimated_external_wrench_sub_;
     std::thread plan_thread_;
     boost::shared_ptr<HydrusTiltedRobotModel> robot_model_for_plan_;
     OsqpEigen::Solver yaw_range_lp_solver_;
@@ -104,10 +106,12 @@ namespace aerial_robot_navigation
     std::vector<double> lb;
     std::vector<double> ub;
     Eigen::VectorXd desire_wrench_;
+    Eigen::VectorXd est_external_wrench_;
 
     void threadFunc();
     bool plan();
     void DesireWrenchCallback(geometry_msgs::WrenchStamped msg);
+    void EstExternalWrenchCallBack(geometry_msgs::WrenchStamped msg);
 
     void rosParamInit() override;
   };

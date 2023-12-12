@@ -37,7 +37,7 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   desire_wrench_from_pos_ = Eigen::VectorXd::Zero(6);
   target_wrench_cog_ = Eigen::VectorXd::Zero(6);
   p_wrench_stamp_ = Eigen::VectorXd::Zero(6);
-  //desire_pos_ = Eigenn::Vector3d::Zero(3);
+  //desire_pos_ = Eigen::Vector3d::Zero(3);
   attaching_flag_ = false;
   const_err_i_flag_ = false;
 

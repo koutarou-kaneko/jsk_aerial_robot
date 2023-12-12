@@ -199,6 +199,21 @@ namespace
     robot_model->calcWrenchMatrixOnRoot();
     auto Q = robot_model->calcWrenchMatrixOnCoG();
     Eigen::VectorXd desire_wrench = planner->getDesireWrench();
+    Eigen::VectorXd est_external_wrench = planner->getEstExternalWrench();
+
+    //double mass_inv = 1/ robot_model_for_plan_->getMass();
+    //Eigen::Matrix3d inertia_inv = robot_model_for_plan_->getInertia<Eigen::Matrix3d>().inverse();
+    Eigen::Vector3d des_force,des_torque;
+    Eigen::Matrix3d cog_rot;
+    Eigen::Vector3d est_external_wrench_cog;
+    tf::matrixTFToEigen(estimator_->getOrientation(Frame::COG, estimate_mode_), cog_rot);
+    est_external_wrench_cog = cog_rot.inverse() * est_external_wrench;
+    for(int i;i<3;i++)
+      {
+        des_force[i] = desire_wrench[i] + est_external_wrench_cog[i];
+        des_torque[i] = desire_wrench[i+3] + est_external_wrench[i+3];
+      }
+
     Eigen::VectorXd thrusts(4), wrench_des(6), yaw_comp(6);
     thrusts << x[4], x[5], x[6], x[7];
     wrench_des << desire_wrench[0], desire_wrench[1], desire_wrench[2]+robot_model->getGravity()[2], 0, 0, 0;
@@ -241,7 +256,9 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
 
   gimbal_ctrl_pub_ = nh_.advertise<sensor_msgs::JointState>("gimbals_ctrl", 1);
   desire_wrench_sub_ = nh_.subscribe("desire_wrench", 1, &HydrusXiUnderActuatedNavigator::DesireWrenchCallback, this);
+  estimated_external_wrench_sub_ = nh_.subscribe("estimated_external_wrench", 1, &HydrusXiUnderActuatedNavigator::EstExternalWrenchCallBack, this);
   desire_wrench_ = Eigen::VectorXd::Zero(6);
+  est_external_wrench_ = Eigen::VectorXd::Zero(6);
 
   if(nh.hasParam("control_gimbal_names"))
     {
@@ -557,6 +574,17 @@ void HydrusXiUnderActuatedNavigator::DesireWrenchCallback(geometry_msgs::WrenchS
   //std::cout << desire_wrench_ << std::endl;
   //std::cout << "-----------------------" << std::endl;
 
+}  
+
+
+void HydrusXiUnderActuatedNavigator::EstExternalWrenchCallBack(geometry_msgs::WrenchStamped msg)
+{
+  est_external_wrench_[0] = msg.wrench.force.x;
+  est_external_wrench_[1] = msg.wrench.force.y;
+  est_external_wrench_[2] = msg.wrench.force.z;
+  est_external_wrench_[3] = msg.wrench.torque.x;
+  est_external_wrench_[4] = msg.wrench.torque.y;
+  est_external_wrench_[5] = msg.wrench.torque.z;
 }
 
 
