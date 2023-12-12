@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from http import server
+import queue
 import sndhdr
 import sys
 import time
@@ -15,6 +16,7 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from spinal.msg import DesireCoord
 from std_msgs.msg import Empty
 from dynamixel_workbench_msgs.srv import *
+from geometry_msgs.msg import WrenchStamped
 
 class avatar_control():
 
@@ -22,7 +24,7 @@ class avatar_control():
 
         self.debug = rospy.get_param("~debug", False)
         self.gripper = rospy.get_param("~gripper", False)
-        self.robot_name = rospy.get_param("~robot_ns", "hydrus")
+        self.robot_name = rospy.get_param("~robot_ns", "hydrus_xi")
         
         topic_name = '/'+self.robot_name+'/joints_ctrl'
         if self.debug:
@@ -31,6 +33,7 @@ class avatar_control():
         self.joint_servo_pub = rospy.Publisher('/dynamixel_workbench/joint_trajectory', JointTrajectory, queue_size=10)
         self.joint_control_pub = rospy.Publisher(topic_name, JointState, queue_size=10)
         self.ref_joint_angles_pub = rospy.Publisher('/'+self.robot_name+'/ref_joint_angles', JointState, queue_size=10)
+        #self.des_wrench_pub = rospy.Publisher('/'+self.robot_name+'/desire_wrench', WrenchStamped, queue_size=10)
         self.avatar_sub = rospy.Subscriber('/dynamixel_workbench/joint_states', JointState, self.avatarCb)
         self.flight_state_sub = rospy.Subscriber('/'+self.robot_name+'/flight_state', UInt8, self.flight_stateCb)
         self.static_thrust_sub = rospy.Subscriber('/'+self.robot_name+'/static_thrust_available', Bool, self.static_thrustCb)

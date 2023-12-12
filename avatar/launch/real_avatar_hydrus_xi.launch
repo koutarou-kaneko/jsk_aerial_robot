@@ -2,10 +2,10 @@
 <launch>
   ###########  launch config  ###########
   <arg name="debug" default="false" />
-  <arg name="mocap" default="false" />
-  <arg name="headless" default="false" />
-  <arg name="real_machine" default="false" />
-  <arg name="simulation" default="true" />
+  <arg name="mocap" default="true" />
+  <arg name="headless" default="true" />
+  <arg name="real_machine" default="true" />
+  <arg name="simulation" default="false" />
   <arg name="fusion" default="false" />
   <arg name="type" default="quad" />
   <arg name="onboards_model" default="upboard202007" />
@@ -37,6 +37,7 @@
             <arg name="real_machine" value="$(arg real_machine)" /> 
             <arg name="simulation" value="$(arg simulation)" /> 
         </include > 
+        <include file="$(find avatar)/launch/wall_spawn.launch" />
     </group>
   </group>
   

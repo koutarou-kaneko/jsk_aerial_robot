@@ -47,6 +47,8 @@ public:
 
   virtual void calcStaticThrust() override;
 
+  KDL::Frame getRootEnd() {return root_end_;}
+  KDL::Frame getLinkEnd() {return link_end_;}
   void setTargetForceInRootEnd(Eigen::Vector3d target_force) {target_force_in_root_end_ = target_force;}
   void setTargetForceInLinkEnd(Eigen::Vector3d target_force) {target_force_in_link_end_ = target_force;}
   Eigen::Vector3d getCompensateTorqueForRootEndInCog() {return compensate_torque_for_root_end_in_cog_;}
@@ -55,6 +57,8 @@ public:
 private:
   void updateRobotModelImpl(const KDL::JntArray& joint_positions) override;
 
+  KDL::Frame root_end_;
+  KDL::Frame link_end_;
   std::string root_end_name_;
   std::string link_end_name_;
   Eigen::Vector3d target_force_in_root_end_;

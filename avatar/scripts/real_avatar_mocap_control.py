@@ -17,6 +17,7 @@ class mocap_control():
   def __init__(self):
 
     self.real_machine = rospy.get_param("~real_machine", False)
+    self.robot_name = rospy.get_param("~robot_ns", "hydrus_xi")
     topic_name = '/mocap_node/avatar/pose'
     if self.real_machine:
       topic_name = '/avator_mocap_node/avatar/pose'
@@ -28,16 +29,16 @@ class mocap_control():
     self.yaw = rospy.get_param("~yaw", True)
     self.loop = rospy.get_param("~loop", False)
     self.duration = rospy.get_param("~duration", 8)
-    self.nav_pub = rospy.Publisher("/hydrus/uav/nav", FlightNav, queue_size=1)
-    self.att_control_pub = rospy.Publisher("/hydrus/final_target_baselink_rot", DesireCoord, queue_size=1)
+    self.nav_pub = rospy.Publisher('/'+self.robot_name+'/uav/nav', FlightNav, queue_size=1)
+    self.att_control_pub = rospy.Publisher('/'+self.robot_name+'/final_target_baselink_rot', DesireCoord, queue_size=1)
     self.mocap_sub = rospy.Subscriber(topic_name, PoseStamped, self.mocapCb)
-    self.flight_state_sub = rospy.Subscriber("/hydrus/flight_state", UInt8, self.flight_stateCb)
-    self.robot_pos_sub = rospy.Subscriber("/hydrus/mocap/pose",PoseStamped, self.robot_posCb)
+    self.flight_state_sub = rospy.Subscriber('/'+self.robot_name+'/flight_state', UInt8, self.flight_stateCb)
+    self.robot_pos_sub = rospy.Subscriber('/'+self.robot_name+'/mocap/pose',PoseStamped, self.robot_posCb)
 
     self.omega = 2 * math.pi / self.period
     self.velocity = self.omega * self.radius
     #self.velocity = 0.15
-    self.nav_rate = rospy.get_param("/hydrus/nav_rate", 20.0) # hz
+    self.nav_rate = rospy.get_param('/'+self.robot_name+'/nav_rate', 20.0) # hz
     self.nav_rate = 1 / self.nav_rate
     self.Hovering = False
     self.flight_state = 0

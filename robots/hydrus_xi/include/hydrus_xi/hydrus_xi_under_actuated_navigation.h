@@ -69,12 +69,15 @@ namespace aerial_robot_navigation
 
     const std::vector<std::string>& getControlNames() const { return control_gimbal_names_; }
     const std::vector<int>& getControlIndices() const { return control_gimbal_indices_; }
+    const Eigen::VectorXd getDesireWrench() const { return desire_wrench_; }
 
     const bool getPlanVerbose() const { return plan_verbose_; }
 
     void setMaxMinYaw(const double max_min_yaw) { max_min_yaw_ = max_min_yaw;}
+
   private:
     ros::Publisher gimbal_ctrl_pub_;
+    ros::Subscriber desire_wrench_sub_;
     std::thread plan_thread_;
     boost::shared_ptr<HydrusTiltedRobotModel> robot_model_for_plan_;
     OsqpEigen::Solver yaw_range_lp_solver_;
@@ -87,6 +90,7 @@ namespace aerial_robot_navigation
 
     bool plan_verbose_;
     bool maximize_yaw_;
+    bool optimize_wide_x_; // optimize 8d x include thrusts
     double force_norm_weight_; // cost func
     double force_variant_weight_; // cost func
     double yaw_torque_weight_; // cost func
@@ -96,9 +100,14 @@ namespace aerial_robot_navigation
     double gimbal_delta_angle_; // configuration state
 
     std::vector<double> opt_gimbal_angles_, prev_opt_gimbal_angles_;
+    std::vector<double> opt_x_;
+    std::vector<double> lb;
+    std::vector<double> ub;
+    Eigen::VectorXd desire_wrench_;
 
     void threadFunc();
     bool plan();
+    void DesireWrenchCallback(geometry_msgs::WrenchStamped msg);
 
     void rosParamInit() override;
   };
