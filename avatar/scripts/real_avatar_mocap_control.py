@@ -22,7 +22,7 @@ class mocap_control():
     if self.real_machine:
       topic_name = '/avator_mocap_node/avatar/pose'
 
-    
+    self.pos_scaling = rospy.get_param("~pos_scaling", 1.5)
     self.period = rospy.get_param("~period", 40.0)
     self.radius = rospy.get_param("~radius", 1.0)
     self.init_theta = rospy.get_param("~init_theta", 0.0)
@@ -100,9 +100,9 @@ class mocap_control():
         self.mocap_init_flag = True
 
       if self.mocap_init_flag==True and self.robot_init_flag==True:
-        self.flight_nav.target_pos_x = self.mocap_pos.x - mocap_init_pos.x + self.robot_init_pos.x
-        self.flight_nav.target_pos_y = self.mocap_pos.y - mocap_init_pos.y + self.robot_init_pos.y
-        self.flight_nav.target_pos_z = self.mocap_pos.z - mocap_init_pos.z + self.robot_init_pos.z
+        self.flight_nav.target_pos_x = (self.mocap_pos.x - mocap_init_pos.x + self.robot_init_pos.x) * self.pos_scaling
+        self.flight_nav.target_pos_y = (self.mocap_pos.y - mocap_init_pos.y + self.robot_init_pos.y) * self.pos_scaling
+        self.flight_nav.target_pos_z = (self.mocap_pos.z - mocap_init_pos.z + self.robot_init_pos.z) * self.pos_scaling
         '''
         self.flight_nav.target_vel_x = self.velocity
         self.flight_nav.target_vel_y = self.velocity
@@ -110,6 +110,8 @@ class mocap_control():
         '''
         self.flight_nav.target_yaw = self.mocap_euler[2]
         #self.flight_nav.target_omega_z = self.omega
+        if self.flight_nav.target_pos_z <= 0.2:
+          self.flight_nav.target_pos_z = 0.2
       #rospy.loginfo("target_pos is [%f, %f, %f]", self.flight_nav.target_pos_x, self.flight_nav.target_pos_y, self.flight_nav.target_pos_z)
 
       if self.mocap_init_flag==True and self.robot_init_flag==True and self.Hovering == True:

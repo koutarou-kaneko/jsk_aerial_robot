@@ -33,9 +33,9 @@
   <group unless = "$(arg debug)">
     <group unless = "$(arg real_machine)">
         <include file="$(find hydrus_xi)/launch/bringup.launch"> 
-            <arg name="headless" value="$(arg headless)" /> 
-            <arg name="real_machine" value="$(arg real_machine)" /> 
-            <arg name="simulation" value="$(arg simulation)" /> 
+            <arg name="headless" value="false" /> 
+            <arg name="real_machine" value="false" /> 
+            <arg name="simulation" value="true" /> 
         </include > 
         <include file="$(find avatar)/launch/wall_spawn.launch" />
     </group>
@@ -64,7 +64,7 @@
     <group unless = "$(arg real_machine)">
       <include file="$(find aerial_robot_base)/launch/external_module/mocap.launch" />
       <node pkg="avatar" type="real_avatar_mocap_control.py" name="real_avatar_mocap_control" output="screen" >
-        <arg name="real_machine" value="$(arg real_machine)" />
+        <param name="real_machine" value="$(arg real_machine)" />
       </node>
     </group>
   </group>

@@ -33,7 +33,7 @@ class avatar_control():
         self.joint_servo_pub = rospy.Publisher('/dynamixel_workbench/joint_trajectory', JointTrajectory, queue_size=10)
         self.joint_control_pub = rospy.Publisher(topic_name, JointState, queue_size=10)
         self.ref_joint_angles_pub = rospy.Publisher('/'+self.robot_name+'/ref_joint_angles', JointState, queue_size=10)
-        #self.des_wrench_pub = rospy.Publisher('/'+self.robot_name+'/desire_wrench', WrenchStamped, queue_size=10)
+        self.des_wrench_pub = rospy.Publisher('/'+self.robot_name+'/desire_wrench', WrenchStamped, queue_size=10)
         self.avatar_sub = rospy.Subscriber('/dynamixel_workbench/joint_states', JointState, self.avatarCb)
         self.flight_state_sub = rospy.Subscriber('/'+self.robot_name+'/flight_state', UInt8, self.flight_stateCb)
         self.static_thrust_sub = rospy.Subscriber('/'+self.robot_name+'/static_thrust_available', Bool, self.static_thrustCb)
@@ -96,7 +96,7 @@ class avatar_control():
         self.servo_init_position = JointTrajectory()
         self.servo_init_position.joint_names = ["joint1_pitch", "joint1_yaw", "joint2_pitch", "joint2_yaw", "joint3_pitch", "joint3_yaw"]
         self.servo_init_position.points = [JointTrajectoryPoint()]
-        self.servo_init_position.points[0].positions = [0.0, 1.56, 0.0, 1.56, 0.0, 1.56]
+        self.servo_init_position.points[0].positions = [0.0, 1.535, 0.0, 1.535, 0.0, 1.535]
         self.servo_init_position.points[0].time_from_start = rospy.Time(self.servo_init_time)
         self.joint_servo_pub.publish(self.servo_init_position)
         rospy.sleep(self.servo_init_time * 10)
@@ -192,7 +192,7 @@ class avatar_control():
                     self.desire_joint.position[1] = self.yaw_sum_threshold/2
                 else:
                     self.danger_config=False
-                '''
+                
 
                 if self.staric_thrust_available == False:
                     self.danger_config = True
@@ -203,6 +203,7 @@ class avatar_control():
                     self.move_servo(Servo_number=[4,6],desire_angle=[1.57,0.0])
                     #self.servo_Switch(Switch=False,servo_number=6)
                     self.danger_config = False
+                '''
 
 
             if self.gripper==True:
@@ -228,6 +229,11 @@ class avatar_control():
                 desire_joint.name.extend(['gimbal1_roll', 'gimbal1_pitch', 'gimbal2_roll'opt_joint_an, 'gimbal2_pitch', 'gimbal3_roll', 'gimbal3_pitch', 'gimbal4_roll', 'gimbal4_pitch'])
                 desire_joint.position.extend([0] * 8)
             '''
+            desire_wrench_msg = WrenchStamped()
+            desire_wrench_msg.wrench.force.x = 5.0
+            desire_wrench_msg.wrench.force.y = 0.0
+            desire_wrench_msg.wrench.force.z = 0.0
+            self.des_wrench_pub.publish(desire_wrench_msg)
 
             # send joint angles
             self.joint_control_pub.publish(self.desire_joint)
