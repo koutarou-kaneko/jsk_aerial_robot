@@ -370,12 +370,6 @@ void HydrusXiUnderActuatedNavigator::threadFunc()
 
 bool HydrusXiUnderActuatedNavigator::plan()
 {
-  if(force_landing_flag_)
-  {
-    attaching_flag_ = false;
-    optimize_wide_x_ = false;
-  }
-
   double time_stamp = ros::Time::now().toSec();
   joint_positions_for_plan_ = robot_model_->getJointPositions(); // real
 
