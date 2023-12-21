@@ -115,6 +115,7 @@ namespace aerial_robot_navigation
 
     uint8_t getEstimateMode(){ return estimate_mode_;}
     void setEstimateMode(uint8_t estimate_mode){ estimate_mode_ = estimate_mode;}
+    boost::shared_ptr<aerial_robot_estimation::StateEstimator> getEstimator() {return estimator_;}
 
     static constexpr uint8_t POS_CONTROL_COMMAND = 0;
     static constexpr uint8_t VEL_CONTROL_COMMAND = 1;

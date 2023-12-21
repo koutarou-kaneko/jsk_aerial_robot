@@ -4,6 +4,7 @@
 #include <std_msgs/Float64.h>
 #include <geometry_msgs/Vector3Stamped.h>
 #include <tf_conversions/tf_eigen.h>
+#include <cstdlib>
 
 using namespace aerial_robot_control;
 
@@ -30,14 +31,17 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   feedforward_acc_cog_pub_ = nh_.advertise<geometry_msgs::Vector3Stamped>("feedforward_acc_cog", 1);
   feedforward_ang_acc_cog_pub_ = nh_.advertise<geometry_msgs::Vector3Stamped>("feedforward_ang_acc_cog", 1);
   des_wrench_cog_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("des_wrench_cog", 1);
+  attaching_flag_pub_ = nh_.advertise<std_msgs::Bool>("attaching_flag",1);
   desire_wrench_sub_ = nh_.subscribe("desire_wrench", 1, &HydrusTiltedLQIController::DesireWrenchCallback, this);
   desire_pos_sub_ = nh_.subscribe("uav/nav", 1, &HydrusTiltedLQIController::DesirePosCallback, this);
+  acc_root_sub_ = nh_.subscribe("imu", 10, &HydrusTiltedLQIController::accRootCallback, this);
   estimated_external_wrench_in_cog_ = Eigen::VectorXd::Zero(6);
   desire_wrench_ = Eigen::VectorXd::Zero(6);
   desire_wrench_from_pos_ = Eigen::VectorXd::Zero(6);
   target_wrench_cog_ = Eigen::VectorXd::Zero(6);
   p_wrench_stamp_ = Eigen::VectorXd::Zero(6);
-  //desire_pos_ = Eigen::Vector3d::Zero(3);
+  feedforward_term_ = Eigen::VectorXd::Zero(6);
+  desire_pos_ = Eigen::Vector3d::Zero(6);
   attaching_flag_ = false;
   const_err_i_flag_ = false;
 
@@ -51,7 +55,6 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   ros::NodeHandle wrench_roll_nh(est_wrench_nh, "wrench_roll");
   ros::NodeHandle wrench_pitch_nh(est_wrench_nh, "wrench_pitch");
   ros::NodeHandle wrench_yaw_nh(est_wrench_nh, "wrench_yaw");
-  getParam(control_nh, "wrench_diff_gain", wrench_diff_gain_, 1.0);
 
   double limit_sum, limit_p, limit_i, limit_d;
   double limit_err_p, limit_err_i, limit_err_d;
@@ -134,6 +137,10 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   external_wrench_pid_reconf_servers_.push_back(boost::make_shared<PidControlDynamicConfig>(wrench_yaw_nh));
   external_wrench_pid_reconf_servers_.back()->setCallback(boost::bind(&HydrusTiltedLQIController::cfgWrenchPidCallback, this, _1, _2, std::vector<int>(1, YAW)));
 
+  getParam<double>(control_nh, "wrench_diff_gain", wrench_diff_gain_, 1.0);
+  getParam<bool>(control_nh, "send_feedforward_switch_flag", send_feedforward_switch_flag_, false);
+  getParam<double>(control_nh, "acc_shock_thres", acc_shock_thres_, 20.0);
+  
 }
 
 void HydrusTiltedLQIController::cfgWrenchPidCallback(aerial_robot_control::PIDConfig &config, uint32_t level, std::vector<int> controller_indices)
@@ -172,26 +179,22 @@ void HydrusTiltedLQIController::cfgWrenchPidCallback(aerial_robot_control::PIDCo
 
 void HydrusTiltedLQIController::DesireWrenchCallback(geometry_msgs::WrenchStamped msg)
 {
-  attaching_flag_ = true;
   Eigen::Vector3d desire_force_at_end;
   desire_force_at_end[0] = msg.wrench.force.x;
   desire_force_at_end[1] = msg.wrench.force.y;
   desire_force_at_end[2] = msg.wrench.force.z;
-  hydrus_robot_model_->setTargetForceInLinkEnd(desire_force_at_end);
-  Eigen::Vector3d des_torque_for_link_end_in_cog = hydrus_robot_model_->getCompensateTorqueForLinkEndInCog();
-  KDL::Frame link_end = hydrus_robot_model_->getLinkEnd();
+  hydrus_robot_model_->setTargetForceInRootEnd(desire_force_at_end);
+  Eigen::Vector3d des_torque_for_root_end_in_cog = hydrus_robot_model_->getCompensateTorqueForRootEndInCog();
+  KDL::Frame root_end = hydrus_robot_model_->getRootEnd();
   KDL::Frame cog = hydrus_robot_model_->getCog<KDL::Frame>();
-  Eigen::Vector3d des_force_for_link_end_in_cog = aerial_robot_model::kdlToEigen(cog.M.Inverse() * link_end.M) * desire_force_at_end;
+  Eigen::Vector3d des_force_for_root_end_in_cog = aerial_robot_model::kdlToEigen(cog.M.Inverse() * root_end.M) * desire_force_at_end;
 
-  desire_wrench_[0] = des_force_for_link_end_in_cog[0];
-  desire_wrench_[1] = des_force_for_link_end_in_cog[1];
-  desire_wrench_[2] = des_force_for_link_end_in_cog[2];
-  desire_wrench_[3] = des_torque_for_link_end_in_cog[0];
-  desire_wrench_[4] = des_torque_for_link_end_in_cog[1];
-  desire_wrench_[5] = des_torque_for_link_end_in_cog[2];
-  //std::cout << des_force_for_link_end_in_cog << std::endl;
-  //std::cout << "-----------------------" << std::endl;
-
+  desire_wrench_[0] = des_force_for_root_end_in_cog[0];
+  desire_wrench_[1] = des_force_for_root_end_in_cog[1];
+  desire_wrench_[2] = des_force_for_root_end_in_cog[2];
+  desire_wrench_[3] = des_torque_for_root_end_in_cog[0];
+  desire_wrench_[4] = des_torque_for_root_end_in_cog[1];
+  desire_wrench_[5] = des_torque_for_root_end_in_cog[2];
 }
 
 void HydrusTiltedLQIController::DesirePosCallback(aerial_robot_msgs::FlightNav msg)
@@ -199,9 +202,22 @@ void HydrusTiltedLQIController::DesirePosCallback(aerial_robot_msgs::FlightNav m
   desire_pos_[0] = msg.target_pos_x;
   desire_pos_[1] = msg.target_pos_y;
   desire_pos_[2] = msg.target_pos_z;
-  desire_pos_[3] = 0;
-  desire_pos_[4] = 0;
   desire_pos_[5] = msg.target_yaw;
+}
+
+void HydrusTiltedLQIController::accRootCallback(const spinal::Imu msg)
+{
+  
+  if((!attaching_flag_) && (msg.acc_data[0] > acc_shock_thres_))
+  {
+    attaching_flag_ = true;
+  }
+  /*
+  if(attaching_flag_ && abs(est_external_wrench_[0])<=0.6 && abs(est_external_wrench_[1])<=0.6)
+  {
+    attaching_flag_ = false;
+  }*/
+
 }
 
 bool HydrusTiltedLQIController::update()
@@ -257,6 +273,25 @@ bool HydrusTiltedLQIController::checkRobotModel()
 
 void HydrusTiltedLQIController::controlCore()
 {
+  tf::Vector3 pos = estimator_->getPos(Frame::COG, estimate_mode_);
+  tf::Vector3 euler = estimator_->getEuler(Frame::COG, estimate_mode_);
+  double yaw_diff = desire_pos_[5] - euler.z();
+  double pos_x_diff = desire_pos_[0] - pos.x();
+  double pos_y_diff = desire_pos_[1] - pos.y();
+  if(abs(pos_x_diff)<=0.1 && yaw_diff<=0.1)
+  {
+    attaching_flag_ = false;
+  }
+  if(navigator_->getForceLandingFlag())
+  {
+    attaching_flag_ = false;
+    send_feedforward_switch_flag_ = false;
+  }
+
+  //std::cout << "controller attaching flag is " << attaching_flag_ << std::endl;
+  std_msgs::Bool attaching_flag_msg;
+  attaching_flag_msg.data = attaching_flag_;
+  attaching_flag_pub_.publish(attaching_flag_msg);
   // during attaching
   if(attaching_flag_)
     {
@@ -271,7 +306,8 @@ void HydrusTiltedLQIController::controlCore()
       pid_controllers_.at(Y).setErrI(err_i_y_);
       pid_controllers_.at(Z).setErrI(err_i_z_);
     }
-  
+  //else{const_err_i_flag_ = false;}
+
   double du = ros::Time::now().toSec() - control_timestamp_;
   UnderActuatedTiltedLQIController::controlCore();
   tf::Matrix3x3 uav_rot = estimator_->getOrientation(Frame::COG, estimate_mode_);
@@ -287,7 +323,7 @@ void HydrusTiltedLQIController::controlCore()
   //double target_ang_acc_z = pid_controllers_.at(YAW).result();
   double target_ang_acc_z = candidate_yaw_term_;
   target_wrench_acc_cog.tail(3) = Eigen::Vector3d(target_ang_acc_x, target_ang_acc_y, target_ang_acc_z);
-
+  /*
   Eigen::VectorXd p_wrench_diff = Eigen::VectorXd::Zero(6);
   Eigen::VectorXd d_wrench_diff = Eigen::VectorXd::Zero(6);
   for (int i=0;i<=5;i++){
@@ -302,6 +338,7 @@ void HydrusTiltedLQIController::controlCore()
   external_wrench_pid_controllers_.at(PITCH).update(p_wrench_diff[4], du, d_wrench_diff[4], 0);
   external_wrench_pid_controllers_.at(YAW).update(p_wrench_diff[5], du, d_wrench_diff[5], 0);
   p_wrench_stamp_ = p_wrench_diff;
+  */
 
   /*
   geometry_msgs::WrenchStamped feedforward_wrench_msg;
@@ -314,37 +351,38 @@ void HydrusTiltedLQIController::controlCore()
   */
 
   /* feedforward */
-
-  tf::Vector3 pos = estimator_->getPos(Frame::COG, estimate_mode_);
-  tf::Vector3 pos_diff = desire_pos_ - pos;
-  double gain=1.5;
-  for(int i;i<6;i++)
-  {
-    desire_wrench_from_pos_[i] = gain * pos_diff[i];
-  }
-
-
   double mass_inv = 1/ hydrus_robot_model_->getMass();
   Eigen::Matrix3d inertia_inv = hydrus_robot_model_->getInertia<Eigen::Matrix3d>().inverse();
   Eigen::Vector3d des_force,des_torque;
   Eigen::Matrix3d cog_rot;
-  Eigen::Vector3d est_external_wrench_cog;
+  Eigen::Vector3d est_external_force_cog;
+  Eigen::Vector3d est_external_force;
+  est_external_force =  est_external_wrench_.head(3);
   tf::matrixTFToEigen(estimator_->getOrientation(Frame::COG, estimate_mode_), cog_rot);
-  est_external_wrench_cog = cog_rot.inverse() * est_external_wrench_;
+  est_external_force_cog = cog_rot.inverse() * est_external_force;
   for(int i;i<3;i++)
     {
-      des_force[i] = desire_wrench_[i] + est_external_wrench_cog[i];
+      des_force[i] = desire_wrench_[i] + est_external_force_cog[i];
       des_torque[i] = desire_wrench_[i+3] + est_external_wrench_[i+3];
     }
 
-  Eigen::Vector3d des_acc = des_force * mass_inv * wrench_diff_gain_;
+  Eigen::Vector3d des_acc = des_force * mass_inv;
   Eigen::Vector3d des_acc_ang = inertia_inv * des_torque * wrench_diff_gain_;
-  
-  target_acc_.setX(des_acc[0]);
-  target_acc_.setY(des_acc[1]);
-  target_acc_.setZ(des_acc[2]);
-  target_acc_ang_.setZ(des_acc_ang[2]);
-  
+  //ROS_INFO("send_feedforward_switch_flag: %d", send_feedforward_switch_flag_);
+  if(send_feedforward_switch_flag_ && attaching_flag_)
+  {
+    target_acc_.setX(des_acc[0]+feedforward_term_[0]);
+    target_acc_.setY(des_acc[1]+feedforward_term_[1]);
+    //target_acc_.setZ(des_acc[2]+feedforward_term_[2]);
+    target_acc_ang_.setZ(des_acc_ang[2]+feedforward_term_[5]);
+    target_wrench_acc_cog[0] += des_acc[0]+feedforward_term_[0];
+    target_wrench_acc_cog[1] += des_acc[1]+feedforward_term_[1];
+    target_wrench_acc_cog[5] += des_acc_ang[2]+feedforward_term_[5];
+    std::cout << "send_feedforward" << std::endl;
+  }
+  feedforward_term_.head(3) += des_acc;
+  feedforward_term_.tail(3) += des_acc_ang;
+
   geometry_msgs::Vector3Stamped feedforward_acc_cog_msg;
   geometry_msgs::Vector3Stamped feedforward_ang_acc_cog_msg;
   geometry_msgs::WrenchStamped des_wrench_cog_msg;
@@ -363,11 +401,6 @@ void HydrusTiltedLQIController::controlCore()
   feedforward_acc_cog_pub_.publish (feedforward_acc_cog_msg);
   feedforward_ang_acc_cog_pub_.publish(feedforward_ang_acc_cog_msg);
   des_wrench_cog_pub_.publish(des_wrench_cog_msg);
-  /*
-  std::cout << "desire_wrench_from_pos = " << std::endl;
-  std::cout << desire_wrench_from_pos_ << std::endl;
-  std::cout << "--------------------------" << std::endl;
-  */
   setTargetWrenchAccCog(target_wrench_acc_cog);
 
 }

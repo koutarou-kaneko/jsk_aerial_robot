@@ -73,6 +73,7 @@ namespace
     // Thrust norm/var
     Eigen::VectorXd force_v(4);
     force_v << x_wide[4], x_wide[5], x_wide[6], x_wide[7];
+    //force_v = robot_model->getStaticThrust();
     double average_force = force_v.sum() / force_v.size();
     double variant = 0;
 
@@ -206,8 +207,13 @@ namespace
     Eigen::Vector3d des_force,des_torque;
     Eigen::Matrix3d cog_rot;
     Eigen::Vector3d est_external_wrench_cog;
-    tf::matrixTFToEigen(estimator_->getOrientation(Frame::COG, estimate_mode_), cog_rot);
-    est_external_wrench_cog = cog_rot.inverse() * est_external_wrench;
+    Eigen::Vector3d est_external_force;
+    for(int i;i<3;i++)
+    {
+      est_external_force[i] = est_external_wrench[i];
+    }
+    tf::matrixTFToEigen(planner->getEstimator()->getOrientation(Frame::COG, planner->getEstimateMode()), cog_rot);
+    est_external_wrench_cog = cog_rot.inverse() * est_external_force;
     for(int i;i<3;i++)
       {
         des_force[i] = desire_wrench[i] + est_external_wrench_cog[i];
@@ -216,8 +222,9 @@ namespace
 
     Eigen::VectorXd thrusts(4), wrench_des(6), yaw_comp(6);
     thrusts << x[4], x[5], x[6], x[7];
-    wrench_des << desire_wrench[0], desire_wrench[1], desire_wrench[2]+robot_model->getGravity()[2], 0, 0, 0;
-    yaw_comp << 0, 0, 0, 0, 0, desire_wrench[5];
+    //wrench_des << desire_wrench[0], desire_wrench[1], robot_model->getGravity()[2], 0, 0, desire_wrench[5];
+    wrench_des << des_force[0], des_force[1], robot_model->getGravity()[2], 0, 0, des_torque[2];
+    yaw_comp << 0, 0, 0, 0, 0, 0;
     //std::vector<double> res(m, 0);
     auto res = Q*thrusts - robot_model->getMass()*wrench_des - yaw_comp;
     for (int i = 0; i < m; i++) {
@@ -257,8 +264,10 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   gimbal_ctrl_pub_ = nh_.advertise<sensor_msgs::JointState>("gimbals_ctrl", 1);
   desire_wrench_sub_ = nh_.subscribe("desire_wrench", 1, &HydrusXiUnderActuatedNavigator::DesireWrenchCallback, this);
   estimated_external_wrench_sub_ = nh_.subscribe("estimated_external_wrench", 1, &HydrusXiUnderActuatedNavigator::EstExternalWrenchCallBack, this);
+  attaching_flag_sub_ = nh_.subscribe("attaching_flag", 1, &HydrusXiUnderActuatedNavigator::AttachingFlagCallBack, this);
   desire_wrench_ = Eigen::VectorXd::Zero(6);
   est_external_wrench_ = Eigen::VectorXd::Zero(6);
+  attaching_flag_ = false;
 
   if(nh.hasParam("control_gimbal_names"))
     {
@@ -278,37 +287,31 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
     }
 
   /* nonlinear optimization for vectoring angles planner */
-  if (optimize_wide_x_)
-    {
-      vectoring_nl_solver_ = boost::make_shared<nlopt::opt>(nlopt::LN_COBYLA, 2*control_gimbal_names_.size());
-    }
-  else
-    {
+      vectoring_nl_solver_wide_ = boost::make_shared<nlopt::opt>(nlopt::LN_COBYLA, 2*control_gimbal_names_.size());
       vectoring_nl_solver_ = boost::make_shared<nlopt::opt>(nlopt::LN_COBYLA, control_gimbal_names_.size());
-    }
   if(maximize_yaw_)
     {
       std::cout << "maximaize yaw" << std::endl;
       vectoring_nl_solver_->set_max_objective(maximizeMinYawTorque, this);
       vectoring_nl_solver_->add_inequality_constraint(fcTMinConstraint, this, 1e-8);
+      vectoring_nl_solver_wide_->set_max_objective(maximizeMinYawTorque, this);
+      vectoring_nl_solver_wide_->add_inequality_constraint(fcTMinConstraint, this, 1e-8);
     }
   else
     {
       std::cout << "maximaize FCTMin" << std::endl;
-      if(optimize_wide_x_)
-        {
-          vectoring_nl_solver_->set_max_objective(maximizeFCTMinWide, this);
-          vectoring_nl_solver_->add_equality_mconstraint(kinematicsConstraint, this, {0.05, 0.05, 0.1, 0.001, 0.001, 0.001});
-        }
-      else
-        {
-          vectoring_nl_solver_->set_max_objective(maximizeFCTMin, this);
-        }
+      vectoring_nl_solver_wide_->set_max_objective(maximizeFCTMinWide, this);
+      vectoring_nl_solver_wide_->add_equality_mconstraint(kinematicsConstraint, this, {0.05, 0.05, 0.1, 0.001, 0.001, 0.001});
+      vectoring_nl_solver_->set_max_objective(maximizeFCTMin, this);
     }
   vectoring_nl_solver_->add_inequality_constraint(baselinkRotConstraint, this, 1e-8);
+  //vectoring_nl_solver_wide_->add_inequality_constraint(baselinkRotConstraint, this, 1e-8);
 
   vectoring_nl_solver_->set_xtol_rel(1e-4); //1e-4
   vectoring_nl_solver_->set_maxeval(1000); // 1000 times
+  vectoring_nl_solver_wide_->set_xtol_rel(1e-4); //1e-4
+  vectoring_nl_solver_wide_->set_maxeval(1000); // 1000 times
+
   opt_x_ = {M_PI, M_PI, M_PI, M_PI, 9.0, 10.0, 10.0, 9.0};
 
   /* linear optimization for yaw range */
@@ -343,8 +346,8 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   // instantiate the yaw_range_lp_solver
   if(!yaw_range_lp_solver_.initSolver())
     throw std::runtime_error("can not init LP solver based on osqp");
-
   plan_thread_ = std::thread(boost::bind(&HydrusXiUnderActuatedNavigator::threadFunc, this));
+
 }
 
 void HydrusXiUnderActuatedNavigator::threadFunc()
@@ -358,7 +361,6 @@ void HydrusXiUnderActuatedNavigator::threadFunc()
   double plan_init_sleep;
   getParam<double>(navi_nh, "plan_init_sleep", plan_init_sleep, 2.0);
   ros::Duration(plan_init_sleep).sleep();
-
   while(ros::ok())
     {
       plan();
@@ -368,6 +370,12 @@ void HydrusXiUnderActuatedNavigator::threadFunc()
 
 bool HydrusXiUnderActuatedNavigator::plan()
 {
+  if(force_landing_flag_)
+  {
+    attaching_flag_ = false;
+    optimize_wide_x_ = false;
+  }
+
   double time_stamp = ros::Time::now().toSec();
   joint_positions_for_plan_ = robot_model_->getJointPositions(); // real
 
@@ -393,16 +401,10 @@ bool HydrusXiUnderActuatedNavigator::plan()
     }
 
   /* find the optimal gimbal vectoring angles from nlopt */
-  if(optimize_wide_x_)
-    {
-      lb.resize(2*control_gimbal_indices_.size(), - M_PI);
-      ub.resize(2*control_gimbal_indices_.size(), M_PI);      
-    }
-  else
-    {
-      lb.resize(control_gimbal_indices_.size(), - M_PI);
-      ub.resize(control_gimbal_indices_.size(), M_PI);
-    }
+  lb_wide.resize(2*control_gimbal_indices_.size(), - M_PI);
+  ub_wide.resize(2*control_gimbal_indices_.size(), M_PI);      
+  lb.resize(control_gimbal_indices_.size(), - M_PI);
+  ub.resize(control_gimbal_indices_.size(), M_PI);
   /* update the range by using the last optimization result with the assumption that the motion is cotinuous */
   if(opt_gimbal_angles_.size() != 0)
     {
@@ -417,13 +419,10 @@ bool HydrusXiUnderActuatedNavigator::plan()
          {
             lb.at(i) = opt_gimbal_angles_.at(i) - delta_angle;
             ub.at(i) = opt_gimbal_angles_.at(i) + delta_angle;
-            //std::cout << "lb[" << i << "] = " << lb.at(i) << std::endl;
-            //std::cout << "ub[" << i << "] = " << ub.at(i) << std::endl;
-            if(optimize_wide_x_)
-              {
-                lb.at(4+i) = 8.9;
-                ub.at(4+i) = robot_model_->getThrustUpperLimit();
-              }
+            lb_wide.at(i) = opt_gimbal_angles_.at(i) - delta_angle;
+            ub_wide.at(i) = opt_gimbal_angles_.at(i) + delta_angle;
+            lb_wide.at(4+i) = 8.9;
+            ub_wide.at(4+i) = robot_model_->getThrustUpperLimit();
          }
       /*avoid over angle (hard cording)*/
       /*
@@ -478,34 +477,23 @@ bool HydrusXiUnderActuatedNavigator::plan()
 
   vectoring_nl_solver_->set_lower_bounds(lb);
   vectoring_nl_solver_->set_upper_bounds(ub);
+  vectoring_nl_solver_wide_->set_lower_bounds(lb_wide);
+  vectoring_nl_solver_wide_->set_upper_bounds(ub_wide);
 
   double start_time = ros::Time::now().toSec();
   double max_f = 0;
   try
     {
       opt_x_ = {opt_gimbal_angles_.at(0), opt_gimbal_angles_.at(1), opt_gimbal_angles_.at(2), opt_gimbal_angles_.at(3), opt_x_.at(4), opt_x_.at(5), opt_x_.at(6), opt_x_.at(7)};
-      if(optimize_wide_x_)
+      if(optimize_wide_x_ && attaching_flag_)
         {
-          nlopt::result result = vectoring_nl_solver_->optimize(opt_x_, max_f);
+          nlopt::result result = vectoring_nl_solver_wide_->optimize(opt_x_, max_f);
           opt_gimbal_angles_ = {opt_x_.at(0), opt_x_.at(1), opt_x_.at(2), opt_x_.at(3)};
-          /*
-          for(int i;i<opt_x_.size();i++)
-          {
-            std::cout << "opt_x_[" << i << "] = " << opt_x_.at(i) << std::endl;
-          }
-          std::cout <<std::endl;
-          */
+          std::cout << "opt_wide_x" << std::endl;
         }
       else
         {
-          nlopt::result result = vectoring_nl_solver_->optimize(opt_gimbal_angles_, max_f);         
-          /* 
-          for(int i;i<opt_gimbal_angles_.size();i++)
-          {
-            std::cout << "opt_gimbal_angles_[" << i << "] = " << opt_gimbal_angles_.at(i) << std::endl;
-          }
-          std::cout <<std::endl;
-          */
+          nlopt::result result = vectoring_nl_solver_->optimize(opt_gimbal_angles_, max_f);
         }
       double roll,pitch,yaw;
       robot_model_for_plan_->getCogDesireOrientation<KDL::Rotation>().GetRPY(roll, pitch, yaw);
@@ -549,7 +537,6 @@ bool HydrusXiUnderActuatedNavigator::plan()
 
   double time = ros::Time::now().toSec();
   double frequency = 1/(time - time_stamp);
-  //std::cout << "opt_frequency = " << frequency << std::endl;
   return true;
 }
 
@@ -559,21 +546,18 @@ void HydrusXiUnderActuatedNavigator::DesireWrenchCallback(geometry_msgs::WrenchS
   desire_force_at_end[0] = msg.wrench.force.x;
   desire_force_at_end[1] = msg.wrench.force.y;
   desire_force_at_end[2] = msg.wrench.force.z;
-  robot_model_for_plan_->setTargetForceInLinkEnd(desire_force_at_end);
-  Eigen::Vector3d des_torque_for_link_end_in_cog = robot_model_for_plan_->getCompensateTorqueForLinkEndInCog();
-  KDL::Frame link_end = robot_model_for_plan_->getLinkEnd();
+  robot_model_for_plan_->setTargetForceInRootEnd(desire_force_at_end);
+  Eigen::Vector3d des_torque_for_root_end_in_cog = robot_model_for_plan_->getCompensateTorqueForRootEndInCog();
+  KDL::Frame root_end = robot_model_for_plan_->getRootEnd();
   KDL::Frame cog = robot_model_for_plan_->getCog<KDL::Frame>();
-  Eigen::Vector3d des_force_for_link_end_in_cog = aerial_robot_model::kdlToEigen(cog.M.Inverse() * link_end.M) * desire_force_at_end;
+  Eigen::Vector3d des_force_for_root_end_in_cog = aerial_robot_model::kdlToEigen(cog.M.Inverse() * root_end.M) * desire_force_at_end;
 
-  desire_wrench_[0] = des_force_for_link_end_in_cog[0];
-  desire_wrench_[1] = des_force_for_link_end_in_cog[1];
-  desire_wrench_[2] = des_force_for_link_end_in_cog[2];
-  desire_wrench_[3] = des_torque_for_link_end_in_cog[0];
-  desire_wrench_[4] = des_torque_for_link_end_in_cog[1];
-  desire_wrench_[5] = des_torque_for_link_end_in_cog[2];
-  //std::cout << desire_wrench_ << std::endl;
-  //std::cout << "-----------------------" << std::endl;
-
+  desire_wrench_[0] = des_force_for_root_end_in_cog[0];
+  desire_wrench_[1] = des_force_for_root_end_in_cog[1];
+  desire_wrench_[2] = des_force_for_root_end_in_cog[2];
+  desire_wrench_[3] = des_torque_for_root_end_in_cog[0];
+  desire_wrench_[4] = des_torque_for_root_end_in_cog[1];
+  desire_wrench_[5] = des_torque_for_root_end_in_cog[2];
 }  
 
 
@@ -585,6 +569,16 @@ void HydrusXiUnderActuatedNavigator::EstExternalWrenchCallBack(geometry_msgs::Wr
   est_external_wrench_[3] = msg.wrench.torque.x;
   est_external_wrench_[4] = msg.wrench.torque.y;
   est_external_wrench_[5] = msg.wrench.torque.z;
+  for(int i;i<est_external_wrench_.size();i++)
+    {
+      if(est_external_wrench_[i]>=15){est_external_wrench_[i]=15;}
+      if(est_external_wrench_[i]<=-15){est_external_wrench_[i]=-15;}
+    }
+}
+
+void HydrusXiUnderActuatedNavigator::AttachingFlagCallBack(std_msgs::Bool msg)
+{
+  attaching_flag_ = msg.data;
 }
 
 
@@ -594,7 +588,7 @@ void HydrusXiUnderActuatedNavigator::rosParamInit()
   ros::NodeHandle navi_nh(nh_, "navigation");
   getParam<bool>(navi_nh, "plan_verbose", plan_verbose_, false);
   getParam<bool>(navi_nh, "maximize_yaw", maximize_yaw_, false);
-  getParam<bool>(navi_nh, "optimize_wide_x", optimize_wide_x_, true);
+  getParam<bool>(navi_nh, "optimize_wide_x", optimize_wide_x_, false);
   getParam<double>(navi_nh, "gimbal_delta_angle", gimbal_delta_angle_, 0.2);
   getParam<double>(navi_nh, "force_norm_rate", force_norm_weight_, 2.0);
   getParam<double>(navi_nh, "force_variant_rate", force_variant_weight_, 0.01);

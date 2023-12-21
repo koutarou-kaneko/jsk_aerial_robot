@@ -5,8 +5,11 @@ controller:
   momentum_observer_force_weight: 10
   momentum_observer_torque_weight: 10
 
-  wrench_diff_gain: 0.7
+  wrench_diff_gain: 1.0
   wrench_estimate_flag: true
+  send_feedforward_switch_flag: false
+  acc_shock_thres: 18.0 
+
   est_wrench:
     wrench_xy:
       p_gain: 1.0

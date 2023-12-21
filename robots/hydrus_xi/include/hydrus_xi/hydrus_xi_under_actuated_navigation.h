@@ -40,6 +40,8 @@
 #include <hydrus/hydrus_tilted_robot_model.h>
 #include <nlopt.hpp>
 #include <OsqpEigen/OsqpEigen.h>
+#include <std_msgs/Bool.h>
+
 
 namespace aerial_robot_navigation
 {
@@ -80,10 +82,13 @@ namespace aerial_robot_navigation
     ros::Publisher gimbal_ctrl_pub_;
     ros::Subscriber desire_wrench_sub_;
     ros::Subscriber estimated_external_wrench_sub_;
+    ros::Subscriber attaching_flag_sub_;
     std::thread plan_thread_;
     boost::shared_ptr<HydrusTiltedRobotModel> robot_model_for_plan_;
     OsqpEigen::Solver yaw_range_lp_solver_;
     boost::shared_ptr<nlopt::opt> vectoring_nl_solver_;
+    boost::shared_ptr<nlopt::opt> vectoring_nl_solver_wide_;
+
 
     KDL::JntArray joint_positions_for_plan_;
     std::vector<std::string> control_gimbal_names_;
@@ -103,15 +108,17 @@ namespace aerial_robot_navigation
 
     std::vector<double> opt_gimbal_angles_, prev_opt_gimbal_angles_;
     std::vector<double> opt_x_;
-    std::vector<double> lb;
-    std::vector<double> ub;
+    std::vector<double> lb, ub;
+    std::vector<double> lb_wide, ub_wide;
     Eigen::VectorXd desire_wrench_;
     Eigen::VectorXd est_external_wrench_;
+    bool attaching_flag_;
 
     void threadFunc();
     bool plan();
     void DesireWrenchCallback(geometry_msgs::WrenchStamped msg);
     void EstExternalWrenchCallBack(geometry_msgs::WrenchStamped msg);
+    void AttachingFlagCallBack(std_msgs::Bool msg);
 
     void rosParamInit() override;
   };

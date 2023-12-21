@@ -315,7 +315,7 @@ public:
           torque_enable_(false),
           first_get_pos_flag_(true),
           force_servo_off_(false),
-          internal_offset_(0)
+          internal_offset_(0),
           hardware_error_status_(0),
           operating_mode_(0),
           goal_current_(0)
