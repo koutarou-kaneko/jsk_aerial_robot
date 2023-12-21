@@ -7,7 +7,7 @@ controller:
 
   wrench_diff_gain: 1.0
   wrench_estimate_flag: true
-  send_feedforward_switch_flag: false
+  send_feedforward_switch_flag: true
   acc_shock_thres: 18.0 
 
   est_wrench:

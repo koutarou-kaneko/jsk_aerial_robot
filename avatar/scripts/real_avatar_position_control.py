@@ -230,7 +230,7 @@ class avatar_control():
                 desire_joint.position.extend([0] * 8)
             '''
             desire_wrench_msg = WrenchStamped()
-            desire_wrench_msg.wrench.force.x = 5.0
+            desire_wrench_msg.wrench.force.x = 3.0
             desire_wrench_msg.wrench.force.y = 0.0
             desire_wrench_msg.wrench.force.z = 0.0
             self.des_wrench_pub.publish(desire_wrench_msg)

@@ -273,6 +273,7 @@ bool HydrusTiltedLQIController::checkRobotModel()
 
 void HydrusTiltedLQIController::controlCore()
 {
+  int navi_state = navigator_->getNaviState();
   tf::Vector3 pos = estimator_->getPos(Frame::COG, estimate_mode_);
   tf::Vector3 euler = estimator_->getEuler(Frame::COG, estimate_mode_);
   double yaw_diff = desire_pos_[5] - euler.z();
@@ -281,11 +282,10 @@ void HydrusTiltedLQIController::controlCore()
   if(abs(pos_x_diff)<=0.1 && yaw_diff<=0.1)
   {
     attaching_flag_ = false;
-  }
-  if(navigator_->getForceLandingFlag())
+  }  
+  if(navi_state != 5 || navigator_->getForceLandingFlag())
   {
     attaching_flag_ = false;
-    send_feedforward_switch_flag_ = false;
   }
 
   //std::cout << "controller attaching flag is " << attaching_flag_ << std::endl;
