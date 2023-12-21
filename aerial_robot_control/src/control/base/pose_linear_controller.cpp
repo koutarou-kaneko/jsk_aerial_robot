@@ -46,7 +46,7 @@ namespace aerial_robot_control
     vel_(0,0,0), target_vel_(0,0,0),
     rpy_(0,0,0), target_rpy_(0,0,0),
     target_acc_(0,0,0),
-    target_acc_ang_(0,0,0),
+    target_ang_acc_(0,0,0),
     start_rp_integration_(false)
   {
     pid_msg_.x.total.resize(1);

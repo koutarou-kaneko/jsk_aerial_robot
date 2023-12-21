@@ -374,7 +374,7 @@ void HydrusTiltedLQIController::controlCore()
     target_acc_.setX(des_acc[0]+feedforward_term_[0]);
     target_acc_.setY(des_acc[1]+feedforward_term_[1]);
     //target_acc_.setZ(des_acc[2]+feedforward_term_[2]);
-    target_acc_ang_.setZ(des_acc_ang[2]+feedforward_term_[5]);
+    target_ang_acc_.setZ(des_acc_ang[2]+feedforward_term_[5]);
     target_wrench_acc_cog[0] += des_acc[0]+feedforward_term_[0];
     target_wrench_acc_cog[1] += des_acc[1]+feedforward_term_[1];
     target_wrench_acc_cog[5] += des_acc_ang[2]+feedforward_term_[5];
