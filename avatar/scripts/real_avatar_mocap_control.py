@@ -19,10 +19,10 @@ class mocap_control():
     self.real_machine = rospy.get_param("~real_machine", False)
     self.robot_name = rospy.get_param("~robot_ns", "hydrus_xi")
     topic_name = '/mocap_node/avatar/pose'
-    if self.real_machine:
-      topic_name = '/avator_mocap_node/avatar/pose'
+    if self.real_machine == True:
+      topic_name = '/avatar_mocap_node/avatar/pose'
 
-    self.pos_scaling = rospy.get_param("~pos_scaling", 1.5)
+    self.pos_scaling = rospy.get_param("~pos_scaling", 1.1)
     self.period = rospy.get_param("~period", 40.0)
     self.radius = rospy.get_param("~radius", 1.0)
     self.init_theta = rospy.get_param("~init_theta", 0.0)
@@ -102,7 +102,7 @@ class mocap_control():
       if self.mocap_init_flag==True and self.robot_init_flag==True:
         self.flight_nav.target_pos_x = (self.mocap_pos.x - mocap_init_pos.x + self.robot_init_pos.x) * self.pos_scaling
         self.flight_nav.target_pos_y = (self.mocap_pos.y - mocap_init_pos.y + self.robot_init_pos.y) * self.pos_scaling
-        self.flight_nav.target_pos_z = (self.mocap_pos.z - mocap_init_pos.z + self.robot_init_pos.z) * self.pos_scaling
+        self.flight_nav.target_pos_z = (self.mocap_pos.z - mocap_init_pos.z + self.robot_init_pos.z)
         '''
         self.flight_nav.target_vel_x = self.velocity
         self.flight_nav.target_vel_y = self.velocity
@@ -110,8 +110,8 @@ class mocap_control():
         '''
         self.flight_nav.target_yaw = self.mocap_euler[2]
         #self.flight_nav.target_omega_z = self.omega
-        if self.flight_nav.target_pos_z <= 0.2:
-          self.flight_nav.target_pos_z = 0.2
+        #if self.flight_nav.target_pos_z <= 0.2:
+          #self.flight_nav.target_pos_z = 0.2
       #rospy.loginfo("target_pos is [%f, %f, %f]", self.flight_nav.target_pos_x, self.flight_nav.target_pos_y, self.flight_nav.target_pos_z)
 
       if self.mocap_init_flag==True and self.robot_init_flag==True and self.Hovering == True:
@@ -128,7 +128,7 @@ class mocap_control():
         self.desire_att.roll = 0.0
         self.desire_att.pitch = 0.0
         self.flight_nav.target_yaw = 0.0
-        self.flight_nav.target_omega_z = self.omega
+        self.flight_nav.target_omega_z = 0.0
         self.nav_pub.publish(self.flight_nav)
         #self.att_control_pub.publish(self.desire_att)
 

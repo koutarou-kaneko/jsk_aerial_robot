@@ -35,6 +35,7 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   desire_wrench_sub_ = nh_.subscribe("desire_wrench", 1, &HydrusTiltedLQIController::DesireWrenchCallback, this);
   desire_pos_sub_ = nh_.subscribe("uav/nav", 1, &HydrusTiltedLQIController::DesirePosCallback, this);
   acc_root_sub_ = nh_.subscribe("imu", 10, &HydrusTiltedLQIController::accRootCallback, this);
+  hand_force_switch_sub_ = nh_.subscribe("hand_force_switch", 1, &HydrusTiltedLQIController::HandForceSwitchCallBack, this);
   estimated_external_wrench_in_cog_ = Eigen::VectorXd::Zero(6);
   desire_wrench_ = Eigen::VectorXd::Zero(6);
   desire_wrench_from_pos_ = Eigen::VectorXd::Zero(6);
@@ -207,17 +208,30 @@ void HydrusTiltedLQIController::DesirePosCallback(aerial_robot_msgs::FlightNav m
 
 void HydrusTiltedLQIController::accRootCallback(const spinal::Imu msg)
 {
-  
+  /*
   if((!attaching_flag_) && (msg.acc_data[0] > acc_shock_thres_))
   {
     attaching_flag_ = true;
-  }
-  /*
+  }*/
+  /*it was not good
   if(attaching_flag_ && abs(est_external_wrench_[0])<=0.6 && abs(est_external_wrench_[1])<=0.6)
   {
     attaching_flag_ = false;
   }*/
 
+}
+
+void HydrusTiltedLQIController::HandForceSwitchCallBack(std_msgs::Int8 msg)
+{
+  int i = msg.data;
+  if(i==1)
+  {
+    attaching_flag_ = true;
+  }
+  if(i==0)
+  {
+    attaching_flag_ = false;
+  }
 }
 
 bool HydrusTiltedLQIController::update()
@@ -279,6 +293,7 @@ void HydrusTiltedLQIController::controlCore()
   double yaw_diff = desire_pos_[5] - euler.z();
   double pos_x_diff = desire_pos_[0] - pos.x();
   double pos_y_diff = desire_pos_[1] - pos.y();
+  /*
   if(abs(pos_x_diff)<=0.1 && yaw_diff<=0.1)
   {
     attaching_flag_ = false;
@@ -286,9 +301,8 @@ void HydrusTiltedLQIController::controlCore()
   if(navi_state != 5 || navigator_->getForceLandingFlag())
   {
     attaching_flag_ = false;
-  }
+  }*/
 
-  //std::cout << "controller attaching flag is " << attaching_flag_ << std::endl;
   std_msgs::Bool attaching_flag_msg;
   attaching_flag_msg.data = attaching_flag_;
   attaching_flag_pub_.publish(attaching_flag_msg);

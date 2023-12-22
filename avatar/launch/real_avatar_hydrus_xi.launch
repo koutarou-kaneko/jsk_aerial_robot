@@ -31,7 +31,7 @@
 
   ###### simulation ####
   <group unless = "$(arg debug)">
-    <group unless = "$(arg real_machine)">
+    <group if = "$(arg simulation)">
         <include file="$(find hydrus_xi)/launch/bringup.launch"> 
             <arg name="headless" value="false" /> 
             <arg name="real_machine" value="false" /> 
@@ -44,7 +44,7 @@
   ###### base position from mocap of real_avatar ####
   <group if = "$(arg mocap)">
     <group if = "$(arg real_machine)">
-      <node pkg="mocap_optitrack" type="mocap_node" name="avator_mocap_node" respawn="false" >
+      <node pkg="mocap_optitrack" type="mocap_node" name="avatar_mocap_node" respawn="false" >
         <rosparam subst_value="true">
           rigid_bodies:
               '2':
@@ -59,6 +59,7 @@
         </rosparam>
       </node>
       <node pkg="avatar" type="real_avatar_mocap_control.py" name="real_avatar_mocap_control" output="screen" >
+        <param name="real_machine" value="$(arg real_machine)" />
       </node>
     </group>
     <group unless = "$(arg real_machine)">

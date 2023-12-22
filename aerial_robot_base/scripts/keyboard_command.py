@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
-from __future__ import print_function # for print function in python2
+from __future__ import print_function
+import queue # for print function in python2
 import sys, select, termios, tty
 
 import rospy
-from std_msgs.msg import Empty
+from std_msgs.msg import Empty, Int8
 from aerial_robot_msgs.msg import FlightNav
 import rosgraph
 
@@ -27,6 +28,9 @@ h:  halt (force stop motor)
 
      a           s           d           ]
 (move left)  (backward) (move right) (move down)
+
+     m                       n
+(hand force on)         (hand force off)  
 
 
 Please don't have caps lock on.
@@ -69,6 +73,7 @@ if __name__=="__main__":
         takeoff_pub = rospy.Publisher(ns + '/takeoff', Empty, queue_size=1)
         force_landing_pub = rospy.Publisher(ns + '/force_landing', Empty, queue_size=1)
         nav_pub = rospy.Publisher(robot_ns + '/uav/nav', FlightNav, queue_size=1)
+        hand_force_switch_pub = rospy.Publisher(robot_ns + '/hand_force_switch', Int8, queue_size=1)
 
         xy_vel   = rospy.get_param("xy_vel", 0.2)
         z_vel    = rospy.get_param("z_vel", 0.2)
@@ -81,6 +86,7 @@ if __name__=="__main__":
                         nav_msg = FlightNav()
                         nav_msg.control_frame = FlightNav.WORLD_FRAME
                         nav_msg.target = FlightNav.COG
+                        hand_force_msg = Int8()
 
                         key = getKey()
 
@@ -144,6 +150,16 @@ if __name__=="__main__":
                                 nav_msg.target_vel_z = -z_vel
                                 nav_pub.publish(nav_msg)
                                 msg = "send -z vel command"
+                        if key == 'm':
+                                hand_force_msg.data = 1
+                                hand_force_switch_pub.publish(hand_force_msg)
+                                msg = "hand force ON"
+                        if key == 'n':
+                                hand_force_msg.data = 0
+                                hand_force_switch_pub.publish(hand_force_msg)
+                                msg = "hand force OFF"
+
+
                         if key == '\x03':
                                 break
 
