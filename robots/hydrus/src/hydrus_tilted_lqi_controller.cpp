@@ -391,11 +391,11 @@ void HydrusTiltedLQIController::controlCore()
     // target_pitch_ += des_acc[0];
     // target_roll_ += des_acc[1];
     navigator_->setTargetAccX(feedforward_world[0]);
-    navigator_->setTargetAccY(feedforward_world[1]);
-    navigator_->setTargetAngAccZ(des_ang_acc[2] + feedforward_sum_[5]);
+    // navigator_->setTargetAccY(feedforward_world[1]);
+    // navigator_->setTargetAngAccZ(des_ang_acc[2] + feedforward_sum_[5]);
     target_wrench_acc_cog[0] += feedforward_world[0];
-    target_wrench_acc_cog[1] += feedforward_world[1];
-    target_wrench_acc_cog[5] += des_ang_acc[2] + feedforward_sum_[5];
+    // target_wrench_acc_cog[1] += feedforward_world[1];
+    // target_wrench_acc_cog[5] += des_ang_acc[2] + feedforward_sum_[5];
 
     feedforward_sum_.head(3) += des_acc * wrench_diff_gain_;
     feedforward_sum_.tail(3) += des_ang_acc * wrench_diff_gain_;
@@ -405,8 +405,8 @@ void HydrusTiltedLQIController::controlCore()
   if(!attaching_flag_)
   {
     navigator_->setTargetAccX(0);
-    navigator_->setTargetAccY(0);
-    navigator_->setTargetAngAccZ(0);
+    // navigator_->setTargetAccY(0);
+    // navigator_->setTargetAngAccZ(0);
     feedforward_sum_ = Eigen::VectorXd::Zero(6);
   }
   if(pid_controllers_.at(X).result()<0.0)
