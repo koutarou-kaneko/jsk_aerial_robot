@@ -72,8 +72,8 @@ namespace
 
     // Thrust norm/var
     Eigen::VectorXd force_v(4);
-    force_v << x_wide[4], x_wide[5], x_wide[6], x_wide[7];
-    //force_v = robot_model->getStaticThrust();
+    //force_v << x_wide[4], x_wide[5], x_wide[6], x_wide[7];
+    force_v = robot_model->getStaticThrust();
     double average_force = force_v.sum() / force_v.size();
     double variant = 0;
 
@@ -207,26 +207,24 @@ namespace
     Eigen::Vector3d des_force,des_torque;
     Eigen::Matrix3d cog_rot;
     Eigen::Vector3d est_external_wrench_cog;
-    Eigen::Vector3d est_external_force;
-    for(int i;i<3;i++)
-    {
-      est_external_force[i] = est_external_wrench[i];
-    }
+    Eigen::Vector3d est_external_force = est_external_wrench.head(3);
+
     tf::matrixTFToEigen(planner->getEstimator()->getOrientation(Frame::COG, planner->getEstimateMode()), cog_rot);
     est_external_wrench_cog = cog_rot.inverse() * est_external_force;
-    for(int i;i<3;i++)
-      {
-        des_force[i] = desire_wrench[i] + est_external_wrench_cog[i];
-        des_torque[i] = desire_wrench[i+3] + est_external_wrench[i+3];
-      }
-
+    des_force = desire_wrench.head(3) + est_external_wrench_cog;
+    des_torque = desire_wrench.tail(3) + est_external_wrench.tail(3);
+    
     Eigen::VectorXd thrusts(4), wrench_des(6), yaw_comp(6);
-    thrusts << x[4], x[5], x[6], x[7];
+    // thrusts << x[4], x[5], x[6], x[7];
+    thrusts << robot_model->getStaticThrust();
     //wrench_des << desire_wrench[0], desire_wrench[1], robot_model->getGravity()[2], 0, 0, desire_wrench[5];
     wrench_des << des_force[0], des_force[1], robot_model->getGravity()[2], 0, 0, des_torque[2];
     yaw_comp << 0, 0, 0, 0, 0, 0;
+    Eigen::VectorXd des_wrench_cog(6);
+    des_wrench_cog << des_force[0], des_force[1], robot_model->getMass()*robot_model->getGravity()[2], 0, 0, des_torque[2]; 
     //std::vector<double> res(m, 0);
-    auto res = Q*thrusts - robot_model->getMass()*wrench_des - yaw_comp;
+    // auto res = Q*thrusts - robot_model->getMass()*wrench_des - yaw_comp;
+    auto res = Q*thrusts - des_wrench_cog;
     for (int i = 0; i < m; i++) {
       result[i] = res[i];
     }
@@ -415,7 +413,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
             ub.at(i) = opt_gimbal_angles_.at(i) + delta_angle;
             lb_wide.at(i) = opt_gimbal_angles_.at(i) - delta_angle;
             ub_wide.at(i) = opt_gimbal_angles_.at(i) + delta_angle;
-            lb_wide.at(4+i) = 8.9;
+            lb_wide.at(4+i) = 8.6;
             ub_wide.at(4+i) = robot_model_->getThrustUpperLimit();
          }
       /*avoid over angle (hard cording)*/
@@ -468,6 +466,12 @@ bool HydrusXiUnderActuatedNavigator::plan()
             }
         }
     }
+  
+  Eigen::VectorXd static_thrust = robot_model_->getStaticThrust();
+  for(int i;i<4;i++)
+  {
+    opt_x_.at(i+4) = static_thrust[i];
+  }
 
   vectoring_nl_solver_->set_lower_bounds(lb);
   vectoring_nl_solver_->set_upper_bounds(ub);

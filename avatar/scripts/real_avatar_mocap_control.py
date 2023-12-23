@@ -22,7 +22,7 @@ class mocap_control():
     if self.real_machine == True:
       topic_name = '/avatar_mocap_node/avatar/pose'
 
-    self.pos_scaling = rospy.get_param("~pos_scaling", 1.1)
+    self.pos_scaling = rospy.get_param("~pos_scaling", 1.5)
     self.period = rospy.get_param("~period", 40.0)
     self.radius = rospy.get_param("~radius", 1.0)
     self.init_theta = rospy.get_param("~init_theta", 0.0)

@@ -41,7 +41,7 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   desire_wrench_from_pos_ = Eigen::VectorXd::Zero(6);
   target_wrench_cog_ = Eigen::VectorXd::Zero(6);
   p_wrench_stamp_ = Eigen::VectorXd::Zero(6);
-  feedforward_term_ = Eigen::VectorXd::Zero(6);
+  feedforward_sum_ = Eigen::VectorXd::Zero(6);
   desire_pos_ = Eigen::Vector3d::Zero(6);
   attaching_flag_ = false;
   const_err_i_flag_ = false;
@@ -381,31 +381,48 @@ void HydrusTiltedLQIController::controlCore()
     }
 
   Eigen::Vector3d des_acc = des_force * mass_inv;
-  Eigen::Vector3d des_acc_ang = inertia_inv * des_torque * wrench_diff_gain_;
+  Eigen::Vector3d des_ang_acc = inertia_inv * des_torque;
   //ROS_INFO("send_feedforward_switch_flag: %d", send_feedforward_switch_flag_);
+  Eigen::Vector3d feedforward_sum_3 = feedforward_sum_.head(3);
+  Eigen::Vector3d feedforward_world = cog_rot * (des_acc + feedforward_sum_3);
+  
   if(send_feedforward_switch_flag_ && attaching_flag_)
   {
-    target_acc_.setX(des_acc[0]+feedforward_term_[0]);
-    target_acc_.setY(des_acc[1]+feedforward_term_[1]);
-    //target_acc_.setZ(des_acc[2]+feedforward_term_[2]);
-    target_ang_acc_.setZ(des_acc_ang[2]+feedforward_term_[5]);
-    target_wrench_acc_cog[0] += des_acc[0]+feedforward_term_[0];
-    target_wrench_acc_cog[1] += des_acc[1]+feedforward_term_[1];
-    target_wrench_acc_cog[5] += des_acc_ang[2]+feedforward_term_[5];
+    // target_pitch_ += des_acc[0];
+    // target_roll_ += des_acc[1];
+    navigator_->setTargetAccX(feedforward_world[0]);
+    navigator_->setTargetAccY(feedforward_world[1]);
+    navigator_->setTargetAngAccZ(des_ang_acc[2] + feedforward_sum_[5]);
+    target_wrench_acc_cog[0] += feedforward_world[0];
+    target_wrench_acc_cog[1] += feedforward_world[1];
+    target_wrench_acc_cog[5] += des_ang_acc[2] + feedforward_sum_[5];
+
+    feedforward_sum_.head(3) += des_acc * wrench_diff_gain_;
+    feedforward_sum_.tail(3) += des_ang_acc * wrench_diff_gain_;
+
     std::cout << "send_feedforward" << std::endl;
   }
-  feedforward_term_.head(3) += des_acc;
-  feedforward_term_.tail(3) += des_acc_ang;
+  if(!attaching_flag_)
+  {
+    navigator_->setTargetAccX(0);
+    navigator_->setTargetAccY(0);
+    navigator_->setTargetAngAccZ(0);
+    feedforward_sum_ = Eigen::VectorXd::Zero(6);
+  }
+  if(pid_controllers_.at(X).result()<0.0)
+  {
+    //attaching_flag_ = false;
+  }
 
   geometry_msgs::Vector3Stamped feedforward_acc_cog_msg;
   geometry_msgs::Vector3Stamped feedforward_ang_acc_cog_msg;
   geometry_msgs::WrenchStamped des_wrench_cog_msg;
-  feedforward_acc_cog_msg.vector.x = des_acc[0];
-  feedforward_acc_cog_msg.vector.y = des_acc[1];
-  feedforward_acc_cog_msg.vector.z = des_acc[2];
-  feedforward_ang_acc_cog_msg.vector.x = des_acc_ang[0];
-  feedforward_ang_acc_cog_msg.vector.y = des_acc_ang[1];
-  feedforward_ang_acc_cog_msg.vector.z = des_acc_ang[2];
+  feedforward_acc_cog_msg.vector.x = feedforward_world[0];
+  feedforward_acc_cog_msg.vector.y = feedforward_world[1];
+  feedforward_acc_cog_msg.vector.z = feedforward_world[2];
+  feedforward_ang_acc_cog_msg.vector.x = feedforward_sum_[3];
+  feedforward_ang_acc_cog_msg.vector.y = feedforward_sum_[4];
+  feedforward_ang_acc_cog_msg.vector.z = feedforward_sum_[5];
   des_wrench_cog_msg.wrench.force.x = des_force[0];
   des_wrench_cog_msg.wrench.force.y = des_force[1];
   des_wrench_cog_msg.wrench.force.z = des_force[2];

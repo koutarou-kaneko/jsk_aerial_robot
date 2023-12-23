@@ -233,7 +233,7 @@ class avatar_control():
             desire_wrench_msg.wrench.force.x = 3.0
             desire_wrench_msg.wrench.force.y = 0.0
             desire_wrench_msg.wrench.force.z = 0.0
-            self.des_wrench_pub.publish(desire_wrench_msg)
+            #self.des_wrench_pub.publish(desire_wrench_msg)
 
             # send joint angles
             self.joint_control_pub.publish(self.desire_joint)

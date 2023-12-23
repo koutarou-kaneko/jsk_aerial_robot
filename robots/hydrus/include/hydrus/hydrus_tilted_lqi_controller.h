@@ -78,7 +78,7 @@ namespace aerial_robot_control
     Eigen::VectorXd desire_wrench_from_pos_;
     Eigen::VectorXd target_wrench_cog_;
     Eigen::VectorXd p_wrench_stamp_;
-    Eigen::VectorXd feedforward_term_;
+    Eigen::VectorXd feedforward_sum_;
     Eigen::VectorXd desire_pos_;
     bool send_feedforward_switch_flag_;
     bool attaching_flag_, const_err_i_flag_;
