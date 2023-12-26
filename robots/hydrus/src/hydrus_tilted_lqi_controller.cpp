@@ -32,6 +32,7 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   feedforward_ang_acc_cog_pub_ = nh_.advertise<geometry_msgs::Vector3Stamped>("feedforward_ang_acc_cog", 1);
   des_wrench_cog_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("des_wrench_cog", 1);
   attaching_flag_pub_ = nh_.advertise<std_msgs::Bool>("attaching_flag",1);
+  filtered_est_external_wrench_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("filtered_est_external_wrench",1);
   desire_wrench_sub_ = nh_.subscribe("desire_wrench", 1, &HydrusTiltedLQIController::DesireWrenchCallback, this);
   desire_pos_sub_ = nh_.subscribe("uav/nav", 1, &HydrusTiltedLQIController::DesirePosCallback, this);
   acc_root_sub_ = nh_.subscribe("imu", 10, &HydrusTiltedLQIController::accRootCallback, this);
@@ -45,6 +46,7 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   desire_pos_ = Eigen::Vector3d::Zero(6);
   attaching_flag_ = false;
   const_err_i_flag_ = false;
+  first_flag_ = true;
 
   ros::NodeHandle control_nh(nh_, "controller");
   ros::NodeHandle est_wrench_nh(control_nh, "est_wrench");
@@ -141,6 +143,11 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   getParam<double>(control_nh, "wrench_diff_gain", wrench_diff_gain_, 1.0);
   getParam<bool>(control_nh, "send_feedforward_switch_flag", send_feedforward_switch_flag_, false);
   getParam<double>(control_nh, "acc_shock_thres", acc_shock_thres_, 20.0);
+  double cutoff_freq, sample_freq;
+  getParam<double>(control_nh, "cutoff_freq", cutoff_freq, 25.0);
+  getParam<double>(control_nh, "sample_freq", sample_freq, 100.0);
+  lpf_est_external_wrench_ = IirFilter(sample_freq, cutoff_freq, 6);
+
   
 }
 
@@ -287,6 +294,14 @@ bool HydrusTiltedLQIController::checkRobotModel()
 
 void HydrusTiltedLQIController::controlCore()
 {
+  if(first_flag_)
+  {
+    lpf_est_external_wrench_.setInitValues(est_external_wrench_);
+    first_flag_ = false;
+  }
+  Eigen::VectorXd filtered_est_external_wrench;
+  filtered_est_external_wrench = lpf_est_external_wrench_.filterFunction(est_external_wrench_);
+
   int navi_state = navigator_->getNaviState();
   tf::Vector3 pos = estimator_->getPos(Frame::COG, estimate_mode_);
   tf::Vector3 euler = estimator_->getEuler(Frame::COG, estimate_mode_);
@@ -417,6 +432,7 @@ void HydrusTiltedLQIController::controlCore()
   geometry_msgs::Vector3Stamped feedforward_acc_cog_msg;
   geometry_msgs::Vector3Stamped feedforward_ang_acc_cog_msg;
   geometry_msgs::WrenchStamped des_wrench_cog_msg;
+  geometry_msgs::WrenchStamped filtered_est_external_wrench_msg;
   feedforward_acc_cog_msg.vector.x = feedforward_world[0];
   feedforward_acc_cog_msg.vector.y = feedforward_world[1];
   feedforward_acc_cog_msg.vector.z = feedforward_world[2];
@@ -429,9 +445,17 @@ void HydrusTiltedLQIController::controlCore()
   des_wrench_cog_msg.wrench.torque.x = des_torque[0];
   des_wrench_cog_msg.wrench.torque.y = des_torque[1];
   des_wrench_cog_msg.wrench.torque.z = des_torque[2];
+  filtered_est_external_wrench_msg.wrench.force.x = filtered_est_external_wrench[0];
+  filtered_est_external_wrench_msg.wrench.force.y = filtered_est_external_wrench[1];
+  filtered_est_external_wrench_msg.wrench.force.z = filtered_est_external_wrench[2];
+  filtered_est_external_wrench_msg.wrench.torque.x = filtered_est_external_wrench[3];
+  filtered_est_external_wrench_msg.wrench.torque.y = filtered_est_external_wrench[4];
+  filtered_est_external_wrench_msg.wrench.torque.z = filtered_est_external_wrench[5];
+
   feedforward_acc_cog_pub_.publish (feedforward_acc_cog_msg);
   feedforward_ang_acc_cog_pub_.publish(feedforward_ang_acc_cog_msg);
   des_wrench_cog_pub_.publish(des_wrench_cog_msg);
+  filtered_est_external_wrench_pub_.publish(filtered_est_external_wrench_msg);
   setTargetWrenchAccCog(target_wrench_acc_cog);
 
 }

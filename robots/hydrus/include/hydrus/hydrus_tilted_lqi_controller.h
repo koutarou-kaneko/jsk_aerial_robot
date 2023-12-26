@@ -69,6 +69,7 @@ namespace aerial_robot_control
     ros::Publisher feedforward_ang_acc_cog_pub_;
     ros::Publisher des_wrench_cog_pub_;
     ros::Publisher attaching_flag_pub_;
+    ros::Publisher filtered_est_external_wrench_pub_;
     ros::Subscriber desire_wrench_sub_;
     ros::Subscriber desire_pos_sub_;
     ros::Subscriber acc_root_sub_;
@@ -81,10 +82,11 @@ namespace aerial_robot_control
     Eigen::VectorXd feedforward_sum_;
     Eigen::VectorXd desire_pos_;
     bool send_feedforward_switch_flag_;
-    bool attaching_flag_, const_err_i_flag_;
+    bool attaching_flag_, const_err_i_flag_, first_flag_;
     double err_i_x_, err_i_y_, err_i_z_;
     double wrench_diff_gain_;
     double acc_shock_thres_;
+    IirFilter lpf_est_external_wrench_;
     bool update() override;
     void controlCore() override;
     void sendCmd() override;
