@@ -6,6 +6,7 @@ import sys, select, termios, tty
 
 import rospy
 from std_msgs.msg import Empty, Int8
+from geometry_msgs.msg import WrenchStamped
 from aerial_robot_msgs.msg import FlightNav
 import rosgraph
 
@@ -74,7 +75,7 @@ if __name__=="__main__":
         force_landing_pub = rospy.Publisher(ns + '/force_landing', Empty, queue_size=1)
         nav_pub = rospy.Publisher(robot_ns + '/uav/nav', FlightNav, queue_size=1)
         hand_force_switch_pub = rospy.Publisher(robot_ns + '/hand_force_switch', Int8, queue_size=1)
-
+        hand_force_pub = rospy.Publisher(robot_ns + '/desire_wrench', WrenchStamped, queue_size=1)
         xy_vel   = rospy.get_param("xy_vel", 0.2)
         z_vel    = rospy.get_param("z_vel", 0.2)
         yaw_vel  = rospy.get_param("yaw_vel", 0.2)
@@ -86,7 +87,9 @@ if __name__=="__main__":
                         nav_msg = FlightNav()
                         nav_msg.control_frame = FlightNav.WORLD_FRAME
                         nav_msg.target = FlightNav.COG
-                        hand_force_msg = Int8()
+                        hand_force_switch_msg = Int8()
+                        hand_force_msg = WrenchStamped()
+
 
                         key = getKey()
 
@@ -151,13 +154,54 @@ if __name__=="__main__":
                                 nav_pub.publish(nav_msg)
                                 msg = "send -z vel command"
                         if key == 'm':
-                                hand_force_msg.data = 1
-                                hand_force_switch_pub.publish(hand_force_msg)
+                                hand_force_switch_msg.data = 1
+                                hand_force_switch_pub.publish(hand_force_switch_msg)
                                 msg = "hand force ON"
                         if key == 'n':
-                                hand_force_msg.data = 0
-                                hand_force_switch_pub.publish(hand_force_msg)
+                                hand_force_switch_msg.data = 0
+                                hand_force_switch_pub.publish(hand_force_switch_msg)
                                 msg = "hand force OFF"
+                        if key == '1':
+                                hand_force_msg.wrench.force.x = 0.1
+                                hand_force_pub.publish(hand_force_msg)
+                                msg = "hand froce = 0.1N"
+                        if key == '2':
+                                hand_force_msg.wrench.force.x = 0.2
+                                hand_force_pub.publish(hand_force_msg)
+                                msg = "hand froce = 0.2N"
+                        if key == '3':
+                                hand_force_msg.wrench.force.x = 0.3
+                                hand_force_pub.publish(hand_force_msg)
+                                msg = "hand froce = 0.3N"
+                        if key == '4':
+                                hand_force_msg.wrench.force.x = 0.4
+                                hand_force_pub.publish(hand_force_msg)
+                                msg = "hand froce = 0.4N"
+                        if key == '5':
+                                hand_force_msg.wrench.force.x = 0.5
+                                hand_force_pub.publish(hand_force_msg)
+                                msg = "hand froce = 0.5N"
+                        if key == '6':
+                                hand_force_msg.wrench.force.x = 0.6
+                                hand_force_pub.publish(hand_force_msg)
+                                msg = "hand froce = 0.6N"
+                        if key == '7':
+                                hand_force_msg.wrench.force.x = 0.7
+                                hand_force_pub.publish(hand_force_msg)
+                                msg = "hand froce = 0.7N"
+                        if key == '8':
+                                hand_force_msg.wrench.force.x = 0.8
+                                hand_force_pub.publish(hand_force_msg)
+                                msg = "hand froce = 0.8N"
+                        if key == '9':
+                                hand_force_msg.wrench.force.x = 0.9
+                                hand_force_pub.publish(hand_force_msg)
+                                msg = "hand froce = 0.9N"
+                        if key == '0':
+                                hand_force_msg.wrench.force.x = 1.0
+                                hand_force_pub.publish(hand_force_msg)
+                                msg = "hand froce = 1.0N"
+        
 
 
                         if key == '\x03':
