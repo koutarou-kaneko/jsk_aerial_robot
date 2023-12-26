@@ -28,7 +28,7 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   fc_t_min_pub_ = nh_.advertise<std_msgs::Float64>("fc_t_min", 1);
   fc_t_min_thre_pub_  = nh_.advertise<std_msgs::Float64>("fc_t_min_thre", 1);
   fc_rp_min_pub_ = nh_.advertise<std_msgs::Float64>("fc_rp_min", 1);
-  feedforward_acc_cog_pub_ = nh_.advertise<geometry_msgs::Vector3Stamped>("feedforward_acc_cog", 1);
+  feedforward_acc_cog_pub_ = nh_.advertise<geometry_msgs::Vector3Stamped>("feedforward_acc_world", 1);
   feedforward_ang_acc_cog_pub_ = nh_.advertise<geometry_msgs::Vector3Stamped>("feedforward_ang_acc_cog", 1);
   des_wrench_cog_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("des_wrench_cog", 1);
   attaching_flag_pub_ = nh_.advertise<std_msgs::Bool>("attaching_flag",1);
@@ -386,13 +386,13 @@ void HydrusTiltedLQIController::controlCore()
   Eigen::Matrix3d cog_rot;
   Eigen::Vector3d est_external_force_cog;
   Eigen::Vector3d est_external_force;
-  est_external_force =  est_external_wrench_.head(3);
+  est_external_force =  filtered_est_external_wrench.head(3);
   tf::matrixTFToEigen(estimator_->getOrientation(Frame::COG, estimate_mode_), cog_rot);
   est_external_force_cog = cog_rot.inverse() * est_external_force;
   for(int i;i<3;i++)
     {
       des_force[i] = desire_wrench_[i] + est_external_force_cog[i];
-      des_torque[i] = desire_wrench_[i+3] + est_external_wrench_[i+3];
+      des_torque[i] = desire_wrench_[i+3] + filtered_est_external_wrench[i+3];
     }
 
   Eigen::Vector3d des_acc = des_force * mass_inv;
@@ -405,11 +405,11 @@ void HydrusTiltedLQIController::controlCore()
   {
     // target_pitch_ += des_acc[0];
     // target_roll_ += des_acc[1];
-    navigator_->setTargetAccX(feedforward_world[0]);
-    // navigator_->setTargetAccY(feedforward_world[1]);
+    // navigator_->setTargetAccX(feedforward_world[0]);
+    navigator_->setTargetAccY(feedforward_world[1]);
     // navigator_->setTargetAngAccZ(des_ang_acc[2] + feedforward_sum_[5]);
-    target_wrench_acc_cog[0] += feedforward_world[0];
-    // target_wrench_acc_cog[1] += feedforward_world[1];
+    // target_wrench_acc_cog[0] += feedforward_world[0];
+    target_wrench_acc_cog[1] += feedforward_world[1];
     // target_wrench_acc_cog[5] += des_ang_acc[2] + feedforward_sum_[5];
 
     feedforward_sum_.head(3) += des_acc * wrench_diff_gain_;
@@ -419,8 +419,8 @@ void HydrusTiltedLQIController::controlCore()
   }
   if(!attaching_flag_)
   {
-    navigator_->setTargetAccX(0);
-    // navigator_->setTargetAccY(0);
+    // navigator_->setTargetAccX(0);
+    navigator_->setTargetAccY(0);
     // navigator_->setTargetAngAccZ(0);
     feedforward_sum_ = Eigen::VectorXd::Zero(6);
   }

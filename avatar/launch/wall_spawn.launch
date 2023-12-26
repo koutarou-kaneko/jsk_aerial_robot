@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <launch>
 
-  <arg name="wall_x" default="3.5"/>
-  <arg name="wall_y" default="0.0"/>
+  <arg name="wall_x" default="0.0"/>
+  <arg name="wall_y" default="3.5"/>
   <arg name="wall_z" default="0.0"/>
   <arg name="wall_pitch" default="0.0"/>
   <arg name="wall_yaw" default="0.0"/>
