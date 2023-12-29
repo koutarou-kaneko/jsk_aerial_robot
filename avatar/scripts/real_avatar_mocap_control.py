@@ -7,7 +7,7 @@ import rospy
 import math
 import signal
 import copy
-from std_msgs.msg import UInt8
+from std_msgs.msg import UInt8,Int8
 import tf.transformations as tf
 from geometry_msgs.msg import PoseStamped
 from aerial_robot_msgs.msg import FlightNav
@@ -22,7 +22,7 @@ class mocap_control():
     if self.real_machine == True:
       topic_name = '/avatar_mocap_node/avatar/pose'
 
-    self.pos_scaling = rospy.get_param("~pos_scaling", 1.1)
+    self.pos_scaling = rospy.get_param("~pos_scaling", 1.1) #1.1 is good for real machine
     self.period = rospy.get_param("~period", 40.0)
     self.radius = rospy.get_param("~radius", 1.0)
     self.init_theta = rospy.get_param("~init_theta", 0.0)
@@ -34,6 +34,7 @@ class mocap_control():
     self.mocap_sub = rospy.Subscriber(topic_name, PoseStamped, self.mocapCb)
     self.flight_state_sub = rospy.Subscriber('/'+self.robot_name+'/flight_state', UInt8, self.flight_stateCb)
     self.robot_pos_sub = rospy.Subscriber('/'+self.robot_name+'/mocap/pose',PoseStamped, self.robot_posCb)
+    self.hand_force_switch_sub = rospy.Subscriber('/'+self.robot_name+'/hand_force_switch', Int8, self.hand_force_switchCb)
 
     self.omega = 2 * math.pi / self.period
     self.velocity = self.omega * self.radius
@@ -43,9 +44,13 @@ class mocap_control():
     self.Hovering = False
     self.flight_state = 0
     self.mocap_pos = None
+    self.mocap_init_pos = None
     self.mocap_init_flag = False
     self.robot_init_flag = False
     self.robot_init_pos = None
+    self.robot_pos_now = None
+    self.hand_force_flag = False
+    self.attaching_init_flag = False
 
     self.flight_nav = FlightNav() 
     self.flight_nav.target = FlightNav.COG
@@ -76,7 +81,15 @@ class mocap_control():
       self.robot_init_pos = msg.pose.position
       self.robot_init_flag = True
       rospy.loginfo("robot_init_pos is [%f, %f, %f]",self.robot_init_pos.x, self.robot_init_pos.y, self.robot_init_pos.z)
-     
+    if self.Hovering:
+      self.robot_pos_now = msg.pose.position
+  
+  def hand_force_switchCb(self,msg):
+    if msg.data == 1:
+      self.hand_force_flag = True
+    else:
+      self.hand_force_flag = False
+   
   def stopRequest(self, signal, frame):
     rospy.loginfo("stop following")
     self.flight_nav.target_vel_x = 0
@@ -84,6 +97,7 @@ class mocap_control():
     self.flight_nav.target_omega_z = 0
     self.nav_pub.publish(self.flight_nav)
     sys.exit(0)
+
 
   def main(self):
     while not rospy.is_shutdown():
@@ -95,28 +109,31 @@ class mocap_control():
           continue
       
       if self.mocap_init_flag == False and self.Hovering == True:
-        mocap_init_pos = copy.deepcopy(self.mocap_pos)
-        rospy.loginfo("mocap_init_pos is [%f, %f, %f]",mocap_init_pos.x, mocap_init_pos.y, mocap_init_pos.z)
+        self.mocap_init_pos = copy.deepcopy(self.mocap_pos)
+        rospy.loginfo("mocap_init_pos is [%f, %f, %f]",self.mocap_init_pos.x, self.mocap_init_pos.y, self.mocap_init_pos.z)
         self.mocap_init_flag = True
 
-      if self.mocap_init_flag==True and self.robot_init_flag==True:
-        self.flight_nav.target_pos_x = (self.mocap_pos.x - mocap_init_pos.x + self.robot_init_pos.x) * self.pos_scaling
-        self.flight_nav.target_pos_y = (self.mocap_pos.y - mocap_init_pos.y + self.robot_init_pos.y) * self.pos_scaling
-        self.flight_nav.target_pos_z = (self.mocap_pos.z - mocap_init_pos.z + self.robot_init_pos.z)
-        '''
-        self.flight_nav.target_vel_x = self.velocity
-        self.flight_nav.target_vel_y = self.velocity
-        self.flight_nav.target_vel_z = self.velocity
-        '''
+      if self.mocap_init_flag==True and self.robot_init_flag==True and self.Hovering==True:
+        self.flight_nav.target_pos_x = (self.mocap_pos.x - self.mocap_init_pos.x + self.robot_init_pos.x) * self.pos_scaling
+        self.flight_nav.target_pos_y = (self.mocap_pos.y - self.mocap_init_pos.y + self.robot_init_pos.y) * self.pos_scaling
+        self.flight_nav.target_pos_z = (self.mocap_pos.z - self.mocap_init_pos.z + self.robot_init_pos.z)
         self.flight_nav.target_yaw = self.mocap_euler[2]
-        #self.flight_nav.target_omega_z = self.omega
-        #if self.flight_nav.target_pos_z <= 0.2:
-          #self.flight_nav.target_pos_z = 0.2
-      #rospy.loginfo("target_pos is [%f, %f, %f]", self.flight_nav.target_pos_x, self.flight_nav.target_pos_y, self.flight_nav.target_pos_z)
+        if self.hand_force_flag==True:
+          if self.attaching_init_flag == False:
+            attaching_pos_y = self.robot_pos_now.y
+            self.attaching_init_flag = True
+          #self.flight_nav.target_pos_y = attaching_pos_y + 0.1 #0.1 is fix diff of cog and mocap
+          self.mocap_init_pos.y = self.mocap_pos.y
+          self.robot_init_pos.y = attaching_pos_y + 0.1
+        else:
+          self.attaching_init_flag = False
+        self.nav_pub.publish(self.flight_nav)
 
+      """
       if self.mocap_init_flag==True and self.robot_init_flag==True and self.Hovering == True:
         self.nav_pub.publish(self.flight_nav)
         #self.att_control_pub.publish(self.desire_att)
+      """
 
       if self.flight_state == 4:
         self.flight_nav.target_pos_x = 0.0

@@ -329,16 +329,17 @@ void HydrusTiltedLQIController::controlCore()
           err_i_x_ = pid_controllers_.at(X).getErrI();
           err_i_y_ = pid_controllers_.at(Y).getErrI();
           err_i_z_ = pid_controllers_.at(Z).getErrI();
+          //err_p_y_ = pid_controllers_.at(Y).getErrP();
           const_err_i_flag_ = true;
         }
       pid_controllers_.at(X).setErrI(err_i_x_);
       pid_controllers_.at(Y).setErrI(err_i_y_);
       pid_controllers_.at(Z).setErrI(err_i_z_);
+      pid_controllers_.at(Y).setErrP(0);
     }
   //else{const_err_i_flag_ = false;}
 
   double du = ros::Time::now().toSec() - control_timestamp_;
-  UnderActuatedTiltedLQIController::controlCore();
   tf::Matrix3x3 uav_rot = estimator_->getOrientation(Frame::COG, estimate_mode_);
   tf::Vector3 target_acc_w(pid_controllers_.at(X).result(),
                            pid_controllers_.at(Y).result(),
@@ -428,6 +429,8 @@ void HydrusTiltedLQIController::controlCore()
   {
     //attaching_flag_ = false;
   }
+  
+  UnderActuatedTiltedLQIController::controlCore();
 
   geometry_msgs::Vector3Stamped feedforward_acc_cog_msg;
   geometry_msgs::Vector3Stamped feedforward_ang_acc_cog_msg;

@@ -83,7 +83,7 @@ namespace aerial_robot_control
     Eigen::VectorXd desire_pos_;
     bool send_feedforward_switch_flag_;
     bool attaching_flag_, const_err_i_flag_, first_flag_;
-    double err_i_x_, err_i_y_, err_i_z_;
+    double err_i_x_, err_i_y_, err_i_z_, err_p_y_;
     double wrench_diff_gain_;
     double acc_shock_thres_;
     IirFilter lpf_est_external_wrench_;
