@@ -148,6 +148,7 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   getParam<double>(control_nh, "sample_freq", sample_freq, 100.0);
   lpf_est_external_wrench_ = IirFilter(sample_freq, cutoff_freq, 6);
 
+  y_p_gain_ = pid_controllers_.at(Y).getPGain();
   
 }
 
@@ -322,6 +323,7 @@ void HydrusTiltedLQIController::controlCore()
   attaching_flag_msg.data = attaching_flag_;
   attaching_flag_pub_.publish(attaching_flag_msg);
   // during attaching
+  /*
   if(attaching_flag_)
     {
       if(!const_err_i_flag_)
@@ -336,7 +338,7 @@ void HydrusTiltedLQIController::controlCore()
       pid_controllers_.at(Y).setErrI(err_i_y_);
       pid_controllers_.at(Z).setErrI(err_i_z_);
       pid_controllers_.at(Y).setErrP(0);
-    }
+    }*/
   //else{const_err_i_flag_ = false;}
 
   double du = ros::Time::now().toSec() - control_timestamp_;
@@ -429,8 +431,32 @@ void HydrusTiltedLQIController::controlCore()
   {
     //attaching_flag_ = false;
   }
+    
+  // during attaching
+  if(attaching_flag_)
+    {
+      if(!const_err_i_flag_)
+        {
+          err_i_x_ = pid_controllers_.at(X).getErrI();
+          err_i_y_ = pid_controllers_.at(Y).getErrI();
+          err_i_z_ = pid_controllers_.at(Z).getErrI();
+          y_p_gain_ = pid_controllers_.at(Y).getPGain();
+          //err_p_y_ = pid_controllers_.at(Y).getErrP();
+          const_err_i_flag_ = true;
+        }
+      pid_controllers_.at(X).setErrI(err_i_x_);
+      pid_controllers_.at(Y).setErrI(err_i_y_);
+      pid_controllers_.at(Z).setErrI(err_i_z_);
+      //pid_controllers_.at(Y).setErrP(0);
+      pid_controllers_.at(Y).setPGain(0.0);
+    }
+  if(!attaching_flag_)
+  {
+    pid_controllers_.at(Y).setPGain(y_p_gain_);
+  }
   
   UnderActuatedTiltedLQIController::controlCore();
+  
 
   geometry_msgs::Vector3Stamped feedforward_acc_cog_msg;
   geometry_msgs::Vector3Stamped feedforward_ang_acc_cog_msg;

@@ -86,6 +86,7 @@ namespace aerial_robot_control
     double err_i_x_, err_i_y_, err_i_z_, err_p_y_;
     double wrench_diff_gain_;
     double acc_shock_thres_;
+    double y_p_gain_;
     IirFilter lpf_est_external_wrench_;
     bool update() override;
     void controlCore() override;
