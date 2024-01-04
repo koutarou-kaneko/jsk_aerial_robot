@@ -47,7 +47,7 @@
       <node pkg="mocap_optitrack" type="mocap_node" name="avatar_mocap_node" respawn="false" >
         <rosparam subst_value="true">
           rigid_bodies:
-              '2':
+              '6':
                 pose: avatar/pose
                 pose2d: avatar/ground_pose
                 child_frame_id: baselink

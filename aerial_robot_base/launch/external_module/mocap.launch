@@ -1,7 +1,7 @@
 <launch>
 
   <arg name="robot_id" default="1"/>
-  <arg name="avatar_id" default="2" />
+  <arg name="avatar_id" default="6" />
 
   <node pkg="mocap_optitrack"
     type="mocap_node"
