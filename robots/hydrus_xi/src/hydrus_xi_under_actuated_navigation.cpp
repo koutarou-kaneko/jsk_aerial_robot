@@ -176,6 +176,8 @@ namespace
     double angle = atan2(sqrt(ez_x* ez_x + ez_y * ez_y), fabs(ez_z));
 
     return angle - planner->getBaselinkRotThresh();
+    // return planner->getBaselinkRotThresh() - angle;
+
   }
 
 

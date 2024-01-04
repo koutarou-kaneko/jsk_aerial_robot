@@ -44,7 +44,7 @@ class avatar_control():
         self.servo_Switch_state = True
         self.danger_config = False
         self.staric_thrust_available = True
-        self.angle_limit = rospy.get_param("angle_limit", 1.56) # the limitation of the joint
+        self.angle_limit = rospy.get_param("angle_limit", 1.535) # the limitation of the joint
         self.min_yaw_angle = rospy.get_param("min_yaw_angle", 0.3)
         self.yaw_sum_threshold = rospy.get_param("yaw_sum_threshold", 1.0)
         self.servo_init_time = 0.5

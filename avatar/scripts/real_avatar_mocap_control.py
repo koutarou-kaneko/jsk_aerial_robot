@@ -81,7 +81,7 @@ class mocap_control():
       self.robot_init_pos = msg.pose.position
       self.robot_init_flag = True
       rospy.loginfo("robot_init_pos is [%f, %f, %f]",self.robot_init_pos.x, self.robot_init_pos.y, self.robot_init_pos.z)
-    if self.Hovering:
+    if self.Hovering == True:
       self.robot_pos_now = msg.pose.position
   
   def hand_force_switchCb(self,msg):
@@ -124,7 +124,7 @@ class mocap_control():
             self.attaching_init_flag = True
           #self.flight_nav.target_pos_y = attaching_pos_y + 0.1 #0.1 is fix diff of cog and mocap
           self.mocap_init_pos.y = self.mocap_pos.y
-          self.robot_init_pos.y = attaching_pos_y + 0.1
+          self.robot_init_pos.y = attaching_pos_y + 0.1*self.pos_scaling
         else:
           self.attaching_init_flag = False
         self.nav_pub.publish(self.flight_nav)
