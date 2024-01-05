@@ -208,12 +208,13 @@ namespace
     //Eigen::Matrix3d inertia_inv = robot_model_for_plan_->getInertia<Eigen::Matrix3d>().inverse();
     Eigen::Vector3d des_force,des_torque;
     Eigen::Matrix3d cog_rot;
-    Eigen::Vector3d est_external_wrench_cog;
+    Eigen::Vector3d est_external_wrench_cog, des_force_cog;
     Eigen::Vector3d est_external_force = est_external_wrench.head(3);
 
     tf::matrixTFToEigen(planner->getEstimator()->getOrientation(Frame::COG, planner->getEstimateMode()), cog_rot);
     est_external_wrench_cog = cog_rot.inverse() * est_external_force;
-    des_force = desire_wrench.head(3) + est_external_wrench_cog;
+    des_force_cog = cog_rot.inverse() * desire_wrench.head(3);
+    des_force = des_force_cog + est_external_wrench_cog;
     des_torque = desire_wrench.tail(3) + est_external_wrench.tail(3);
     
     Eigen::VectorXd thrusts(4), wrench_des(6), yaw_comp(6);
@@ -305,7 +306,7 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
       vectoring_nl_solver_->set_max_objective(maximizeFCTMin, this);
     }
   vectoring_nl_solver_->add_inequality_constraint(baselinkRotConstraint, this, 1e-8);
-  //vectoring_nl_solver_wide_->add_inequality_constraint(baselinkRotConstraint, this, 1e-8);
+  vectoring_nl_solver_wide_->add_inequality_constraint(baselinkRotConstraint, this, 1e-8);
 
   vectoring_nl_solver_->set_xtol_rel(1e-4); //1e-4
   vectoring_nl_solver_->set_maxeval(1000); // 1000 times
