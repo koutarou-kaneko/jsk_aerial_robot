@@ -162,45 +162,45 @@ if __name__=="__main__":
                                 hand_force_switch_pub.publish(hand_force_switch_msg)
                                 msg = "hand force OFF"
                         if key == '1':
-                                hand_force_msg.wrench.force.x = 0.2
-                                hand_force_pub.publish(hand_force_msg)
-                                msg = "hand froce = 0.2N"
-                        if key == '2':
                                 hand_force_msg.wrench.force.x = 0.4
                                 hand_force_pub.publish(hand_force_msg)
                                 msg = "hand froce = 0.4N"
-                        if key == '3':
-                                hand_force_msg.wrench.force.x = 0.6
-                                hand_force_pub.publish(hand_force_msg)
-                                msg = "hand froce = 0.6N"
-                        if key == '4':
+                        if key == '2':
                                 hand_force_msg.wrench.force.x = 0.8
                                 hand_force_pub.publish(hand_force_msg)
                                 msg = "hand froce = 0.8N"
-                        if key == '5':
-                                hand_force_msg.wrench.force.x = 1.0
-                                hand_force_pub.publish(hand_force_msg)
-                                msg = "hand froce = 1.0N"
-                        if key == '6':
+                        if key == '3':
                                 hand_force_msg.wrench.force.x = 1.2
                                 hand_force_pub.publish(hand_force_msg)
                                 msg = "hand froce = 1.2N"
-                        if key == '7':
-                                hand_force_msg.wrench.force.x = 1.4
-                                hand_force_pub.publish(hand_force_msg)
-                                msg = "hand froce = 1.4N"
-                        if key == '8':
+                        if key == '4':
                                 hand_force_msg.wrench.force.x = 1.6
                                 hand_force_pub.publish(hand_force_msg)
                                 msg = "hand froce = 1.6N"
-                        if key == '9':
-                                hand_force_msg.wrench.force.x = 1.8
-                                hand_force_pub.publish(hand_force_msg)
-                                msg = "hand froce = 1.8N"
-                        if key == '0':
+                        if key == '5':
                                 hand_force_msg.wrench.force.x = 2.0
                                 hand_force_pub.publish(hand_force_msg)
                                 msg = "hand froce = 2.0N"
+                        if key == '6':
+                                hand_force_msg.wrench.force.x = 2.4
+                                hand_force_pub.publish(hand_force_msg)
+                                msg = "hand froce = 2.4N"
+                        if key == '7':
+                                hand_force_msg.wrench.force.x = 2.8
+                                hand_force_pub.publish(hand_force_msg)
+                                msg = "hand froce = 2.8N"
+                        if key == '8':
+                                hand_force_msg.wrench.force.x = 3.2
+                                hand_force_pub.publish(hand_force_msg)
+                                msg = "hand froce = 3.2N"
+                        if key == '9':
+                                hand_force_msg.wrench.force.x = 3.6
+                                hand_force_pub.publish(hand_force_msg)
+                                msg = "hand froce = 3.6N"
+                        if key == '0':
+                                hand_force_msg.wrench.force.x = 4.0
+                                hand_force_pub.publish(hand_force_msg)
+                                msg = "hand froce = 4.0N"
         
 
 
