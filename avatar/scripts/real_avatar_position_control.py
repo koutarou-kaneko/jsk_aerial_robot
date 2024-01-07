@@ -126,7 +126,9 @@ class avatar_control():
             self.set_servo_init(msg)
 
         # set the joint servo off
+        
         if self.debug==False and self.Hovering==True and self.servo_Switch_state==True and self.danger_config==False:
+        #if self.debug==False and self.servo_Switch_state==True and self.danger_config==False:
             for i , n in enumerate(msg.name):
                 if 'yaw' in n:
                     self.servo_Switch(Switch=False, servo_number=i+1)
@@ -142,7 +144,7 @@ class avatar_control():
                     self.servo_Switch(Switch=True, servo_number=4)
                     self.servo_Switch_state = False
             rospy.loginfo("servo off")
-        
+
         self.raw_servo_position = msg
         self.raw_servo_position.name = list(self.raw_servo_position.name)
         self.raw_servo_position.position = list(self.raw_servo_position.position)

@@ -148,6 +148,14 @@ class mocap_control():
         self.flight_nav.target_omega_z = 0.0
         self.nav_pub.publish(self.flight_nav)
         #self.att_control_pub.publish(self.desire_att)
+      '''
+      self.flight_nav.target_pos_x = (self.mocap_pos.x - self.mocap_init_pos.x + self.robot_init_pos.x) * self.pos_scaling
+      self.flight_nav.target_pos_y = (self.mocap_pos.y - self.mocap_init_pos.y + self.robot_init_pos.y) * self.pos_scaling
+      self.flight_nav.target_pos_z = (self.mocap_pos.z - self.mocap_init_pos.z + self.robot_init_pos.z)
+      self.flight_nav.target_yaw = self.mocap_euler[2]
+      self.nav_pub.publish(self.flight_nav)
+      '''
+
 
       time.sleep(self.nav_rate)
 
