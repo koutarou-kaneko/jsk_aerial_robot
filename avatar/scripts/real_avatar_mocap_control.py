@@ -114,8 +114,8 @@ class mocap_control():
         self.mocap_init_flag = True
 
       if self.mocap_init_flag==True and self.robot_init_flag==True and self.Hovering==True:
-        self.flight_nav.target_pos_x = (self.mocap_pos.x - self.mocap_init_pos.x + self.robot_init_pos.x) * self.pos_scaling
-        self.flight_nav.target_pos_y = (self.mocap_pos.y - self.mocap_init_pos.y + self.robot_init_pos.y) * self.pos_scaling
+        self.flight_nav.target_pos_x = (self.mocap_pos.x - self.mocap_init_pos.x + self.robot_init_pos.x) * self.pos_scaling + 0.1
+        self.flight_nav.target_pos_y = (self.mocap_pos.y - self.mocap_init_pos.y + self.robot_init_pos.y) * self.pos_scaling + 0.6
         self.flight_nav.target_pos_z = (self.mocap_pos.z - self.mocap_init_pos.z + self.robot_init_pos.z)
         self.flight_nav.target_yaw = self.mocap_euler[2]
         if self.hand_force_flag==True:
