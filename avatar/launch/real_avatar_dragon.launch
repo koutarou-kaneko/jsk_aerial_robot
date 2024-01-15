@@ -58,7 +58,10 @@
         <param name="real_machine" value="$(arg real_machine)" />
       </node>
       -->
-      <node pkg="dragon" type="real_avatar_mocap_control.py" name="real_avatar_mocap_control" output="screen" >
+      <node pkg="avatar" type="real_avatar_mocap_control.py" name="real_avatar_mocap_control" output="screen" >
+        <param name="real_machine" value="$(arg real_machine)" />
+        <param name="debug" value="$(arg debug)" />
+        <param name="robot_ns" value="$(arg robot_ns)" />
       </node>
 
     </group>
@@ -70,7 +73,10 @@
         <param name="real_machine" value="$(arg real_machine)" />
       </node>
       -->
-      <node pkg="dragon" type="real_avatar_mocap_control.py" name="real_avatar_mocap_control" output="screen" >
+      <node pkg="avatar" type="real_avatar_mocap_control.py" name="real_avatar_mocap_control" output="screen" >
+        <param name="real_machine" value="$(arg real_machine)" />
+        <param name="debug" value="$(arg debug)" />
+        <param name="robot_ns" value="$(arg robot_ns)" />
       </node>
 
     </group>
@@ -80,7 +86,8 @@
 
   ###### joint angles from real avator ####
   <include file="$(find dragon)/launch/includes/dynamixel_controllers.launch" />
-  <node pkg="dragon" type="real_avatar_position_control.py" name="real_avatar_position_control" output="screen">
+  <node pkg="avatar" type="real_avatar_position_control.py" name="real_avatar_position_control" output="screen">
+    <param name="robot_ns" value="$(arg robot_ns)" />
     <param name="debug" value="$(arg debug)" />
   </node>
     

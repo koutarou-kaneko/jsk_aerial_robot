@@ -60,12 +60,14 @@
       </node>
       <node pkg="avatar" type="real_avatar_mocap_control.py" name="real_avatar_mocap_control" output="screen" >
         <param name="real_machine" value="$(arg real_machine)" />
+        <param name="robot_ns" value="$(arg robot_ns)" />
       </node>
     </group>
     <group unless = "$(arg real_machine)">
       <include file="$(find aerial_robot_base)/launch/external_module/mocap.launch" />
       <node pkg="avatar" type="real_avatar_mocap_control.py" name="real_avatar_mocap_control" output="screen" >
         <param name="real_machine" value="$(arg real_machine)" />
+        <param name="robot_ns" value="$(arg robot_ns)" />
       </node>
     </group>
   </group>

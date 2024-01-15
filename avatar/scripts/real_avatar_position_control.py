@@ -10,11 +10,10 @@ import rospy
 import math
 import copy
 import select, termios, tty
-from std_msgs.msg import UInt8, Bool
+from std_msgs.msg import UInt8, Bool, Empty
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from spinal.msg import DesireCoord
-from std_msgs.msg import Empty
 from dynamixel_workbench_msgs.srv import *
 from geometry_msgs.msg import WrenchStamped
 
@@ -36,11 +35,13 @@ class avatar_control():
         self.des_wrench_pub = rospy.Publisher('/'+self.robot_name+'/desire_wrench', WrenchStamped, queue_size=10)
         self.avatar_sub = rospy.Subscriber('/dynamixel_workbench/joint_states', JointState, self.avatarCb)
         self.flight_state_sub = rospy.Subscriber('/'+self.robot_name+'/flight_state', UInt8, self.flight_stateCb)
+        self.land_sub = rospy.Subscriber('/'+self.robot_name+'/teleop_command/land', Empty, self.landCb)
         self.static_thrust_sub = rospy.Subscriber('/'+self.robot_name+'/static_thrust_available', Bool, self.static_thrustCb)
 
         self.raw_servo_position = None
         self.desire_joint = JointState()
         self.Hovering = False
+        self.Landing = False
         self.servo_Switch_state = True
         self.danger_config = False
         self.staric_thrust_available = True
@@ -106,11 +107,12 @@ class avatar_control():
         self.flight_state = msg.data
         if self.flight_state == 5:
             self.Hovering = True 
-        '''
-        if self.flight_state == 4:
-            self.servo_switch(Switch=True)
-            self.set_servo_init(msg)
-        '''
+        if self.flight_state == 2:
+            self.Landing = False
+
+    def landCb(self,msg):
+        self.Landing = True
+
 
     def static_thrustCb(self,msg):
         self.staric_thrust_available = msg.data
@@ -132,6 +134,8 @@ class avatar_control():
             for i , n in enumerate(msg.name):
                 if 'yaw' in n:
                     self.servo_Switch(Switch=False, servo_number=i+1)
+                if self.robot_name == "dragon":
+                    self.servo_Switch(Switch=False, servo_number=i+1)
                 if self.gripper==True:
                     self.servo_Switch(Switch=True, servo_number=4)
                     self.servo_Switch_state = False
@@ -139,6 +143,8 @@ class avatar_control():
         if self.debug==True and self.servo_Switch_state==True and self.danger_config==False:
             for i , n in enumerate(msg.name):
                 if 'yaw' in n:
+                    self.servo_Switch(Switch=False, servo_number=i+1)
+                if self.robot_name == "dragon":
                     self.servo_Switch(Switch=False, servo_number=i+1)
                 if self.gripper==True:
                     self.servo_Switch(Switch=True, servo_number=4)
@@ -158,7 +164,7 @@ class avatar_control():
             if self.raw_servo_position is None:
                 continue
             # for hydrus
-            if self.gripper==False:
+            if self.robot_name == "hydrus_xi":
                 self.desire_joint = copy.deepcopy(self.raw_servo_position)
                 #rospy.loginfo(self.desire_joint)
                 self.desire_joint.name = ["joint1", "joint2","joint3"]
@@ -170,6 +176,10 @@ class avatar_control():
                 del self.desire_joint.position[2:5]
                 del self.desire_joint.position[0]
                 self.desire_joint.name = ["joint1", "joint3"]
+
+            # for dragon
+            if self.robot_name == "dragon":
+                self.desire_joint = copy.deepcopy(self.raw_servo_position)
 
             #avoid over angle 
             for i in range(len(self.desire_joint.position)):
@@ -238,7 +248,8 @@ class avatar_control():
             #self.des_wrench_pub.publish(desire_wrench_msg)
 
             # send joint angles
-            self.joint_control_pub.publish(self.desire_joint)
+            if self.Landing == False:
+                self.joint_control_pub.publish(self.desire_joint)
             #self.ref_joint_angles_pub.publish(self.desire_joint)
 
             r.sleep()

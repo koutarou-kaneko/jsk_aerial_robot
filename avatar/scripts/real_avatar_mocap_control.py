@@ -7,7 +7,7 @@ import rospy
 import math
 import signal
 import copy
-from std_msgs.msg import UInt8,Int8
+from std_msgs.msg import UInt8,Int8,Empty
 import tf.transformations as tf
 from geometry_msgs.msg import PoseStamped
 from aerial_robot_msgs.msg import FlightNav
@@ -33,6 +33,7 @@ class mocap_control():
     self.att_control_pub = rospy.Publisher('/'+self.robot_name+'/final_target_baselink_rot', DesireCoord, queue_size=1)
     self.mocap_sub = rospy.Subscriber(topic_name, PoseStamped, self.mocapCb)
     self.flight_state_sub = rospy.Subscriber('/'+self.robot_name+'/flight_state', UInt8, self.flight_stateCb)
+    self.land_sub = rospy.Subscriber('/'+self.robot_name+'/teleop_command/land', Empty, self.landCb)
     self.robot_pos_sub = rospy.Subscriber('/'+self.robot_name+'/mocap/pose',PoseStamped, self.robot_posCb)
     self.hand_force_switch_sub = rospy.Subscriber('/'+self.robot_name+'/hand_force_switch', Int8, self.hand_force_switchCb)
 
@@ -42,6 +43,7 @@ class mocap_control():
     self.nav_rate = rospy.get_param('/'+self.robot_name+'/nav_rate', 20.0) # hz
     self.nav_rate = 1 / self.nav_rate
     self.Hovering = False
+    self.Landing = False
     self.flight_state = 0
     self.mocap_pos = None
     self.mocap_init_pos = None
@@ -74,8 +76,14 @@ class mocap_control():
     self.flight_state = msg.data
     if self.flight_state == 5:
       #rospy.loginfo("Hovering")
-      self.Hovering = True  
-  
+      self.Hovering = True
+    if self.flight_state == 2:
+      self.Landing = False
+      
+  def landCb(self,msg):
+    # print("recieve land command")
+    self.Landing = True
+
   def robot_posCb(self,msg):
     if self.robot_init_flag == False and self.Hovering == True:
       self.robot_init_pos = msg.pose.position
@@ -101,13 +109,13 @@ class mocap_control():
 
   def main(self):
     while not rospy.is_shutdown():
-      
+
       if self.mocap_pos == None:
-          rospy.loginfo_throttle(1.0, "not yet receive the mocap controller message")
-          time.sleep(self.nav_rate)
-          self.mocap_init_flag = False
-          continue
-      
+        rospy.loginfo_throttle(1.0, "not yet receive the mocap controller message")
+        time.sleep(self.nav_rate)
+        self.mocap_init_flag = False
+        continue
+    
       if self.mocap_init_flag == False and self.Hovering == True:
         self.mocap_init_pos = copy.deepcopy(self.mocap_pos)
         rospy.loginfo("mocap_init_pos is [%f, %f, %f]",self.mocap_init_pos.x, self.mocap_init_pos.y, self.mocap_init_pos.z)
@@ -115,19 +123,26 @@ class mocap_control():
 
       if self.mocap_init_flag==True and self.robot_init_flag==True and self.Hovering==True:
         self.flight_nav.target_pos_x = (self.mocap_pos.x - self.mocap_init_pos.x + self.robot_init_pos.x) * self.pos_scaling + 0.1
-        self.flight_nav.target_pos_y = (self.mocap_pos.y - self.mocap_init_pos.y + self.robot_init_pos.y) * self.pos_scaling + 0.6
+        self.flight_nav.target_pos_y = (self.mocap_pos.y - self.mocap_init_pos.y + self.robot_init_pos.y) * self.pos_scaling + 0.5
         self.flight_nav.target_pos_z = (self.mocap_pos.z - self.mocap_init_pos.z + self.robot_init_pos.z)
         self.flight_nav.target_yaw = self.mocap_euler[2]
+        self.desire_att.roll = self.mocap_euler[0]
+        self.desire_att.pitch = self.mocap_euler[1]
+
         if self.hand_force_flag==True:
           if self.attaching_init_flag == False:
             attaching_pos_y = self.robot_pos_now.y
             self.attaching_init_flag = True
           #self.flight_nav.target_pos_y = attaching_pos_y + 0.1 #0.1 is fix diff of cog and mocap
-          self.mocap_init_pos.y = self.mocap_pos.y
+          self.mocap_init_pos.y = self.mocap_pos.y - 0.1
           self.robot_init_pos.y = attaching_pos_y + 0.1*self.pos_scaling
         else:
           self.attaching_init_flag = False
-        self.nav_pub.publish(self.flight_nav)
+
+        if self.Landing == False:
+          self.nav_pub.publish(self.flight_nav)
+          if self.robot_name == "dragon":
+            self.att_control_pub.publish(self.desire_att)
 
       """
       if self.mocap_init_flag==True and self.robot_init_flag==True and self.Hovering == True:
@@ -135,19 +150,20 @@ class mocap_control():
         #self.att_control_pub.publish(self.desire_att)
       """
 
-      if self.flight_state == 4:
-        self.flight_nav.target_pos_x = 0.0
-        self.flight_nav.target_pos_y = 0.0
-        self.flight_nav.target_pos_z = 0.0
-        self.flight_nav.target_vel_x = 0.0
-        self.flight_nav.target_vel_y = 0.0
-        self.flight_nav.target_vel_z = 0.0
-        self.desire_att.roll = 0.0
-        self.desire_att.pitch = 0.0
-        self.flight_nav.target_yaw = 0.0
-        self.flight_nav.target_omega_z = 0.0
-        self.nav_pub.publish(self.flight_nav)
-        #self.att_control_pub.publish(self.desire_att)
+      # if self.flight_state == 4:
+      #   self.flight_nav.target_pos_x = 0.0
+      #   self.flight_nav.target_pos_y = 0.0
+      #   self.flight_nav.target_pos_z = 0.0
+      #   self.flight_nav.target_vel_x = 0.0
+      #   self.flight_nav.target_vel_y = 0.0
+      #   self.flight_nav.target_vel_z = 0.0
+      #   self.desire_att.roll = 0.0
+      #   self.desire_att.pitch = 0.0
+      #   self.flight_nav.target_yaw = 0.0
+      #   self.flight_nav.target_omega_z = 0.0
+      #   self.nav_pub.publish(self.flight_nav)
+      #   if self.robot_name == "dragon":
+      #     self.att_control_pub.publish(self.desire_att)
       '''
       self.flight_nav.target_pos_x = (self.mocap_pos.x - self.mocap_init_pos.x + self.robot_init_pos.x) * self.pos_scaling
       self.flight_nav.target_pos_y = (self.mocap_pos.y - self.mocap_init_pos.y + self.robot_init_pos.y) * self.pos_scaling
@@ -161,7 +177,7 @@ class mocap_control():
 
 if __name__ == "__main__":
 
-  rospy.init_node("dragon_mocap_ctrl")
+  rospy.init_node("avatar_mocap_ctrl")
 
   Tracker = mocap_control()
   Tracker.main()

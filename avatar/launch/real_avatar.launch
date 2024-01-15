@@ -7,7 +7,7 @@
   <arg name="real_machine" default="false" />
   <arg name="simulation" default="true" />
   <arg name="gripper" default="false" />
-  <arg name="torque_control" default="true" />
+  <arg name="torque_control" default="false" />
   <arg name="fusion" default="true" />
   <arg name="type" default="quad" />
   <arg name="onboards_model" default="default_mode_201907" />
@@ -65,7 +65,7 @@
       <node pkg="mocap_optitrack" type="mocap_node" name="avator_mocap_node" respawn="false" >
         <rosparam subst_value="true">
           rigid_bodies:
-              '2':
+              '6':
                 pose: avatar/pose
                 pose2d: avatar/ground_pose
                 child_frame_id: baselink

@@ -87,6 +87,7 @@ class mocap_control():
   def main(self):
     while not rospy.is_shutdown():
       
+      print(self.flight_state)
       if self.mocap_pos == None:
           rospy.loginfo_throttle(1.0, "not yet receive the mocap controller message")
           time.sleep(self.nav_rate)
