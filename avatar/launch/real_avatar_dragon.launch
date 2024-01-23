@@ -85,7 +85,7 @@
       
 
   ###### joint angles from real avator ####
-  <include file="$(find dragon)/launch/includes/dynamixel_controllers.launch" />
+  <include file="$(find avatar)/launch/includes/dynamixel_controllers.launch" />
   <node pkg="avatar" type="real_avatar_position_control.py" name="real_avatar_position_control" output="screen">
     <param name="robot_ns" value="$(arg robot_ns)" />
     <param name="debug" value="$(arg debug)" />
