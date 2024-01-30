@@ -50,6 +50,11 @@ class analisys():
         self.std_dev_y = 0
         self.std_dev_z = 0
         self.std_dev_err_yaw = 0
+        self.ave_x = 0
+        self.ave_y = 0
+        self.ave_z = 0
+        self.ave_err_yaw = 0
+
         self.seq_init_flag = False
         self.debug_seq_init_flag = False
         self.hand_force_switch_flag = False
@@ -101,6 +106,11 @@ class analisys():
         self.std_dev_y = np.std(self.err_y_array)
         self.std_dev_z = np.std(self.err_z_array)
         self.std_dev_error_yaw = np.std(self.err_yaw_array)
+        self.ave_x = np.mean(self.err_x_array)
+        self.ave_y = np.mean(self.err_y_array)
+        self.ave_z = np.mean(self.err_z_array)
+        self.ave_err_yaw = np.mean(self.err_yaw_array)
+
 
     def hand_force_switch_cb(self,msg):
         if msg.data == 1:
@@ -128,6 +138,11 @@ class analisys():
         print("std dev of y = ", self.std_dev_y)
         print("std dev of z = ", self.std_dev_z)
         print("std dev of error yaw = ", self.std_dev_error_yaw)
+        print("std ave of x = ", self.ave_x)
+        print("std ave of y = ", self.ave_y)
+        print("std ave of z = ", self.ave_z)
+        print("std ave of error yaw = ", self.ave_error_yaw)
+
 
 
         # plot
@@ -144,7 +159,7 @@ class analisys():
         plt.xlim()
         plt.ylim()
         plt.legend()
-        plt.show()
+        # plt.show()
 
         # plt.grid(color='k', linestyle=':',linewidth=0.3)
         # plt.title("pitch_diff")
@@ -176,7 +191,7 @@ class analisys():
         plt.xlim()
         plt.ylim()
         plt.legend()
-        plt.show()
+        # plt.show()
 
         # plt.grid(color='k', linestyle=':',linewidth=0.3)
         # plt.title("y_err")
@@ -206,7 +221,7 @@ class analisys():
         plt.xlim()
         plt.ylim()
         plt.legend()
-        plt.show()
+        # plt.show()
 
 
 

@@ -7,7 +7,7 @@
   <arg name="use_joint_state"         default="true"/>
   <arg name="use_cmd_vel"             default="false"/>
 
-  <param name="dynamixel_info"          value="$(find dragon)/config/quad/real_avator/DynamixelServoConfig.yaml"/>
+  <param name="dynamixel_info"          value="$(find avatar)/config/DynamixelServoConfig.yaml"/>
 
   <node name="$(arg namespace)" pkg="dynamixel_workbench_controllers" type="dynamixel_workbench_controllers"
         	    required="true" output="screen" args="$(arg usb_port) $(arg dxl_baud_rate)">
