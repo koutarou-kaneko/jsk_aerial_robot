@@ -2,7 +2,7 @@
 <launch>
   ###########  launch config  ###########
   <arg name="debug" default="false" />
-  <arg name="mocap" default="true" />
+  <arg name="mocap" default="false" />
   <arg name="headless" default="true" />
   <arg name="real_machine" default="true" />
   <arg name="simulation" default="false" />
