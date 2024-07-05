@@ -2,8 +2,8 @@
 
 import rospy
 from std_msgs.msg import Float32
-from dynamixel_workbench_msgs.srv import *
 from geometry_msgs.msg import WrenchStamped
+from std_msgs.msg import Header
 
 class lpf_for_FTsensor():
 
@@ -36,6 +36,10 @@ class lpf_for_FTsensor():
     r = rospy.Rate(40)
     while not rospy.is_shutdown():
 
+      self.filterd_val_msg.header = Header()
+      self.filterd_val_msg.header.stamp = rospy.Time.now()
+      self.filterd_val_msg.header.frame_id = 'cfs_frame' 
+
       for i in range (len(self.raw_val)):
         self.filterd_val[i] = (1-self.delay_param) * self.filterd_val[i] + self.delay_param * self.raw_val[i]
 
@@ -45,6 +49,7 @@ class lpf_for_FTsensor():
       self.filterd_val_msg.wrench.torque.x = self.filterd_val[3]
       self.filterd_val_msg.wrench.torque.y = self.filterd_val[4]
       self.filterd_val_msg.wrench.torque.z = self.filterd_val[5]
+
       self.filterd_val_pub.publish(self.filterd_val_msg)
 
       r.sleep()
