@@ -83,6 +83,7 @@ namespace aerial_robot_navigation
     ros::Subscriber desire_wrench_sub_;
     ros::Subscriber estimated_external_wrench_sub_;
     ros::Subscriber attaching_flag_sub_;
+    ros::Subscriber filterd_ftsensor_sub_;
     std::thread plan_thread_;
     boost::shared_ptr<HydrusTiltedRobotModel> robot_model_for_plan_;
     OsqpEigen::Solver yaw_range_lp_solver_;
@@ -112,6 +113,7 @@ namespace aerial_robot_navigation
     std::vector<double> lb_wide, ub_wide;
     Eigen::VectorXd desire_wrench_;
     Eigen::VectorXd est_external_wrench_;
+    Eigen::VectorXd filtered_ftsensor_wrench_;
     bool attaching_flag_;
 
     void threadFunc();
@@ -119,6 +121,7 @@ namespace aerial_robot_navigation
     void DesireWrenchCallback(geometry_msgs::WrenchStamped msg);
     void EstExternalWrenchCallBack(geometry_msgs::WrenchStamped msg);
     void AttachingFlagCallBack(std_msgs::Bool msg);
+    void FilterdFtsensorCallBack(geometry_msgs::WrenchStamped msg);
 
     void rosParamInit() override;
   };

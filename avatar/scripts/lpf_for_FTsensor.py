@@ -4,6 +4,7 @@ import rospy
 from std_msgs.msg import Float32
 from geometry_msgs.msg import WrenchStamped
 from std_msgs.msg import Header
+from std_srvs.srv import Empty
 
 class lpf_for_FTsensor():
 
@@ -32,8 +33,21 @@ class lpf_for_FTsensor():
   def delay_param_Cb(self,msg):
     self.delay_param = msg.data
 
+  def call_calib(self):
+    rospy.wait_for_service('/cfs_sensor_calib')
+    try:
+      service = rospy.ServiceProxy('/cfs_sensor_calib', Empty)
+      response = service()
+    except rospy.ServiceException:
+      print('cfs_calib service call failed')
+
+
   def main(self):
     r = rospy.Rate(40)
+
+    # calibration
+    self.call_calib()
+    
     while not rospy.is_shutdown():
 
       self.filterd_val_msg.header = Header()

@@ -72,8 +72,8 @@ namespace
 
     // Thrust norm/var
     Eigen::VectorXd force_v(4);
-    //force_v << x_wide[4], x_wide[5], x_wide[6], x_wide[7];
-    force_v = robot_model->getStaticThrust();
+    force_v << x_wide[4], x_wide[5], x_wide[6], x_wide[7];
+    // force_v = robot_model->getStaticThrust();
     double average_force = force_v.sum() / force_v.size();
     double variant = 0;
 
@@ -187,6 +187,20 @@ namespace
     return planner->getFCTMinThresh() - planner->getRobotModelForPlan()->getFeasibleControlTMin();
   }
 
+  // void thrustLimitConstraint(unsigned m, double* result, unsigned n, const double* x, double *gradient, void *planner_ptr)
+  // {
+  //   HydrusXiUnderActuatedNavigator *planner = reinterpret_cast<HydrusXiUnderActuatedNavigator*>(planner_ptr);
+  //   auto robot_model = planner->getRobotModelForPlan();
+  //   robot_model->calc3DoFThrust(planner->ff_f_xy_[0], planner->ff_f_xy_[1]);
+  //   auto thrust = robot_model->get3DoFThrust();
+  //   Eigen::VectorXd ret_e(8);
+  //   ret_e << thrust-Eigen::VectorXd::Constant(4, robot_model->getThrustUpperLimit()), Eigen::VectorXd::Constant(4, 8.9)-thrust;
+
+  //   for (int i=0; i<m; i++) {
+  //     result[i] = ret_e(i);
+  //   }
+  // }
+
   void kinematicsConstraint(unsigned m, double* result, unsigned n, const double* x, double *gradient, void *planner_ptr)
   {
     HydrusXiUnderActuatedNavigator *planner = reinterpret_cast<HydrusXiUnderActuatedNavigator*>(planner_ptr);
@@ -208,13 +222,13 @@ namespace
     //Eigen::Matrix3d inertia_inv = robot_model_for_plan_->getInertia<Eigen::Matrix3d>().inverse();
     Eigen::Vector3d des_force,des_torque;
     Eigen::Matrix3d cog_rot;
-    Eigen::Vector3d est_external_wrench_cog, des_force_cog;
+    Eigen::Vector3d est_external_force_cog, des_force_cog;
     Eigen::Vector3d est_external_force = est_external_wrench.head(3);
 
     tf::matrixTFToEigen(planner->getEstimator()->getOrientation(Frame::COG, planner->getEstimateMode()), cog_rot);
-    est_external_wrench_cog = cog_rot.inverse() * est_external_force;
+    est_external_force_cog = cog_rot.inverse() * est_external_force;
     des_force_cog = cog_rot.inverse() * desire_wrench.head(3);
-    des_force = des_force_cog + est_external_wrench_cog;
+    des_force = des_force_cog + est_external_force_cog;
     des_torque = desire_wrench.tail(3) + est_external_wrench.tail(3);
     
     Eigen::VectorXd thrusts(4), wrench_des(6), yaw_comp(6);
@@ -224,7 +238,11 @@ namespace
     wrench_des << des_force[0], des_force[1], robot_model->getGravity()[2], 0, 0, des_torque[2];
     yaw_comp << 0, 0, 0, 0, 0, 0;
     Eigen::VectorXd des_wrench_cog(6);
-    des_wrench_cog << des_force[0], des_force[1], robot_model->getMass()*robot_model->getGravity()[2], 0, 0, des_torque[2]; 
+    // des_wrench_cog << des_force[0], des_force[1], robot_model->getMass()*robot_model->getGravity()[2], 0, 0, des_torque[2]; 
+
+    //test 4 July
+    des_wrench_cog << est_external_force_cog[0], est_external_force_cog[1], robot_model->getMass()*robot_model->getGravity()[2], 0, 0, est_external_wrench[5]; 
+
     //std::vector<double> res(m, 0);
     // auto res = Q*thrusts - robot_model->getMass()*wrench_des - yaw_comp;
     auto res = Q*thrusts - des_wrench_cog;
@@ -266,8 +284,10 @@ void HydrusXiUnderActuatedNavigator::initialize(ros::NodeHandle nh, ros::NodeHan
   desire_wrench_sub_ = nh_.subscribe("desire_wrench", 1, &HydrusXiUnderActuatedNavigator::DesireWrenchCallback, this);
   estimated_external_wrench_sub_ = nh_.subscribe("estimated_external_wrench", 1, &HydrusXiUnderActuatedNavigator::EstExternalWrenchCallBack, this);
   attaching_flag_sub_ = nh_.subscribe("attaching_flag", 1, &HydrusXiUnderActuatedNavigator::AttachingFlagCallBack, this);
+  filterd_ftsensor_sub_ = nh_.subscribe("/filterd_ftsensor", 1, &HydrusXiUnderActuatedNavigator::FilterdFtsensorCallBack, this);
   desire_wrench_ = Eigen::VectorXd::Zero(6);
   est_external_wrench_ = Eigen::VectorXd::Zero(6);
+  filtered_ftsensor_wrench_ = Eigen::VectorXd::Zero(6);
   attaching_flag_ = false;
 
   if(nh.hasParam("control_gimbal_names"))
@@ -416,7 +436,7 @@ bool HydrusXiUnderActuatedNavigator::plan()
             ub.at(i) = opt_gimbal_angles_.at(i) + delta_angle;
             lb_wide.at(i) = opt_gimbal_angles_.at(i) - delta_angle;
             ub_wide.at(i) = opt_gimbal_angles_.at(i) + delta_angle;
-            lb_wide.at(4+i) = 8.6;
+            lb_wide.at(4+i) = robot_model_->getThrustLowerLimit();
             ub_wide.at(4+i) = robot_model_->getThrustUpperLimit();
          }
       /*avoid over angle (hard cording)*/
@@ -580,6 +600,17 @@ void HydrusXiUnderActuatedNavigator::EstExternalWrenchCallBack(geometry_msgs::Wr
 void HydrusXiUnderActuatedNavigator::AttachingFlagCallBack(std_msgs::Bool msg)
 {
   attaching_flag_ = msg.data;
+}
+
+void HydrusXiUnderActuatedNavigator::FilterdFtsensorCallBack(geometry_msgs::WrenchStamped msg)
+{
+  filtered_ftsensor_wrench_[0] = msg.wrench.force.x;
+  filtered_ftsensor_wrench_[1] = msg.wrench.force.y;
+  filtered_ftsensor_wrench_[2] = msg.wrench.force.z;
+  filtered_ftsensor_wrench_[3] = msg.wrench.torque.x;
+  filtered_ftsensor_wrench_[4] = msg.wrench.torque.y;
+  filtered_ftsensor_wrench_[5] = msg.wrench.torque.z;
+
 }
 
 

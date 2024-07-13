@@ -10,7 +10,7 @@
   </node>
 
   <node name="lpf_for_FTsensor" pkg="avatar" type="lpf_for_FTsensor.py" output="screen" >
-    <!-- <param name="delay_param" value="(arg filter_param)" /> -->
+    <param name="delay_param" value="$(arg filter_param)" />
   </node>
 
 </launch>
