@@ -72,7 +72,6 @@ namespace aerial_robot_control
     ros::Publisher filtered_est_external_wrench_pub_;
     ros::Subscriber desire_wrench_sub_;
     ros::Subscriber desire_pos_sub_;
-    ros::Subscriber acc_root_sub_;
     ros::Subscriber hand_force_switch_sub_;
     Eigen::VectorXd estimated_external_wrench_in_cog_;
     Eigen::VectorXd desire_wrench_;
@@ -91,10 +90,8 @@ namespace aerial_robot_control
     bool update() override;
     void controlCore() override;
     void sendCmd() override;
-    void cfgWrenchPidCallback(aerial_robot_control::PIDConfig &config, uint32_t level, std::vector<int> controller_indices);
     void DesireWrenchCallback(geometry_msgs::WrenchStamped msg);
     void DesirePosCallback(aerial_robot_msgs::FlightNav msg);
-    void accRootCallback(const spinal::Imu msg);
     void HandForceSwitchCallBack(std_msgs::Int8 msg);
   };
 

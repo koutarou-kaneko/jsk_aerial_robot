@@ -35,7 +35,6 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   filtered_est_external_wrench_pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("filtered_est_external_wrench",1);
   desire_wrench_sub_ = nh_.subscribe("desire_wrench", 1, &HydrusTiltedLQIController::DesireWrenchCallback, this);
   desire_pos_sub_ = nh_.subscribe("uav/nav", 1, &HydrusTiltedLQIController::DesirePosCallback, this);
-  acc_root_sub_ = nh_.subscribe("imu", 10, &HydrusTiltedLQIController::accRootCallback, this);
   hand_force_switch_sub_ = nh_.subscribe("hand_force_switch", 1, &HydrusTiltedLQIController::HandForceSwitchCallBack, this);
   estimated_external_wrench_in_cog_ = Eigen::VectorXd::Zero(6);
   desire_wrench_ = Eigen::VectorXd::Zero(6);
@@ -48,143 +47,18 @@ void HydrusTiltedLQIController::initialize(ros::NodeHandle nh,
   const_err_i_flag_ = false;
   first_flag_ = true;
 
-  ros::NodeHandle control_nh(nh_, "controller");
-  ros::NodeHandle est_wrench_nh(control_nh, "est_wrench");
-  ros::NodeHandle wrench_xy_nh(est_wrench_nh, "wrench_xy");
-  ros::NodeHandle wrench_x_nh(est_wrench_nh, "wrench_x");
-  ros::NodeHandle wrench_y_nh(est_wrench_nh, "wrench_y");
-  ros::NodeHandle wrench_z_nh(est_wrench_nh, "wrench_z");
-  ros::NodeHandle wrench_roll_pitch_nh(est_wrench_nh, "wrench_roll_pitch");
-  ros::NodeHandle wrench_roll_nh(est_wrench_nh, "wrench_roll");
-  ros::NodeHandle wrench_pitch_nh(est_wrench_nh, "wrench_pitch");
-  ros::NodeHandle wrench_yaw_nh(est_wrench_nh, "wrench_yaw");
-
-  double limit_sum, limit_p, limit_i, limit_d;
-  double limit_err_p, limit_err_i, limit_err_d;
-  double p_gain, i_gain, d_gain;
-
-  auto loadParam = [&, this](ros::NodeHandle nh)
-    {
-      getParam<double>(nh, "limit_sum", limit_sum, 1.0e6);
-      getParam<double>(nh, "limit_p", limit_p, 1.0e6);
-      getParam<double>(nh, "limit_i", limit_i, 1.0e6);
-      getParam<double>(nh, "limit_d", limit_d, 1.0e6);
-      getParam<double>(nh, "limit_err_p", limit_err_p, 1.0e6);
-      getParam<double>(nh, "limit_err_i", limit_err_i, 1.0e6);
-      getParam<double>(nh, "limit_err_d", limit_err_d, 1.0e6);
-
-      getParam<double>(nh, "p_gain", p_gain, 0.0);
-      getParam<double>(nh, "i_gain", i_gain, 0.0);
-      getParam<double>(nh, "d_gain", d_gain, 0.0);
-    };
-
-  /* xy */
-  if(wrench_xy_nh.hasParam("p_gain"))
-    {
-      loadParam(wrench_xy_nh);
-      external_wrench_pid_controllers_.push_back(PID("wrench_x", p_gain, i_gain, d_gain, limit_sum, limit_p, limit_i, limit_d, limit_err_p, limit_err_i, limit_err_d));
-      external_wrench_pid_controllers_.push_back(PID("wrench_y", p_gain, i_gain, d_gain, limit_sum, limit_p, limit_i, limit_d, limit_err_p, limit_err_i, limit_err_d));
-
-      std::vector<int> indices = {X, Y};
-      external_wrench_pid_reconf_servers_.push_back(boost::make_shared<PidControlDynamicConfig>(wrench_xy_nh));
-      external_wrench_pid_reconf_servers_.back()->setCallback(boost::bind(&HydrusTiltedLQIController::cfgWrenchPidCallback, this, _1, _2, indices));
-
-    }
-  else
-    {
-      loadParam(wrench_x_nh);
-      external_wrench_pid_controllers_.push_back(PID("wrench_x", p_gain, i_gain, d_gain, limit_sum, limit_p, limit_i, limit_d, limit_err_p, limit_err_i, limit_err_d));
-      external_wrench_pid_reconf_servers_.push_back(boost::make_shared<PidControlDynamicConfig>(wrench_x_nh));
-      external_wrench_pid_reconf_servers_.back()->setCallback(boost::bind(&HydrusTiltedLQIController::cfgWrenchPidCallback, this, _1, _2, std::vector<int>(1, X)));
-
-      loadParam(wrench_y_nh);
-      external_wrench_pid_controllers_.push_back(PID("wrench_y", p_gain, i_gain, d_gain, limit_sum, limit_p, limit_i, limit_d, limit_err_p, limit_err_i, limit_err_d));
-      external_wrench_pid_reconf_servers_.push_back(boost::make_shared<PidControlDynamicConfig>(wrench_y_nh));
-      external_wrench_pid_reconf_servers_.back()->setCallback(boost::bind(&HydrusTiltedLQIController::cfgWrenchPidCallback, this, _1, _2, std::vector<int>(1, Y)));
-    }
-
-  /* z */
-  loadParam(wrench_z_nh);
-  external_wrench_pid_controllers_.push_back(PID("wrench_z", p_gain, i_gain, d_gain, limit_sum, limit_p, limit_i, limit_d, limit_err_p, limit_err_i, limit_err_d));
-  external_wrench_pid_reconf_servers_.push_back(boost::make_shared<PidControlDynamicConfig>(wrench_z_nh));
-  external_wrench_pid_reconf_servers_.back()->setCallback(boost::bind(&HydrusTiltedLQIController::cfgWrenchPidCallback, this, _1, _2, std::vector<int>(1, Z)));
-
-  /* roll pitch */
-  //getParam<double>(wrench_roll_pitch_nh, "start_integration_height", start_rp_integration_height_, 0.01);
-  if(wrench_roll_pitch_nh.hasParam("p_gain"))
-    {
-      loadParam(wrench_roll_pitch_nh);
-      external_wrench_pid_controllers_.push_back(PID("wrench_roll", p_gain, i_gain, d_gain, limit_sum, limit_p, limit_i, limit_d, limit_err_p, limit_err_i, limit_err_d));
-      external_wrench_pid_controllers_.push_back(PID("wrench_pitch", p_gain, i_gain, d_gain, limit_sum, limit_p, limit_i, limit_d, limit_err_p, limit_err_i, limit_err_d));
-      std::vector<int> indices = {ROLL, PITCH};
-      external_wrench_pid_reconf_servers_.push_back(boost::make_shared<PidControlDynamicConfig>(wrench_roll_pitch_nh));
-      external_wrench_pid_reconf_servers_.back()->setCallback(boost::bind(&HydrusTiltedLQIController::cfgWrenchPidCallback, this, _1, _2, indices));
-    }
-  else
-    {
-      loadParam(wrench_roll_nh);
-      external_wrench_pid_controllers_.push_back(PID("wrench_roll", p_gain, i_gain, d_gain, limit_sum, limit_p, limit_i, limit_d, limit_err_p, limit_err_i, limit_err_d));
-      external_wrench_pid_reconf_servers_.push_back(boost::make_shared<PidControlDynamicConfig>(wrench_roll_nh));
-      external_wrench_pid_reconf_servers_.back()->setCallback(boost::bind(&HydrusTiltedLQIController::cfgWrenchPidCallback, this, _1, _2, std::vector<int>(1, ROLL)));
-
-      loadParam(wrench_pitch_nh);
-      external_wrench_pid_controllers_.push_back(PID("wrench_pitch", p_gain, i_gain, d_gain, limit_sum, limit_p, limit_i, limit_d, limit_err_p, limit_err_i, limit_err_d));
-      external_wrench_pid_reconf_servers_.push_back(boost::make_shared<PidControlDynamicConfig>(wrench_pitch_nh));
-      external_wrench_pid_reconf_servers_.back()->setCallback(boost::bind(&HydrusTiltedLQIController::cfgWrenchPidCallback, this, _1, _2, std::vector<int>(1, PITCH)));
-    }
-
-  /* yaw */
-  loadParam(wrench_yaw_nh);
-  //getParam<bool>(wrench_yaw_nh, "need_d_control", need_yaw_d_control_, false);
-  external_wrench_pid_controllers_.push_back(PID("wrench_yaw", p_gain, i_gain, d_gain, limit_sum, limit_p, limit_i, limit_d, limit_err_p, limit_err_i, limit_err_d));
-  external_wrench_pid_reconf_servers_.push_back(boost::make_shared<PidControlDynamicConfig>(wrench_yaw_nh));
-  external_wrench_pid_reconf_servers_.back()->setCallback(boost::bind(&HydrusTiltedLQIController::cfgWrenchPidCallback, this, _1, _2, std::vector<int>(1, YAW)));
-
-  getParam<double>(control_nh, "wrench_diff_gain", wrench_diff_gain_, 1.0);
-  getParam<bool>(control_nh, "send_feedforward_switch_flag", send_feedforward_switch_flag_, false);
-  getParam<double>(control_nh, "acc_shock_thres", acc_shock_thres_, 20.0);
+  getParam<double>(nh_, "wrench_diff_gain", wrench_diff_gain_, 1.0);
+  getParam<bool>(nh_, "send_feedforward_switch_flag", send_feedforward_switch_flag_, false);
+  getParam<double>(nh_, "acc_shock_thres", acc_shock_thres_, 20.0);
   double cutoff_freq, sample_freq;
-  getParam<double>(control_nh, "cutoff_freq", cutoff_freq, 25.0);
-  getParam<double>(control_nh, "sample_freq", sample_freq, 100.0);
+  getParam<double>(nh_, "cutoff_freq", cutoff_freq, 25.0);
+  getParam<double>(nh_, "sample_freq", sample_freq, 100.0);
   lpf_est_external_wrench_ = IirFilter(sample_freq, cutoff_freq, 6);
 
   y_p_gain_ = pid_controllers_.at(Y).getPGain();
   
 }
 
-void HydrusTiltedLQIController::cfgWrenchPidCallback(aerial_robot_control::PIDConfig &config, uint32_t level, std::vector<int> controller_indices)
-{
-  using Levels = aerial_robot_msgs::DynamicReconfigureLevels;
-  if(config.pid_control_flag)
-    {
-      switch(level)
-        {
-        case Levels::RECONFIGURE_P_GAIN:
-          for(const auto& index: controller_indices)
-            {
-              external_wrench_pid_controllers_.at(index).setPGain(config.p_gain);
-              ROS_INFO_STREAM("change p gain for controller '" << external_wrench_pid_controllers_.at(index).getName() << "'");
-            }
-          break;
-        case Levels::RECONFIGURE_I_GAIN:
-          for(const auto& index: controller_indices)
-            {
-              external_wrench_pid_controllers_.at(index).setIGain(config.i_gain);
-              ROS_INFO_STREAM("change i gain for controller '" << external_wrench_pid_controllers_.at(index).getName() << "'");
-            }
-          break;
-        case Levels::RECONFIGURE_D_GAIN:
-          for(const auto& index: controller_indices)
-            {
-              external_wrench_pid_controllers_.at(index).setDGain(config.d_gain);
-              ROS_INFO_STREAM("change d gain for controller '" << external_wrench_pid_controllers_.at(index).getName() << "'");
-            }
-          break;
-        default :
-          break;
-        }
-    }
-}
 
 void HydrusTiltedLQIController::DesireWrenchCallback(geometry_msgs::WrenchStamped msg)
 {
@@ -212,21 +86,6 @@ void HydrusTiltedLQIController::DesirePosCallback(aerial_robot_msgs::FlightNav m
   desire_pos_[1] = msg.target_pos_y;
   desire_pos_[2] = msg.target_pos_z;
   desire_pos_[5] = msg.target_yaw;
-}
-
-void HydrusTiltedLQIController::accRootCallback(const spinal::Imu msg)
-{
-  /*
-  if((!attaching_flag_) && (msg.acc_data[0] > acc_shock_thres_))
-  {
-    attaching_flag_ = true;
-  }*/
-  /*it was not good
-  if(attaching_flag_ && abs(est_external_wrench_[0])<=0.6 && abs(est_external_wrench_[1])<=0.6)
-  {
-    attaching_flag_ = false;
-  }*/
-
 }
 
 void HydrusTiltedLQIController::HandForceSwitchCallBack(std_msgs::Int8 msg)
@@ -309,37 +168,10 @@ void HydrusTiltedLQIController::controlCore()
   double yaw_diff = desire_pos_[5] - euler.z();
   double pos_x_diff = desire_pos_[0] - pos.x();
   double pos_y_diff = desire_pos_[1] - pos.y();
-  /*
-  if(abs(pos_x_diff)<=0.1 && yaw_diff<=0.1)
-  {
-    attaching_flag_ = false;
-  }  
-  if(navi_state != 5 || navigator_->getForceLandingFlag())
-  {
-    attaching_flag_ = false;
-  }*/
 
   std_msgs::Bool attaching_flag_msg;
   attaching_flag_msg.data = attaching_flag_;
   attaching_flag_pub_.publish(attaching_flag_msg);
-  // during attaching
-  /*
-  if(attaching_flag_)
-    {
-      if(!const_err_i_flag_)
-        {
-          err_i_x_ = pid_controllers_.at(X).getErrI();
-          err_i_y_ = pid_controllers_.at(Y).getErrI();
-          err_i_z_ = pid_controllers_.at(Z).getErrI();
-          //err_p_y_ = pid_controllers_.at(Y).getErrP();
-          const_err_i_flag_ = true;
-        }
-      pid_controllers_.at(X).setErrI(err_i_x_);
-      pid_controllers_.at(Y).setErrI(err_i_y_);
-      pid_controllers_.at(Z).setErrI(err_i_z_);
-      pid_controllers_.at(Y).setErrP(0);
-    }*/
-  //else{const_err_i_flag_ = false;}
 
   double du = ros::Time::now().toSec() - control_timestamp_;
   tf::Matrix3x3 uav_rot = estimator_->getOrientation(Frame::COG, estimate_mode_);
@@ -355,32 +187,6 @@ void HydrusTiltedLQIController::controlCore()
   //double target_ang_acc_z = pid_controllers_.at(YAW).result();
   double target_ang_acc_z = candidate_yaw_term_;
   target_wrench_acc_cog.tail(3) = Eigen::Vector3d(target_ang_acc_x, target_ang_acc_y, target_ang_acc_z);
-  /*
-  Eigen::VectorXd p_wrench_diff = Eigen::VectorXd::Zero(6);
-  Eigen::VectorXd d_wrench_diff = Eigen::VectorXd::Zero(6);
-  for (int i=0;i<=5;i++){
-    p_wrench_diff[i] = desire_wrench_[i] - est_external_wrench_[i];
-    double dp = p_wrench_diff[i] - p_wrench_stamp_[i];
-    d_wrench_diff[i] = dp/du;
-  }
-  external_wrench_pid_controllers_.at(X).update(p_wrench_diff[0], du, d_wrench_diff[0], 0);
-  external_wrench_pid_controllers_.at(Y).update(p_wrench_diff[1], du, d_wrench_diff[1], 0);
-  external_wrench_pid_controllers_.at(Z).update(p_wrench_diff[2], du, d_wrench_diff[2], 0);
-  external_wrench_pid_controllers_.at(ROLL).update(p_wrench_diff[3], du, d_wrench_diff[3], 0);
-  external_wrench_pid_controllers_.at(PITCH).update(p_wrench_diff[4], du, d_wrench_diff[4], 0);
-  external_wrench_pid_controllers_.at(YAW).update(p_wrench_diff[5], du, d_wrench_diff[5], 0);
-  p_wrench_stamp_ = p_wrench_diff;
-  */
-
-  /*
-  geometry_msgs::WrenchStamped feedforward_wrench_msg;
-  feedforward_wrench_msg.wrench.force.x = external_wrench_pid_controllers_.at(X).result();
-  feedforward_wrench_msg.wrench.force.y = external_wrench_pid_controllers_.at(Y).result();
-  feedforward_wrench_msg.wrench.force.z = external_wrench_pid_controllers_.at(Z).result();
-  feedforward_wrench_msg.wrench.torque.x = external_wrench_pid_controllers_.at(ROLL).result();
-  feedforward_wrench_msg.wrench.torque.y = external_wrench_pid_controllers_.at(PITCH).result();
-  feedforward_wrench_msg.wrench.torque.z = external_wrench_pid_controllers_.at(YAW).result();
-  */
 
   /* feedforward */
   double mass_inv = 1/ hydrus_robot_model_->getMass();
