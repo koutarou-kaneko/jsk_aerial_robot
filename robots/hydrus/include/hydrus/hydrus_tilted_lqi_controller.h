@@ -59,12 +59,7 @@ namespace aerial_robot_control
     bool checkRobotModel() override;
   private:
     boost::shared_ptr<HydrusTiltedRobotModel> hydrus_robot_model_;
-    std::vector<PID> external_wrench_pid_controllers_;
-    std::vector<boost::shared_ptr<PidControlDynamicConfig> > external_wrench_pid_reconf_servers_;
     ros::Publisher static_thrust_available_pub_;
-    ros::Publisher fc_t_min_pub_;
-    ros::Publisher fc_t_min_thre_pub_;
-    ros::Publisher fc_rp_min_pub_;
     ros::Publisher feedforward_acc_cog_pub_;
     ros::Publisher feedforward_ang_acc_cog_pub_;
     ros::Publisher des_wrench_cog_pub_;
@@ -91,10 +86,8 @@ namespace aerial_robot_control
     bool update() override;
     void controlCore() override;
     void sendCmd() override;
-    void cfgWrenchPidCallback(aerial_robot_control::PIDConfig &config, uint32_t level, std::vector<int> controller_indices);
     void DesireWrenchCallback(geometry_msgs::WrenchStamped msg);
     void DesirePosCallback(aerial_robot_msgs::FlightNav msg);
-    void accRootCallback(const spinal::Imu msg);
     void HandForceSwitchCallBack(std_msgs::Int8 msg);
   };
 
