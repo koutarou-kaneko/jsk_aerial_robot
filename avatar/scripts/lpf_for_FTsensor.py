@@ -39,7 +39,7 @@ class lpf_for_FTsensor():
       service = rospy.ServiceProxy('/cfs_sensor_calib', Empty)
       response = service()
     except rospy.ServiceException:
-      print('cfs_calib service call failed')
+      print('cfs_calib service calling failed')
 
 
   def main(self):
@@ -57,12 +57,12 @@ class lpf_for_FTsensor():
       for i in range (len(self.raw_val)):
         self.filterd_val[i] = (1-self.delay_param) * self.filterd_val[i] + self.delay_param * self.raw_val[i]
 
-      self.filterd_val_msg.wrench.force.x = self.filterd_val[0]
-      self.filterd_val_msg.wrench.force.y = self.filterd_val[1]
-      self.filterd_val_msg.wrench.force.z = self.filterd_val[2]
-      self.filterd_val_msg.wrench.torque.x = self.filterd_val[3]
-      self.filterd_val_msg.wrench.torque.y = self.filterd_val[4]
-      self.filterd_val_msg.wrench.torque.z = self.filterd_val[5]
+      self.filterd_val_msg.wrench.force.x = self.filterd_val[2]
+      self.filterd_val_msg.wrench.force.y = -self.filterd_val[0]
+      self.filterd_val_msg.wrench.force.z = -self.filterd_val[1]
+      self.filterd_val_msg.wrench.torque.x = self.filterd_val[5]
+      self.filterd_val_msg.wrench.torque.y = -self.filterd_val[3]
+      self.filterd_val_msg.wrench.torque.z = -self.filterd_val[4]
 
       self.filterd_val_pub.publish(self.filterd_val_msg)
 

@@ -611,15 +611,15 @@ void HydrusXiUnderActuatedNavigator::AttachingFlagCallBack(std_msgs::Bool msg)
 void HydrusXiUnderActuatedNavigator::FilterdFtsensorCallBack(geometry_msgs::WrenchStamped msg)
 {
   Eigen::Vector3d force_at_end, torque_at_end;
-  KDL::Frame root_end = hydrus_robot_model_->getRootEnd();
-  KDL::Frame cog = hydrus_robot_model_->getCog<KDL::Frame>();
+  KDL::Frame root_end = robot_model_for_plan_->getRootEnd();
+  KDL::Frame cog = robot_model_for_plan_->getCog<KDL::Frame>();
 
-  force_at_end[0] = msg.wrench.force.z;
-  force_at_end[1] = msg.wrench.force.x;
-  force_at_end[2] = -msg.wrench.force.y;
-  torque_at_end[0] = msg.wrench.torque.z;
-  torque_at_end[1] = msg.wrench.torque.x;
-  torque_at_end[2] = -msg.wrench.torque.y;
+  force_at_end[0] = msg.wrench.force.x;
+  force_at_end[1] = msg.wrench.force.y;
+  force_at_end[2] = msg.wrench.force.z;
+  torque_at_end[0] = msg.wrench.torque.x;
+  torque_at_end[1] = msg.wrench.torque.y;
+  torque_at_end[2] = msg.wrench.torque.z;
   Eigen::Vector3d force_for_root_end_in_cog = aerial_robot_model::kdlToEigen(cog.M.Inverse() * root_end.M) * force_at_end;
 
   filtered_ftsensor_wrench_[0] = force_for_root_end_in_cog[0];

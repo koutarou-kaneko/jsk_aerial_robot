@@ -82,7 +82,7 @@ namespace aerial_robot_control
     bool send_feedforward_switch_flag_;
     bool using_FTsensor_;
     bool attaching_flag_, const_err_i_flag_, first_flag_;
-    double err_i_x_, err_i_y_, err_i_z_, err_p_y_;
+    double err_i_x_, err_i_y_, err_i_z_, err_i_yaw_, err_p_y_;
     double wrench_diff_gain_;
     double acc_shock_thres_;
     double x_p_gain_, y_p_gain_;

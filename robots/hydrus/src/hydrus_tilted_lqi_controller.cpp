@@ -87,12 +87,12 @@ void HydrusTiltedLQIController::FilterdFtsensorCallBack(geometry_msgs::WrenchSta
   KDL::Frame root_end = hydrus_robot_model_->getRootEnd();
   KDL::Frame cog = hydrus_robot_model_->getCog<KDL::Frame>();
 
-  force_at_end[0] = msg.wrench.force.z;
-  force_at_end[1] = msg.wrench.force.x;
-  force_at_end[2] = -msg.wrench.force.y;
-  torque_at_end[0] = msg.wrench.torque.z;
-  torque_at_end[1] = msg.wrench.torque.x;
-  torque_at_end[2] = -msg.wrench.torque.y;
+  force_at_end[0] = msg.wrench.force.x;
+  force_at_end[1] = msg.wrench.force.y;
+  force_at_end[2] = msg.wrench.force.z;
+  torque_at_end[0] = msg.wrench.torque.x;
+  torque_at_end[1] = msg.wrench.torque.y;
+  torque_at_end[2] = msg.wrench.torque.z;
   Eigen::Vector3d force_for_root_end_in_cog = aerial_robot_model::kdlToEigen(cog.M.Inverse() * root_end.M) * force_at_end;
 
   filtered_ftsensor_wrench_[0] = force_for_root_end_in_cog[0];
@@ -213,8 +213,8 @@ void HydrusTiltedLQIController::controlCore()
   Eigen::Vector3d target_force, target_torque;
   if(using_FTsensor_)
   {
-  target_force = desire_wrench_.head(3) + cog_rot.inverse() * filtered_ftsensor_wrench_.head(3);
-  target_torque = desire_wrench_.tail(3) + cog_rot.inverse() * filtered_ftsensor_wrench_.tail(3);
+  target_force = desire_wrench_.head(3) + filtered_ftsensor_wrench_.head(3);
+  target_torque = desire_wrench_.tail(3) + filtered_ftsensor_wrench_.tail(3);
   }
   else
   {
@@ -263,6 +263,7 @@ void HydrusTiltedLQIController::controlCore()
           err_i_x_ = pid_controllers_.at(X).getErrI();
           err_i_y_ = pid_controllers_.at(Y).getErrI();
           err_i_z_ = pid_controllers_.at(Z).getErrI();
+          err_i_yaw_ = pid_controllers_.at(YAW).getErrI();
           x_p_gain_ = pid_controllers_.at(X).getPGain();
           y_p_gain_ = pid_controllers_.at(Y).getPGain();
           //err_p_y_ = pid_controllers_.at(Y).getErrP();
@@ -271,14 +272,16 @@ void HydrusTiltedLQIController::controlCore()
       pid_controllers_.at(X).setErrI(err_i_x_);
       pid_controllers_.at(Y).setErrI(err_i_y_);
       pid_controllers_.at(Z).setErrI(err_i_z_);
+      pid_controllers_.at(YAW).setErrI(err_i_yaw_);
       //pid_controllers_.at(Y).setErrP(0);
-      pid_controllers_.at(X).setPGain(0.0);
+      // pid_controllers_.at(X).setPGain(0.0);
       pid_controllers_.at(Y).setPGain(0.0);
     }
   if(!attaching_flag_)
   {
-    pid_controllers_.at(X).setPGain(x_p_gain_);
+    // pid_controllers_.at(X).setPGain(x_p_gain_);
     pid_controllers_.at(Y).setPGain(y_p_gain_);
+    const_err_i_flag_ = false;
   }
   
   UnderActuatedTiltedLQIController::controlCore();
