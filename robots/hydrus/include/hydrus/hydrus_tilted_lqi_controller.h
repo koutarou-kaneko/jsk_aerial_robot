@@ -67,8 +67,9 @@ namespace aerial_robot_control
     ros::Publisher filtered_est_external_wrench_pub_;
     ros::Subscriber desire_wrench_sub_;
     ros::Subscriber desire_pos_sub_;
-    ros::Subscriber acc_root_sub_;
     ros::Subscriber hand_force_switch_sub_;
+    ros::Subscriber filterd_ftsensor_sub_;
+
     Eigen::VectorXd estimated_external_wrench_in_cog_;
     Eigen::VectorXd desire_wrench_;
     Eigen::VectorXd desire_wrench_from_pos_;
@@ -76,12 +77,15 @@ namespace aerial_robot_control
     Eigen::VectorXd p_wrench_stamp_;
     Eigen::VectorXd feedforward_sum_;
     Eigen::VectorXd desire_pos_;
+    Eigen::VectorXd filtered_ftsensor_wrench_;
+
     bool send_feedforward_switch_flag_;
+    bool using_FTsensor_;
     bool attaching_flag_, const_err_i_flag_, first_flag_;
     double err_i_x_, err_i_y_, err_i_z_, err_p_y_;
     double wrench_diff_gain_;
     double acc_shock_thres_;
-    double y_p_gain_;
+    double x_p_gain_, y_p_gain_;
     IirFilter lpf_est_external_wrench_;
     bool update() override;
     void controlCore() override;
@@ -89,6 +93,7 @@ namespace aerial_robot_control
     void DesireWrenchCallback(geometry_msgs::WrenchStamped msg);
     void DesirePosCallback(aerial_robot_msgs::FlightNav msg);
     void HandForceSwitchCallBack(std_msgs::Int8 msg);
+    void FilterdFtsensorCallBack(geometry_msgs::WrenchStamped msg);
   };
 
 };

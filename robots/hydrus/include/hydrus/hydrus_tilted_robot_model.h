@@ -51,6 +51,8 @@ public:
   KDL::Frame getLinkEnd() {return link_end_;}
   void setTargetForceInRootEnd(Eigen::Vector3d target_force) {target_force_in_root_end_ = target_force;}
   void setTargetForceInLinkEnd(Eigen::Vector3d target_force) {target_force_in_link_end_ = target_force;}
+  Eigen::Vector3d getCompensateForceForRootEndInCog() {return compensate_force_for_root_end_in_cog_;}
+  Eigen::Vector3d getCompensateForceForLinkEndInCog() {return compensate_force_for_link_end_in_cog_;}
   Eigen::Vector3d getCompensateTorqueForRootEndInCog() {return compensate_torque_for_root_end_in_cog_;}
   Eigen::Vector3d getCompensateTorqueForLinkEndInCog() {return compensate_torque_for_link_end_in_cog_;}
 
@@ -63,6 +65,8 @@ private:
   std::string link_end_name_;
   Eigen::Vector3d target_force_in_root_end_;
   Eigen::Vector3d target_force_in_link_end_;
+  Eigen::Vector3d compensate_force_for_root_end_in_cog_;
+  Eigen::Vector3d compensate_force_for_link_end_in_cog_;
   Eigen::Vector3d compensate_torque_for_root_end_in_cog_;
   Eigen::Vector3d compensate_torque_for_link_end_in_cog_;
 

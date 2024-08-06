@@ -187,20 +187,6 @@ namespace
     return planner->getFCTMinThresh() - planner->getRobotModelForPlan()->getFeasibleControlTMin();
   }
 
-  // void thrustLimitConstraint(unsigned m, double* result, unsigned n, const double* x, double *gradient, void *planner_ptr)
-  // {
-  //   HydrusXiUnderActuatedNavigator *planner = reinterpret_cast<HydrusXiUnderActuatedNavigator*>(planner_ptr);
-  //   auto robot_model = planner->getRobotModelForPlan();
-  //   robot_model->calc3DoFThrust(planner->ff_f_xy_[0], planner->ff_f_xy_[1]);
-  //   auto thrust = robot_model->get3DoFThrust();
-  //   Eigen::VectorXd ret_e(8);
-  //   ret_e << thrust-Eigen::VectorXd::Constant(4, robot_model->getThrustUpperLimit()), Eigen::VectorXd::Constant(4, 8.9)-thrust;
-
-  //   for (int i=0; i<m; i++) {
-  //     result[i] = ret_e(i);
-  //   }
-  // }
-
   void kinematicsConstraint(unsigned m, double* result, unsigned n, const double* x, double *gradient, void *planner_ptr)
   {
     HydrusXiUnderActuatedNavigator *planner = reinterpret_cast<HydrusXiUnderActuatedNavigator*>(planner_ptr);
@@ -217,35 +203,42 @@ namespace
     auto Q = robot_model->calcWrenchMatrixOnCoG();
     Eigen::VectorXd desire_wrench = planner->getDesireWrench();
     Eigen::VectorXd est_external_wrench = planner->getEstExternalWrench();
+    Eigen::VectorXd filtered_ftsensor_wrench = planner->getFilterdFtsensorWrench();
+    bool using_FTsensor = planner->getUsingFTsensor();
 
-    //double mass_inv = 1/ robot_model_for_plan_->getMass();
-    //Eigen::Matrix3d inertia_inv = robot_model_for_plan_->getInertia<Eigen::Matrix3d>().inverse();
-    Eigen::Vector3d des_force,des_torque;
-    Eigen::Matrix3d cog_rot;
-    Eigen::Vector3d est_external_force_cog, des_force_cog;
-    Eigen::Vector3d est_external_force = est_external_wrench.head(3);
-
-    tf::matrixTFToEigen(planner->getEstimator()->getOrientation(Frame::COG, planner->getEstimateMode()), cog_rot);
-    est_external_force_cog = cog_rot.inverse() * est_external_force;
-    des_force_cog = cog_rot.inverse() * desire_wrench.head(3);
-    des_force = des_force_cog + est_external_force_cog;
-    des_torque = desire_wrench.tail(3) + est_external_wrench.tail(3);
+    // Eigen::Vector3d des_force,des_torque;
+    // Eigen::Matrix3d cog_rot;
+    // tf::matrixTFToEigen(planner->getEstimator()->getOrientation(Frame::COG, planner->getEstimateMode()), cog_rot);
+    // Eigen::Vector3d est_external_force_cog, des_force_cog;
+    // Eigen::Vector3d est_external_force = est_external_wrench.head(3);
     
-    Eigen::VectorXd thrusts(4), wrench_des(6), yaw_comp(6);
+    // est_external_force_cog = cog_rot.inverse() * est_external_force;
+    // des_force_cog = cog_rot.inverse() * desire_wrench.head(3);
+    // des_force = des_force_cog + est_external_force_cog;
+    // des_torque = desire_wrench.tail(3) + est_external_wrench.tail(3);
+    
+    // Eigen::VectorXd thrusts(4), wrench_des(6), yaw_comp(6);
     // thrusts << x[4], x[5], x[6], x[7];
-    thrusts << robot_model->getStaticThrust();
-    //wrench_des << desire_wrench[0], desire_wrench[1], robot_model->getGravity()[2], 0, 0, desire_wrench[5];
-    wrench_des << des_force[0], des_force[1], robot_model->getGravity()[2], 0, 0, des_torque[2];
-    yaw_comp << 0, 0, 0, 0, 0, 0;
-    Eigen::VectorXd des_wrench_cog(6);
+    // // thrusts << robot_model->getStaticThrust();
+    // Eigen::VectorXd des_wrench_cog(6);
     // des_wrench_cog << des_force[0], des_force[1], robot_model->getMass()*robot_model->getGravity()[2], 0, 0, des_torque[2]; 
 
-    //test 4 July
-    des_wrench_cog << est_external_force_cog[0], est_external_force_cog[1], robot_model->getMass()*robot_model->getGravity()[2], 0, 0, est_external_wrench[5]; 
+    Eigen::VectorXd thrusts(4), target_wrench(6);
+    thrusts << x[4], x[5], x[6], x[7];
+    if(using_FTsensor)
+    {
+      target_wrench << desire_wrench - filtered_ftsensor_wrench;
+    }
+    else
+    {
+      target_wrench << desire_wrench - est_external_wrench;
+    }
+    target_wrench[3] = 0.0;
+    target_wrench[4] = 0.0;
 
     //std::vector<double> res(m, 0);
     // auto res = Q*thrusts - robot_model->getMass()*wrench_des - yaw_comp;
-    auto res = Q*thrusts - des_wrench_cog;
+    auto res = Q*thrusts - target_wrench;
     for (int i = 0; i < m; i++) {
       result[i] = res[i];
     }
@@ -584,12 +577,25 @@ void HydrusXiUnderActuatedNavigator::DesireWrenchCallback(geometry_msgs::WrenchS
 
 void HydrusXiUnderActuatedNavigator::EstExternalWrenchCallBack(geometry_msgs::WrenchStamped msg)
 {
-  est_external_wrench_[0] = msg.wrench.force.x;
-  est_external_wrench_[1] = msg.wrench.force.y;
-  est_external_wrench_[2] = msg.wrench.force.z;
-  est_external_wrench_[3] = msg.wrench.torque.x;
-  est_external_wrench_[4] = msg.wrench.torque.y;
-  est_external_wrench_[5] = msg.wrench.torque.z;
+  Eigen::Matrix3d cog_rot;
+  tf::matrixTFToEigen(estimator_->getOrientation(Frame::COG, estimator_->getEstimateMode()), cog_rot);
+  Eigen::Vector3d est_external_force, est_external_force_cog;
+  est_external_force[0] = msg.wrench.force.x;
+  est_external_force[1] = msg.wrench.force.y;
+  est_external_force[2] = msg.wrench.force.z;
+  est_external_force_cog = cog_rot.inverse() * est_external_force;
+  Eigen::Vector3d est_external_torque, est_external_torque_cog;
+  est_external_torque[0] = msg.wrench.torque.x;
+  est_external_torque[1] = msg.wrench.torque.y;
+  est_external_torque[2] = msg.wrench.torque.z;
+  est_external_torque_cog = cog_rot.inverse() * est_external_torque;
+
+  for(int i;i<3;i++)
+  {
+    est_external_wrench_[i] = est_external_force_cog[i];
+    est_external_wrench_[i+3] = est_external_torque_cog[i];
+  }
+
   for(int i;i<est_external_wrench_.size();i++)
     {
       if(est_external_wrench_[i]>=15){est_external_wrench_[i]=15;}
@@ -604,12 +610,24 @@ void HydrusXiUnderActuatedNavigator::AttachingFlagCallBack(std_msgs::Bool msg)
 
 void HydrusXiUnderActuatedNavigator::FilterdFtsensorCallBack(geometry_msgs::WrenchStamped msg)
 {
-  filtered_ftsensor_wrench_[0] = msg.wrench.force.x;
-  filtered_ftsensor_wrench_[1] = msg.wrench.force.y;
-  filtered_ftsensor_wrench_[2] = msg.wrench.force.z;
-  filtered_ftsensor_wrench_[3] = msg.wrench.torque.x;
-  filtered_ftsensor_wrench_[4] = msg.wrench.torque.y;
-  filtered_ftsensor_wrench_[5] = msg.wrench.torque.z;
+  Eigen::Vector3d force_at_end, torque_at_end;
+  KDL::Frame root_end = hydrus_robot_model_->getRootEnd();
+  KDL::Frame cog = hydrus_robot_model_->getCog<KDL::Frame>();
+
+  force_at_end[0] = msg.wrench.force.z;
+  force_at_end[1] = msg.wrench.force.x;
+  force_at_end[2] = -msg.wrench.force.y;
+  torque_at_end[0] = msg.wrench.torque.z;
+  torque_at_end[1] = msg.wrench.torque.x;
+  torque_at_end[2] = -msg.wrench.torque.y;
+  Eigen::Vector3d force_for_root_end_in_cog = aerial_robot_model::kdlToEigen(cog.M.Inverse() * root_end.M) * force_at_end;
+
+  filtered_ftsensor_wrench_[0] = force_for_root_end_in_cog[0];
+  filtered_ftsensor_wrench_[1] = force_for_root_end_in_cog[1];
+  filtered_ftsensor_wrench_[2] = force_for_root_end_in_cog[2];
+  filtered_ftsensor_wrench_[3] = torque_at_end[0];
+  filtered_ftsensor_wrench_[4] = torque_at_end[1];
+  filtered_ftsensor_wrench_[5] = torque_at_end[2];
 
 }
 
@@ -621,6 +639,7 @@ void HydrusXiUnderActuatedNavigator::rosParamInit()
   getParam<bool>(navi_nh, "plan_verbose", plan_verbose_, false);
   getParam<bool>(navi_nh, "maximize_yaw", maximize_yaw_, false);
   getParam<bool>(navi_nh, "optimize_wide_x", optimize_wide_x_, false);
+  getParam<bool>(navi_nh, "using_FTsensor", using_FTsensor_, false);
   getParam<double>(navi_nh, "gimbal_delta_angle", gimbal_delta_angle_, 0.2);
   getParam<double>(navi_nh, "force_norm_rate", force_norm_weight_, 2.0);
   getParam<double>(navi_nh, "force_variant_rate", force_variant_weight_, 0.01);

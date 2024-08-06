@@ -8,6 +8,7 @@ controller:
   wrench_diff_gain: 0.01
   wrench_estimate_flag: true
   send_feedforward_switch_flag: true
+  using_FTsensor: true
   acc_shock_thres: 18.0 
 
   cutoff_freq: 25.0

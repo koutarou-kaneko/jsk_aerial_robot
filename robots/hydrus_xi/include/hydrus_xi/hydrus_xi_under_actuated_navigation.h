@@ -73,8 +73,10 @@ namespace aerial_robot_navigation
     const std::vector<int>& getControlIndices() const { return control_gimbal_indices_; }
     const Eigen::VectorXd getDesireWrench() const { return desire_wrench_; }
     const Eigen::VectorXd getEstExternalWrench() const { return est_external_wrench_; }
+    const Eigen::VectorXd getFilterdFtsensorWrench() const { return filtered_ftsensor_wrench_; }
 
     const bool getPlanVerbose() const { return plan_verbose_; }
+    const bool getUsingFTsensor() const { return using_FTsensor_; }
 
     void setMaxMinYaw(const double max_min_yaw) { max_min_yaw_ = max_min_yaw;}
 
@@ -99,6 +101,7 @@ namespace aerial_robot_navigation
     bool plan_verbose_;
     bool maximize_yaw_;
     bool optimize_wide_x_; // optimize 8d x include thrusts
+    bool using_FTsensor_;
     double force_norm_weight_; // cost func
     double force_variant_weight_; // cost func
     double yaw_torque_weight_; // cost func
@@ -115,6 +118,7 @@ namespace aerial_robot_navigation
     Eigen::VectorXd est_external_wrench_;
     Eigen::VectorXd filtered_ftsensor_wrench_;
     bool attaching_flag_;
+
 
     void threadFunc();
     bool plan();

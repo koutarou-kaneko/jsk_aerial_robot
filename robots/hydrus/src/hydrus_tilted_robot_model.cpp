@@ -56,10 +56,10 @@ void HydrusTiltedRobotModel::updateRobotModelImpl(const KDL::JntArray& joint_pos
     {
       ROS_WARN_STREAM_ONCE("[model] there is a end-effector named " << root_end_name_);
       root_end_ = seg_tf_map.at(root_end_name_);
-      Eigen::Vector3d compensate_force_for_root_end_in_cog = aerial_robot_model::kdlToEigen(cog.M.Inverse() * root_end_.M) * target_force_in_root_end_;
+      compensate_force_for_root_end_in_cog_ = aerial_robot_model::kdlToEigen(cog.M.Inverse() * root_end_.M) * target_force_in_root_end_;
       KDL::Frame cog_to_root_end = cog.Inverse() * root_end_;
       Eigen::MatrixXd cog_to_root_end_skew = aerial_robot_model::skew(Eigen::Vector3d(cog_to_root_end.p.x(), cog_to_root_end.p.y(), cog_to_root_end.p.z()));
-      compensate_torque_for_root_end_in_cog_ = cog_to_root_end_skew * compensate_force_for_root_end_in_cog;
+      compensate_torque_for_root_end_in_cog_ = cog_to_root_end_skew * compensate_force_for_root_end_in_cog_;
     }
   else
     {
@@ -70,10 +70,10 @@ void HydrusTiltedRobotModel::updateRobotModelImpl(const KDL::JntArray& joint_pos
     {
       ROS_WARN_STREAM_ONCE("[model] there is a end-effector named " << link_end_name_);
       link_end_ = seg_tf_map.at(link_end_name_);
-      Eigen::Vector3d compensate_force_for_link_end_in_cog = aerial_robot_model::kdlToEigen(cog.M.Inverse() * link_end_.M) * target_force_in_link_end_;
+      compensate_force_for_link_end_in_cog_ = aerial_robot_model::kdlToEigen(cog.M.Inverse() * link_end_.M) * target_force_in_link_end_;
       KDL::Frame cog_to_link_end = cog.Inverse() * link_end_;
       Eigen::MatrixXd cog_to_link_end_skew = aerial_robot_model::skew(Eigen::Vector3d(cog_to_link_end.p.x(), cog_to_link_end.p.y(), cog_to_link_end.p.z()));
-      compensate_torque_for_link_end_in_cog_ = cog_to_link_end_skew * compensate_force_for_link_end_in_cog;
+      compensate_torque_for_link_end_in_cog_ = cog_to_link_end_skew * compensate_force_for_link_end_in_cog_;
     }
   else
     {
