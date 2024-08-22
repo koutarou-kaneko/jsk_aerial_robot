@@ -225,6 +225,7 @@ namespace
 
     Eigen::VectorXd thrusts(4), target_wrench(6);
     thrusts << x[4], x[5], x[6], x[7];
+    // thrusts << robot_model->getStaticThrust();
     if(using_FTsensor)
     {
       target_wrench << desire_wrench - filtered_ftsensor_wrench;
@@ -620,6 +621,15 @@ void HydrusXiUnderActuatedNavigator::FilterdFtsensorCallBack(geometry_msgs::Wren
   torque_at_end[0] = msg.wrench.torque.x;
   torque_at_end[1] = msg.wrench.torque.y;
   torque_at_end[2] = msg.wrench.torque.z;
+
+  for(int i;i<3;i++)
+  {
+    if(force_at_end[i]>=4.0)
+    {
+      force_at_end[i]=4.0;
+    }
+  }
+  
   Eigen::Vector3d force_for_root_end_in_cog = aerial_robot_model::kdlToEigen(cog.M.Inverse() * root_end.M) * force_at_end;
 
   filtered_ftsensor_wrench_[0] = force_for_root_end_in_cog[0];

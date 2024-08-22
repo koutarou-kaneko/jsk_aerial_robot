@@ -93,6 +93,15 @@ void HydrusTiltedLQIController::FilterdFtsensorCallBack(geometry_msgs::WrenchSta
   torque_at_end[0] = msg.wrench.torque.x;
   torque_at_end[1] = msg.wrench.torque.y;
   torque_at_end[2] = msg.wrench.torque.z;
+  
+  for(int i;i<3;i++)
+  {
+    if(force_at_end[i]>=4.0)
+    {
+      force_at_end[i]=4.0;
+    }
+  }
+
   Eigen::Vector3d force_for_root_end_in_cog = aerial_robot_model::kdlToEigen(cog.M.Inverse() * root_end.M) * force_at_end;
 
   filtered_ftsensor_wrench_[0] = force_for_root_end_in_cog[0];
@@ -225,7 +234,7 @@ void HydrusTiltedLQIController::controlCore()
   Eigen::Vector3d target_acc = mass_inv * target_force;
   Eigen::Vector3d target_ang_acc = inertia_inv * target_torque;
   Eigen::Vector3d feedforward_acc = cog_rot * (target_acc + feedforward_sum_.head(3));
-  Eigen::Vector3d feedforward_ang_acc = cog_rot * (target_ang_acc + feedforward_sum_.head(3));
+  Eigen::Vector3d feedforward_ang_acc = cog_rot * (target_ang_acc + feedforward_sum_.tail(3));
   
   if(send_feedforward_switch_flag_ && attaching_flag_)
   {
