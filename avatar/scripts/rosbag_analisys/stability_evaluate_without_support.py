@@ -24,7 +24,7 @@ class analisys():
 
     def __init__(self):
 
-        self.start_time = 120.0 # fill in start time of rosbag
+        self.start_time = 60.0 # fill in start time of rosbag
 
         self.four_axes_sub = rospy.Subscriber('/hydrus_xi/four_axes/command', FourAxisCommand, self.four_axes_cb)
         self.uav_sub = rospy.Subscriber('/hydrus_xi/uav/cog/odom', Odometry, self.uav_cb)

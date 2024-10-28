@@ -97,7 +97,7 @@ class avatar_control():
         self.servo_init_position = JointTrajectory()
         self.servo_init_position.joint_names = ["joint1_pitch", "joint1_yaw", "joint2_pitch", "joint2_yaw", "joint3_pitch", "joint3_yaw"]
         self.servo_init_position.points = [JointTrajectoryPoint()]
-        self.servo_init_position.points[0].positions = [0.0, 1.535, 0.0, 1.535, 0.0, 1.535]
+        self.servo_init_position.points[0].positions = [0.0, 1.5, 0.0, 1.5, 0.0, 1.5]
         self.servo_init_position.points[0].time_from_start = rospy.Time(self.servo_init_time)
         self.joint_servo_pub.publish(self.servo_init_position)
         rospy.sleep(self.servo_init_time * 10)
