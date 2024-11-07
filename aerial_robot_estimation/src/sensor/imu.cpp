@@ -39,6 +39,7 @@ namespace
 {
   int bias_calib = 0;
   ros::Time prev_time;
+  bool first_flag = true;
 }
 
 namespace sensor_plugin
@@ -81,11 +82,21 @@ namespace sensor_plugin
     imu_sub_ = nh_.subscribe<spinal::Imu>(topic_name, 10, &Imu::ImuCallback, this);
     imu_pub_ = indexed_nhp_.advertise<sensor_msgs::Imu>(string("ros_converted"), 1);
     acc_pub_ = indexed_nhp_.advertise<aerial_robot_msgs::Acc>("acc_only", 2);
+
+    //low pass filter
+    double sample_freq, cutoff_freq;
+    getParam<double>("cutoff_freq", cutoff_freq, 20.0);
+    getParam<double>("sample_freq", sample_freq, 200.0);
+    lpf_omega_ = IirFilter(sample_freq, cutoff_freq, 3);
+
+    // debug
+    omega_filter_pub_ = indexed_nhp_.advertise<geometry_msgs::Vector3Stamped>(string("filter_angular_velocity"), 1);
   }
 
   void Imu::ImuCallback(const spinal::ImuConstPtr& imu_msg)
   {
     imu_stamp_ = imu_msg->stamp;
+    tf::Vector3 filtered_omega;
 
     for(int i = 0; i < 3; i++)
       {
@@ -101,6 +112,30 @@ namespace sensor_plugin
         omega_[i] = imu_msg->gyro_data[i];
         mag_[i] = imu_msg->mag_data[i];
       }
+
+    if(first_flag)
+      {
+        lpf_omega_.setInitValues(omega_);
+        first_flag = false;
+      }
+    filtered_omega = lpf_omega_.filterFunction(omega_);
+    geometry_msgs::Vector3Stamped omega_msg;
+    omega_msg.header.stamp = imu_msg->stamp;
+    tf::vector3TFToMsg(filtered_omega, omega_msg.vector);
+    omega_filter_pub_.publish(omega_msg);
+
+    // workaround: use raw roll&pitch omega (not filtered in spinal) for both angular and linear CoG velocity estimation, yaw is still filtered
+    // note: this is different with hydrus-like control which use filtered omega for CoG estimation
+    omega_.setZ(filtered_omega.z());
+
+    // get filtered angular and linear velocity of CoG
+    tf::Transform cog2baselink_tf;
+    tf::transformKDLToTF(robot_model_->getCog2Baselink<KDL::Frame>(), cog2baselink_tf);
+    int estimate_mode = estimator_->getEstimateMode();
+    setFilteredOmegaCog(cog2baselink_tf.getBasis() * filtered_omega);
+    setFilteredVelCog(estimator_->getVel(Frame::BASELINK, estimate_mode)
+                      + estimator_->getOrientation(Frame::BASELINK, estimate_mode)
+                      * (filtered_omega.cross(cog2baselink_tf.inverse().getOrigin())));
 
     estimateProcess();
     updateHealthStamp();
@@ -389,29 +424,20 @@ namespace sensor_plugin
 
         /* publish state date */
         state_.header.stamp = imu_stamp_;
-        tf::Vector3 pos = estimator_->getPos(Frame::BASELINK, aerial_robot_estimation::EGOMOTION_ESTIMATE);
-        tf::Vector3 vel = estimator_->getVel(Frame::BASELINK, aerial_robot_estimation::EGOMOTION_ESTIMATE);
-        state_.states[0].state[0].x = pos.x();
-        state_.states[1].state[0].x = pos.y();
-        state_.states[2].state[0].x = pos.z();
-        state_.states[0].state[0].y = vel.x();
-        state_.states[1].state[0].y = vel.y();
-        state_.states[2].state[0].y = vel.z();
-        state_.states[0].state[0].z = acc_w_.x();
-        state_.states[1].state[0].z = acc_w_.y();
-        state_.states[2].state[0].z = acc_w_.z();
-        pos = estimator_->getPos(Frame::BASELINK, aerial_robot_estimation::EXPERIMENT_ESTIMATE);
-        vel = estimator_->getVel(Frame::BASELINK, aerial_robot_estimation::EXPERIMENT_ESTIMATE);
-        state_.states[0].state[1].x = pos.x();
-        state_.states[1].state[1].x = pos.y();
-        state_.states[2].state[1].x = pos.z();
-        state_.states[0].state[1].y = vel.x();
-        state_.states[1].state[1].y = vel.y();
-        state_.states[2].state[1].y = vel.z();
-        state_.states[0].state[1].z = acc_w_.x();
-        state_.states[1].state[1].z = acc_w_.y();
-        state_.states[2].state[1].z = acc_w_.z();
-
+        for (int i = 0; i < 2; i++)
+          {
+            tf::Vector3 pos = estimator_->getPos(Frame::BASELINK, i);
+            tf::Vector3 vel = estimator_->getVel(Frame::BASELINK, i);
+            state_.states[0].state[i].x = pos.x();
+            state_.states[1].state[i].x = pos.y();
+            state_.states[2].state[i].x = pos.z();
+            state_.states[0].state[i].y = vel.x();
+            state_.states[1].state[i].y = vel.y();
+            state_.states[2].state[i].y = vel.z();
+            state_.states[0].state[i].z = acc_w_.x();
+            state_.states[1].state[i].z = acc_w_.y();
+            state_.states[2].state[i].z = acc_w_.z();
+          }
         state_pub_.publish(state_);
       }
     prev_time = imu_stamp_;
