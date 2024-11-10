@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+
+  <include file="$(find avatar)/cake_cutter/dynamixel.launch" />
+  <node pkg="avatar" type="device.py" name="device_node" output="screen"/> 
+
+</launch>
