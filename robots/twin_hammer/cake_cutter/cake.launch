@@ -1,0 +1,4 @@
+<launch>
+    <node pkg="twin_hammer" type="cutter.py" name="cutter_node" output="screen">
+    </node>
+</launch>
