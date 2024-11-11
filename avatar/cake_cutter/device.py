@@ -10,7 +10,7 @@ class device():
 
   def __init__(self):
     self.device_sub = rospy.Subscriber('/dynamixel_workbench/joint_states', JointState, self.device_Cb)
-    self.joint_servo_pub = rospy.Publisher('/servo_cmd_to_VIM4', ServoControlCmd, queue_size=10) # TODO rewrite for controling from spinal
+    self.joint_servo_pub = rospy.Publisher('/servo/target_states', ServoControlCmd, queue_size=10) # TODO rewrite for controling from spinal
     self.joint_angle = 0.0
     self.servo_cmd_msg = ServoControlCmd()
 
@@ -30,10 +30,11 @@ class device():
     r = rospy.Rate(40)
     while not rospy.is_shutdown():
       self.servo_switch(switch=False,servo_number=1)
+      angle = self.joint_angle[0] * 2048/3.1415
       # print(self.joint_angle)
       # self.servo_cmd_msg.angles = [self.joint_angle]
-      self.servo_cmd_msg.index = [1]
-      self.servo_cmd_msg.angles = [1]
+      self.servo_cmd_msg.index = [0]
+      self.servo_cmd_msg.angles = [-int(angle)]
       self.joint_servo_pub.publish(self.servo_cmd_msg)
       r.sleep()
 
