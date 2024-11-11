@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="force_sensor" default="PFS055YA501U6" /> <!-- other sensor: CFS034CA301U -->
+  <arg name="grip_hight" default="0.445" />
+  <arg name="use_2_sensors" default="true" />
+
+  <group ns="force1"> <!-- upper -->
+    <node name="forces_node" pkg="cfs_sensor" type="cfs_node" output="screen" >
+      <rosparam file="$(find cfs_sensor)/config/$(arg force_sensor).yaml" command="load" />
+      <param name="cfs_default_device_name" value="/dev/ttyACM0" />
+    </node>
+  </group>
+
+  <group if="$(arg use_2_sensors)" >
+    <group ns="force2"> <!-- lower -->
+      <node name="forces_node" pkg="cfs_sensor" type="cfs_node" output="screen" >
+        <rosparam file="$(find cfs_sensor)/config/$(arg force_sensor).yaml" command="load" />
+        <param name="cfs_default_device_name" value="/dev/ttyACM1" />
+      </node>
+    </group>
+  </group>
+
+  <node name="converter" pkg="avatar" type="wrench_convert_kaneko.py" output="screen" >
+    <param name="grip_hight" value="$(arg grip_hight)" />
+    <param name="use_2_sensors" value="$(arg use_2_sensors)" />
+  </node>
+
+
+</launch>
