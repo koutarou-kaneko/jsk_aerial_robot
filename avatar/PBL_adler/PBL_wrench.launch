@@ -2,7 +2,7 @@
 <launch>
 
   <arg name="force_sensor" default="PFS055YA501U6" /> <!-- other sensor: CFS034CA301U -->
-  <arg name="grip_hight" default="0.445" />
+  <arg name="grip_hight" default="0.448" />
   <arg name="use_2_sensors" default="true" />
 
   <group ns="force1"> <!-- upper -->
