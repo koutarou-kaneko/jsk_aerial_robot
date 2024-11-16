@@ -34,7 +34,7 @@ class device():
       # print(self.joint_angle)
       # self.servo_cmd_msg.angles = [self.joint_angle]
       self.servo_cmd_msg.index = [0]
-      self.servo_cmd_msg.angles = [-int(angle)]
+      self.servo_cmd_msg.angles = [int(angle)]
       self.joint_servo_pub.publish(self.servo_cmd_msg)
       r.sleep()
 
