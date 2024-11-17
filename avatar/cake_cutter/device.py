@@ -5,14 +5,17 @@ from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory
 from dynamixel_workbench_msgs.srv import *
 from spinal.msg import ServoControlCmd
+from std_msgs.msg import String
 
 class device():
 
   def __init__(self):
     self.device_sub = rospy.Subscriber('/dynamixel_workbench/joint_states', JointState, self.device_Cb)
-    self.joint_servo_pub = rospy.Publisher('/servo/target_states', ServoControlCmd, queue_size=10) # TODO rewrite for controling from spinal
+    self.joint_servo_pub = rospy.Publisher('/servo_cmd_to_VIM4', ServoControlCmd, queue_size=10) # TODO rewrite for controling from spinal
+    self.test_pub = rospy.Publisher('/test', String, queue_size=10)
     self.joint_angle = 0.0
     self.servo_cmd_msg = ServoControlCmd()
+    self.test_msg = String()
 
   def device_Cb(self, msg):
     self.joint_angle = msg.position
@@ -34,8 +37,11 @@ class device():
       # print(self.joint_angle)
       # self.servo_cmd_msg.angles = [self.joint_angle]
       self.servo_cmd_msg.index = [0]
-      self.servo_cmd_msg.angles = [int(angle)]
+      self.servo_cmd_msg.angles = [-int(angle)]
       self.joint_servo_pub.publish(self.servo_cmd_msg)
+
+      self.test_msg.data = 'test'
+      self.test_pub.publish(self.test_msg)
       r.sleep()
 
 if __name__ == "__main__":
