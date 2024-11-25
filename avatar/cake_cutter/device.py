@@ -14,6 +14,8 @@ class device():
     self.joint_servo_pub = rospy.Publisher('/servo_cmd_to_VIM4', ServoControlCmd, queue_size=10) # TODO rewrite for controling from spinal
     self.test_pub = rospy.Publisher('/test', String, queue_size=10)
     self.joint_angle = 0.0
+    self.init_angle = 200
+    self.scale = 1.5
     self.servo_cmd_msg = ServoControlCmd()
     self.test_msg = String()
 
@@ -33,11 +35,12 @@ class device():
     r = rospy.Rate(40)
     while not rospy.is_shutdown():
       self.servo_switch(switch=False,servo_number=1)
-      angle = self.joint_angle[0] * 2048/3.1415
+      angle = self.joint_angle[0] * 2048/3.1415 * self.scale
+      angle += self.init_angle
       # print(self.joint_angle)
       # self.servo_cmd_msg.angles = [self.joint_angle]
       self.servo_cmd_msg.index = [0]
-      self.servo_cmd_msg.angles = [-int(angle)]
+      self.servo_cmd_msg.angles = [int(angle)]
       self.joint_servo_pub.publish(self.servo_cmd_msg)
 
       self.test_msg.data = 'test'
