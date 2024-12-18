@@ -1,4 +1,5 @@
 <launch>
-    <node pkg="twin_hammer" type="cutter.py" name="cutter_node" output="screen">
-    </node>
+    <node pkg="twin_hammer" type="cutter.py" name="cutter_node" output="screen" />
+    <include file="$(find spinal)/launch/bridge.launch" />
+
 </launch>
