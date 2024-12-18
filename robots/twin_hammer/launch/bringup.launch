@@ -8,10 +8,10 @@
   <arg name="estimate_mode"  default= "1" />
   <arg name="sim_estimate_mode"  default= "2" />
   <arg name="headless" default="True" />
+  <arg name="optimize" default="False" />
   <arg name="worldtype" default="$(find aerial_robot_simulation)/gazebo_model/world/empty.world" />
   <arg name="launch_gazebo" default="True" />
   <arg name="direct_model" default="False" />
-  <arg name="full_vectoring_mode"  default= "false" />
   <arg name="direct_model_name" />
   <arg name="spawn_x" default="0.0"/>
   <arg name="spawn_y" default="0.0"/>
@@ -33,8 +33,7 @@
     <param name="estimation/mode" value= "$(arg estimate_mode)" if="$(arg real_machine)"/>
 
     <param name="uav_model" value= "32" />
-    <rosparam file="$(arg config_dir)/model/FullVectoringRobotModel.yaml" command="load" if="$(arg full_vectoring_mode)" />
-    <rosparam file="$(arg config_dir)/model/UnderActuatedRobotModel.yaml" command="load" unless="$(arg full_vectoring_mode)" />
+    <rosparam file="$(arg config_dir)/model/TwinHammerModel.yaml" command="load" />
 
     ###########  Motor Config  ###########
     <rosparam file="$(arg config_dir)/MotorInfo.yaml" command="load" />
@@ -46,16 +45,16 @@
     <rosparam file="$(arg config_dir)/Battery.yaml" command="load" />
 
     ###########  Control  ###########
-    <rosparam file="$(arg config_dir)/control/FullVectoringControl.yaml" command="load" if="$(arg full_vectoring_mode)"/>
-    <rosparam file="$(arg config_dir)/control/UnderActuatedControl.yaml" command="load" unless="$(arg full_vectoring_mode)"/>
+    <rosparam file="$(arg config_dir)/control/TwinHammerOptimizer.yaml" command="load" if="$(arg optimize)" />
+    <rosparam file="$(arg config_dir)/control/TwinHammerControl.yaml" command="load" unless="$(arg optimize)" />
 
     ###########  Sensor Fusion  ###########
     <rosparam file="$(arg config_dir)/StateEstimation.yaml" command="load" />
     <rosparam file="$(arg config_dir)/Simulation.yaml" command="load" if="$(eval arg('simulation') and not arg('real_machine'))"/>
-    <!--
+    
     ###########  Navigation  ###########
     <rosparam file="$(arg config_dir)/NavigationConfig.yaml" command="load" />
-    -->
+   
   </group>
 
   ###########  Base Platform  ###########
@@ -79,7 +78,7 @@
   </include>
 
   ###########  Sensors ###########
-  <include file="$(find twin_hammer)/launch/includes/sensors.launch.xml" >
+  <include file="$(find twin_hammer)/launch/include/sensors.launch.xml" >
     <arg name="real_machine" value="$(arg real_machine)" />
     <arg name="simulation" value="$(arg simulation)" />
     <arg name="robot_ns" value="$(arg robot_ns)" />

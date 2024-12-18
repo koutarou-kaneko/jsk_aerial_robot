@@ -13,7 +13,10 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   geometry_msgs
   message_generation
+  pluginlib
 )
+
+find_package(NLopt REQUIRED)
 
 find_package(Eigen3 REQUIRED)
 
@@ -34,15 +37,25 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
+  ${NLOPT_INCLUDE_DIRS}
 )
 
-add_library(twin_hammer_controller src/control/twin_hammer_controller.cpp)
-target_link_libraries(twin_hammer_controller ${catkin_LIBRARIES})
+# add_library(twin_hammer_controller src/control/twin_hammer_controller.cpp src/control/twin_hammer_optimizer.cpp)
+# target_link_libraries(twin_hammer_controller ${catkin_LIBRARIES} ${NLOPT_LIBRARIES})
+# add_library(twin_hammer_controller src/control/twin_hammer_controller.cpp)
+# target_link_libraries(twin_hammer_controller ${catkin_LIBRARIES} ${NLOPT_LIBRARIES})
+# add_library(twin_hammer_optimizer src/control/twin_hammer_optimizer.cpp)
+# target_link_libraries(twin_hammer_optimizer ${catkin_LIBRARIES} ${NLOPT_LIBRARIES})
+add_library(twin_hammer_controllib src/control/twin_hammer_controller.cpp src/control/twin_hammer_optimizer.cpp)
+target_link_libraries(twin_hammer_controllib ${catkin_LIBRARIES} ${NLOPT_LIBRARIES})
 
 add_library(twin_hammer_model src/model/twin_hammer_model.cpp)
 target_link_libraries(twin_hammer_model ${catkin_LIBRARIES})
 
-install(TARGETS twin_hammer_model twin_hammer_controller 
+# install(TARGETS twin_hammer_model twin_hammer_controller twin_hammer_optimizer
+#   DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+# )
+install(TARGETS twin_hammer_model twin_hammer_controllib
   DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 
