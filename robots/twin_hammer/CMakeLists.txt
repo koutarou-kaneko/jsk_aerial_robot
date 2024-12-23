@@ -8,7 +8,6 @@ find_package(catkin REQUIRED COMPONENTS
   aerial_robot_estimation
   aerial_robot_model
   aerial_robot_msgs
-  gimbalrotor
   diagnostic_msgs
   std_msgs
   geometry_msgs
@@ -23,7 +22,7 @@ find_package(Eigen3 REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES twin_hammer_model twin_hammer_controller
-  CATKIN_DEPENDS aerial_robot_control aerial_robot_model aerial_robot_msgs pluginlib roscpp gimbalrotor diagnostic_msgs std_msgs geometry_msgs message_runtime
+  CATKIN_DEPENDS aerial_robot_control aerial_robot_model aerial_robot_msgs pluginlib roscpp diagnostic_msgs std_msgs geometry_msgs message_runtime
 )
 
 ###########

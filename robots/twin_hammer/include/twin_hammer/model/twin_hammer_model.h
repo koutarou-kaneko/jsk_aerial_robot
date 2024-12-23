@@ -2,7 +2,6 @@
 
 #pragma once
 
-// #include <gimbalrotor/model/gimbalrotor_robot_model.h>
 #include <aerial_robot_model/model/transformable_aerial_robot_model.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/transform_broadcaster.h>
