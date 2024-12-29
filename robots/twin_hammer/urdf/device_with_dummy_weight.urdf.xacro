@@ -282,7 +282,7 @@
  </joint>
 
  <!-- when fix main body  -->
- <!-- <link name="dummy_weight">
+ <link name="dummy_weight">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <mass value="100"/>
@@ -302,7 +302,7 @@
     <parent link="dummy_weight"/>
     <child link="root"/>
     <origin rpy="0 0 0" xyz="0 0 1.0"/>
-  </joint> -->
+  </joint>
   <!-- ft_sensor_gazebo joint -->
   <!-- <joint name="root_to_dummyweight_joint" type="fixed">
     <parent link="dummy_weight"/>

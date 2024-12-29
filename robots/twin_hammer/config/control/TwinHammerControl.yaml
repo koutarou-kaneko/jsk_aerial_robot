@@ -2,7 +2,7 @@ aerial_robot_control_name: aerial_robot_control/twin_hammer_controller
 
 controller:
 
-  use_haptics: true
+  use_haptics: false
   gimbal_roll_delta_angle: 0.1
   gimbal_pitch_delta_angle: 0.1
   gravity_acc: 3.0

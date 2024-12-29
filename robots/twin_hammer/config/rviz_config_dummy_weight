@@ -90,8 +90,8 @@ Visualization Manager:
           Value: true
         twin_hammer/thrust4:
           Value: true
-        # twin_hammer/dummy_weight:
-        #   Value: true
+        twin_hammer/dummy_weight:
+          Value: true
         world:
           Value: true
       Marker Alpha: 1
@@ -102,7 +102,7 @@ Visualization Manager:
       Show Names: true
       Tree:
         world:
-          # twin_hammer/dummy_weight:
+          twin_hammer/dummy_weight:
             twin_hammer/root:
               twin_hammer/cog:
                 {}
@@ -208,11 +208,11 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        # dummy_weight:
-        #   Alpha: 1
-        #   Show Axes: false
-        #   Show Trail: false
-        #   Value: true
+        dummy_weight:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
       Name: RobotModel
       Robot Description: twin_hammer/robot_description
       TF Prefix: twin_hammer
