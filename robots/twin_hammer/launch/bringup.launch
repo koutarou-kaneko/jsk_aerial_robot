@@ -47,7 +47,7 @@
 
     ###########  Control  ###########
     <rosparam file="$(arg config_dir)/control/TwinHammerOptimizer.yaml" command="load" if="$(arg optimize)" />
-    <rosparam file="$(arg config_dir)/control/TwinHammerControl.yaml" command="load" unless="$(arg optimize)" />
+    <rosparam file="$(arg config_dir)/control/TwinHammerControlTest.yaml" command="load" unless="$(arg optimize)" />
 
     ###########  Sensor Fusion  ###########
     <rosparam file="$(arg config_dir)/StateEstimation.yaml" command="load" />
