@@ -151,8 +151,6 @@ namespace aerial_robot_navigation
     static constexpr float VOLTAGE_20P =  3.747;
     static constexpr float VOLTAGE_10P =  3.683;
     static constexpr float VOLTAGE_0P =  3.209;
-    float pre_battery_percentage_;
-    
 
 
     /* playstation dualschock 3 joystick */
@@ -258,8 +256,6 @@ namespace aerial_robot_navigation
 
     bool param_verbose_;
 
-    bool joy_rotation_flag_;
-
     uint8_t navi_state_;
 
     int  xy_control_mode_;
@@ -273,7 +269,7 @@ namespace aerial_robot_navigation
     bool trajectory_mode_;
     bool lock_teleop_;
     ros::Time force_landing_start_time_;
-    
+
     double hover_convergent_start_time_;
     double hover_convergent_duration_;
     double land_check_start_time_;
@@ -350,8 +346,8 @@ namespace aerial_robot_navigation
     virtual void rosParamInit();
     void poseCallback(const geometry_msgs::PoseStampedConstPtr & msg);
     void simpleMoveBaseGoalCallback(const geometry_msgs::PoseStampedConstPtr & msg);
-    virtual void naviCallback(const aerial_robot_msgs::FlightNavConstPtr & msg);
-    virtual void joyStickControl(const sensor_msgs::JoyConstPtr & joy_msg);
+    void naviCallback(const aerial_robot_msgs::FlightNavConstPtr & msg);
+    void joyStickControl(const sensor_msgs::JoyConstPtr & joy_msg);
     void batteryCheckCallback(const std_msgs::Float32ConstPtr &msg);
 
     virtual void halt() {}
@@ -467,6 +463,9 @@ namespace aerial_robot_navigation
       if(!teleop_flag_) return;
 
       setNaviState(LAND_STATE);
+
+      setTargetXyFromCurrentState();
+      setTargetYawFromCurrentState();
       ROS_INFO("Land state");
     }
 

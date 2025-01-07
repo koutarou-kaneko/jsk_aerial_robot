@@ -4,7 +4,7 @@
 #include <aerial_robot_control/control/base/pose_linear_controller.h>
 #include <twin_hammer/model/twin_hammer_model.h>
 #include <nlopt.hpp>
-// #include <gimbalrotor/control/gimbalrotor_controller.h>
+
 namespace aerial_robot_control
 {
   class TwinHammerController: public PoseLinearController

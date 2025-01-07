@@ -42,7 +42,8 @@
 /* Sensors */
 #if IMU_FLAG
 #include "sensors/imu/imu_ros_cmd.h"
-#include "sensors/imu/imu_mpu9250.h"
+#include "sensors/imu/drivers/mpu9250/imu_mpu9250.h"
+#include "sensors/imu/drivers/icm20948/icm_20948.h"
 #endif
 
 #if BARO_FLAG
@@ -70,7 +71,6 @@
 
 /* Extra Servo */
 #include "extra_servo/extra_servo.h"
-#include "kondo_servo/kondo_servo.h"
 
 
 /* Internal Communication System */
@@ -99,8 +99,10 @@ bool start_processing_flag_ = false; //to prevent systick_callback starting  bef
 
 ros::NodeHandle nh_;
 
-#if IMU_FLAG
+#if IMU_MPU
 IMUOnboard imu_;
+#elif IMU_ICM
+ICM20948 imu_;
 #endif
 
 #if BARO_FLAG
@@ -121,8 +123,6 @@ StateEstimate estimator_;
 BatteryStatus battery_status_;
 FlightControl controller_;
 ExtraServo extra_servo_;
-KondoServo kondo_servo_;
-
 #endif
 
 // defined in Src/freertos.c
@@ -255,15 +255,6 @@ static void MX_NVIC_Init(void);
   }
 #endif
 
-  void kondoServoTaskCallback(void const * argument)
-  {
-	  for(;;)
-	  {
-		  kondo_servo_.update();
-		  osDelay(KONDO_SERVO_UPDATE_INTERVAL);
-	  }
-  }
-
 }
 
 /* USER CODE END PFP */
@@ -366,7 +357,6 @@ int main(void)
 
   /* Extra Servo Control */
   extra_servo_.init(&htim3, &htim5, &nh_);
-  kondo_servo_.init(&huart3, &nh_);
 
   /* Magnetic Encoder */
   encoder_.init(&hi2c2, &nh_);
@@ -380,7 +370,7 @@ int main(void)
   /* BATTERY_STATUS */
   battery_status_.init(&hadc2, &nh_);
   /* Start Attitude Control */
-  controller_.init(&htim4, &htim8, &estimator_, &kondo_servo_, &battery_status_, &nh_, &flightControlMutexHandle);
+  controller_.init(&htim4, &htim8, &estimator_, &battery_status_, &nh_, &flightControlMutexHandle);
 
 #if NERVE_COMM
   controller_.setUavModel(Spine::getUavModel());

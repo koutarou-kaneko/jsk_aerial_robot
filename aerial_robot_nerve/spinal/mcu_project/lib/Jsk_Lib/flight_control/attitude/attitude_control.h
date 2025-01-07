@@ -15,7 +15,6 @@
 #ifndef SIMULATION
 #include "config.h"
 #include <ros.h>
-#include <sensor_msgs/JointState.h>
 #else
 #include <ros/ros.h>
 #endif
@@ -32,9 +31,10 @@
 #include "battery_status/battery_status.h"
 /* RTOS */
 #include "cmsis_os.h"
-/* gimbal servo*/
-#include <kondo_servo/kondo_servo.h>
+/* dshot esc */
+#include "dshot_esc/dshot.h"
 #endif
+
 #include "state_estimate/state_estimate.h"
 
 #include <std_msgs/UInt8.h>
@@ -42,6 +42,7 @@
 #include <std_msgs/Float32MultiArray.h>
 #include <std_srvs/SetBool.h>
 #include <spinal/Pwms.h>
+#include <spinal/PwmTest.h>
 #include <spinal/FourAxisCommand.h>
 #include <spinal/RollPitchYawTerms.h>
 #include <spinal/PwmInfo.h>
@@ -61,7 +62,6 @@
 #define CONTROL_TERM_PUB_INTERVAL 100
 #define CONTROL_FEEDBACK_STATE_PUB_INTERVAL 25
 #define PWM_PUB_INTERVAL 100 //100ms
-#define GIMBAL_CONTROL_PUB_INTERVAL 25 //25ms
 
 #define MOTOR_TEST 0
 
@@ -80,7 +80,8 @@ public:
 #ifdef SIMULATION
   void init(ros::NodeHandle* nh, StateEstimate* estimator);
 #else
-  void init(TIM_HandleTypeDef* htim1, TIM_HandleTypeDef* htim2, StateEstimate* estimator, KondoServo* kondo_servo, BatteryStatus* bat, ros::NodeHandle* nh, osMutexId* mutex = NULL);
+  void init(TIM_HandleTypeDef* htim1, TIM_HandleTypeDef* htim2, StateEstimate* estimator,
+            DShot* dshot, BatteryStatus* bat, ros::NodeHandle* nh, osMutexId* mutex = NULL);
 #endif
 
   void baseInit(); // common part in both pc and board
@@ -88,11 +89,9 @@ public:
 
   void setStartControlFlag(bool start_control_flag);
   void setUavModel(int8_t uav_model);
-  inline uint16_t getMotorNumber(){return motor_number_;}
+  inline uint8_t getMotorNumber(){return motor_number_;}
 
-  void setMotorNumber(uint16_t motor_number);
-  void setGimbalDof(uint8_t gimbal_dof){gimbal_dof_ = gimbal_dof; }
-  uint16_t getGimbalDof(){return gimbal_dof_; }
+  void setMotorNumber(uint8_t motor_number);
   void setPwmTestMode(bool pwm_test_flag){pwm_test_flag_ = pwm_test_flag; }
   bool getIntegrateFlag(){return integrate_flag_; }
   void setIntegrateFlag(bool integrate_flag){integrate_flag_ = integrate_flag; }
@@ -129,7 +128,6 @@ private:
   ros::Subscriber torque_allocation_matrix_inv_sub_;
   ros::Subscriber sim_vol_sub_;
   ros::Publisher anti_gyro_pub_;
-  ros::Publisher gimbal_control_pub_;
   ros::ServiceServer att_control_srv_;
 
   bool setAttitudeControlCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) { att_control_flag_ = req.data; return true;}
@@ -140,22 +138,28 @@ private:
   ros::Subscriber<spinal::FourAxisCommand, AttitudeController> four_axis_cmd_sub_;
   ros::Subscriber<spinal::PwmInfo, AttitudeController> pwm_info_sub_;
   ros::Subscriber<spinal::RollPitchYawTerms, AttitudeController> rpy_gain_sub_;
-  ros::Subscriber<std_msgs::Float32, AttitudeController> pwm_test_sub_;
+  ros::Subscriber<spinal::PwmTest, AttitudeController> pwm_test_sub_;
   ros::Subscriber<spinal::PMatrixPseudoInverseWithInertia, AttitudeController> p_matrix_pseudo_inverse_inertia_sub_;
   ros::Subscriber<spinal::TorqueAllocationMatrixInv, AttitudeController> torque_allocation_matrix_inv_sub_;
   ros::ServiceServer<std_srvs::SetBool::Request, std_srvs::SetBool::Response, AttitudeController> att_control_srv_;
 
-  void setAttitudeControlCallback(const std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) { att_control_flag_ = req.data; }
+  ros::Publisher esc_telem_pub_;
+  spinal::ESCTelemetryArray esc_telem_msg_;
+
+  void setAttitudeControlCallback(const std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res)
+  {
+    att_control_flag_ = req.data;
+  }
 
   BatteryStatus* bat_;
   osMutexId* mutex_;
-  KondoServo* kondo_servo_;
+  DShot* dshot_;
 #endif
 
   StateEstimate* estimator_;
+
   int8_t uav_model_;
-  uint16_t motor_number_;
-  uint8_t gimbal_dof_;
+  uint8_t motor_number_;
   bool start_control_flag_;
   bool pwm_test_flag_;
   bool integrate_flag_;
@@ -191,7 +195,6 @@ private:
   // Thrust PWM Conversion
   float target_thrust_[MAX_MOTOR_NUMBER];
   float target_pwm_[MAX_MOTOR_NUMBER];
-  float target_gimbal_angles_[MAX_MOTOR_NUMBER];
   float min_duty_;
   float max_duty_;
   float min_thrust_; // max thrust is variant according to the voltage
@@ -202,9 +205,9 @@ private:
   uint8_t motor_ref_index_;
   float v_factor_;
   uint32_t voltage_update_last_time_;
-  uint32_t control_term_pub_last_time_, control_feedback_state_pub_last_time_, gimbal_control_pub_last_time_;;
+  uint32_t control_term_pub_last_time_, control_feedback_state_pub_last_time_;
   uint32_t pwm_pub_last_time_;
-  float pwm_test_value_; // PWM Test
+  float pwm_test_value_[MAX_MOTOR_NUMBER]; // PWM Test
 
   void fourAxisCommandCallback( const spinal::FourAxisCommand &cmd_msg);
   void pwmInfoCallback( const spinal::PwmInfo &info_msg);
@@ -213,7 +216,7 @@ private:
   void torqueAllocationMatrixInvCallback(const spinal::TorqueAllocationMatrixInv& msg);
   void thrustGainMapping();
   void maxYawGainIndex();
-  void pwmTestCallback(const std_msgs::Float32& pwm_msg);
+  void pwmTestCallback(const spinal::PwmTest& pwm_msg);
   void pwmConversion(void);
   void pwmsControl(void);
 
