@@ -47,7 +47,8 @@
 
     ###########  Control  ###########
     <rosparam file="$(arg config_dir)/control/TwinHammerOptimizer.yaml" command="load" if="$(arg optimize)" />
-    <rosparam file="$(arg config_dir)/control/TwinHammerControlTest.yaml" command="load" unless="$(arg optimize)" />
+    <rosparam file="$(arg config_dir)/control/TwinHammerControl.yaml" command="load" unless="$(arg optimize)" />
+    <!-- <rosparam file="$(arg config_dir)/control/TwinHammerControlTest.yaml" command="load" unless="$(arg optimize)" /> -->
 
     ###########  Sensor Fusion  ###########
     <rosparam file="$(arg config_dir)/StateEstimation.yaml" command="load" />
@@ -111,5 +112,8 @@
     <arg name="headless" value="$(arg headless)"/>
     <arg name="mujoco_model" value="$(find twin_hammer)/mujoco/robot.xml"/>
   </include>
+
+  ########## dummy mocap node when not use device position #########
+  <node pkg="twin_hammer" type="dummy_mocap_node.py" name="dummy_mocap" output="screen" if="$(eval not arg('simulation') and arg('real_machine') )" />
 
 </launch>

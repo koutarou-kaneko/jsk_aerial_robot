@@ -65,7 +65,7 @@
        <origin rpy="0 0 0" xyz="${rod_length*0.5 - gimbal_roll_x_offset} 0 0"/>
      </xacro:if>
      <xacro:if value="${id == 2}" >
-       <origin rpy="0 0 0" xyz="${gimbal_roll_x_offset - rod_length*0.5} 0 0"/>
+       <origin rpy="0 0 ${pi}" xyz="${gimbal_roll_x_offset - rod_length*0.5} 0 0"/>
      </xacro:if>
      <axis xyz="1 0 0"/>
      <dynamics damping="0.1" friction="0.0"/>
