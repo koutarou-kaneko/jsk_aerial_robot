@@ -185,7 +185,6 @@ void TwinHammerController::controlCore()
     if(gimbal_i_pitch < prev_gimbal_angles_.at(2*i+1) - gimbal_pitch_delta_angle_){
       gimbal_i_pitch = prev_gimbal_angles_.at(2*i+1) - gimbal_pitch_delta_angle_;
     }
-
     target_gimbal_angles_.at(2*i) = gimbal_i_roll;
     target_gimbal_angles_.at(2*i+1) = gimbal_i_pitch;
     // std::cout << "gimbal" << i << "roll is " << gimbal_i_roll << std::endl;
@@ -259,7 +258,8 @@ void TwinHammerController::sendCmd()
   gimbal_control_msg.header.stamp = ros::Time::now();
   for(int i=0; i<motor_num_; i++)
   {
-    gimbal_control_msg.position.push_back(target_gimbal_angles_.at(i));
+    if(i<2){gimbal_control_msg.position.push_back(target_gimbal_angles_.at(i));}
+    else{gimbal_control_msg.position.push_back(-target_gimbal_angles_.at(i));} // this is hard cording
   }
   gimbal_control_pub_.publish(gimbal_control_msg);
 }
