@@ -189,11 +189,13 @@ void TwinHammerController::controlCore()
     }
     if(i==0){
       filtered_gimbal_1_roll_ = (1-delay_param_) * filtered_gimbal_1_roll_ + delay_param_ * gimbal_i_roll;
+      target_gimbal_angles_.at(0) = filtered_gimbal_1_roll_;
     }
     if(i==1){
       filtered_gimbal_2_roll_ = (1-delay_param_) * filtered_gimbal_2_roll_ + delay_param_ * gimbal_i_roll;
+      target_gimbal_angles_.at(2) = filtered_gimbal_2_roll_;
     }
-    target_gimbal_angles_.at(2*i) = gimbal_i_roll;
+    // target_gimbal_angles_.at(2*i) = gimbal_i_roll;
     target_gimbal_angles_.at(2*i+1) = gimbal_i_pitch;
     // std::cout << "gimbal" << i << "roll is " << gimbal_i_roll << std::endl;
     // std::cout << "gimbal" << i << "pitch is " << gimbal_i_pitch << std::endl;
