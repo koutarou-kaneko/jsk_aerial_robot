@@ -30,6 +30,9 @@ namespace aerial_robot_control
     double gimbal_roll_delta_angle_;
     double gimbal_pitch_delta_angle_;
     double gravity_acc_;
+    double filtered_gimbal_1_roll_;
+    double filtered_gimbal_2_roll_;
+    double delay_param_;
 
     boost::shared_ptr<nlopt::opt> nl_solver_;
     std::vector<double> opt_x_;

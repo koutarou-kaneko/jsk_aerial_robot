@@ -31,6 +31,8 @@ void TwinHammerController::initialize(ros::NodeHandle nh, ros::NodeHandle nhp,
 
   haptics_force_ = Eigen::Vector3d::Zero();
   haptics_torque_ = Eigen::Vector3d::Zero();
+  filtered_gimbal_1_roll_ = 0.0;
+  filtered_gimbal_2_roll_ = 0.0;
 
   rosParamInit();
 }
@@ -42,7 +44,7 @@ void TwinHammerController::rosParamInit()
   getParam<double>(control_nh, "gimbal_roll_delta_angle", gimbal_roll_delta_angle_, 0.1);
   getParam<double>(control_nh, "gimbal_pitch_delta_angle", gimbal_pitch_delta_angle_, 0.1);
   getParam<double>(control_nh, "gravity_acc", gravity_acc_, 1.0);
-  
+  getParam<double>(control_nh, "delay_param", delay_param_, 1.0);
 }
 
 void TwinHammerController::HapticsSwitchCallback(std_msgs::Int8 msg)
@@ -185,7 +187,15 @@ void TwinHammerController::controlCore()
     if(gimbal_i_pitch < prev_gimbal_angles_.at(2*i+1) - gimbal_pitch_delta_angle_){
       gimbal_i_pitch = prev_gimbal_angles_.at(2*i+1) - gimbal_pitch_delta_angle_;
     }
-    target_gimbal_angles_.at(2*i) = gimbal_i_roll;
+    if(i==0){
+      filtered_gimbal_1_roll_ = (1-delay_param_) * filtered_gimbal_1_roll_ + delay_param_ * gimbal_i_roll;
+      target_gimbal_angles_.at(0) = filtered_gimbal_1_roll_;
+    }
+    if(i==1){
+      filtered_gimbal_2_roll_ = (1-delay_param_) * filtered_gimbal_2_roll_ + delay_param_ * gimbal_i_roll;
+      target_gimbal_angles_.at(2) = filtered_gimbal_2_roll_;
+    }
+    // target_gimbal_angles_.at(2*i) = gimbal_i_roll;
     target_gimbal_angles_.at(2*i+1) = gimbal_i_pitch;
     // std::cout << "gimbal" << i << "roll is " << gimbal_i_roll << std::endl;
     // std::cout << "gimbal" << i << "pitch is " << gimbal_i_pitch << std::endl;

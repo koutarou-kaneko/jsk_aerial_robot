@@ -6,6 +6,7 @@ controller:
   gimbal_roll_delta_angle: 0.1
   gimbal_pitch_delta_angle: 0.1
   gravity_acc: 3.0
+  delay_param: 0.5
 
   xy:
     p_gain: 0.5
