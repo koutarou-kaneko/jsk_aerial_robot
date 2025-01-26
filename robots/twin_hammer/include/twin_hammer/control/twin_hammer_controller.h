@@ -30,9 +30,14 @@ namespace aerial_robot_control
     double gimbal_roll_delta_angle_;
     double gimbal_pitch_delta_angle_;
     double gravity_acc_;
+
+    bool use_polynominal_;
+    bool use_gaussian_;
     double filtered_gimbal_1_roll_;
     double filtered_gimbal_2_roll_;
     double delay_param_;
+    double gimbal_round_range_;
+    double gaussian_exp_;
 
     boost::shared_ptr<nlopt::opt> nl_solver_;
     std::vector<double> opt_x_;
@@ -40,11 +45,13 @@ namespace aerial_robot_control
 
     ros::Publisher flight_cmd_pub_;
     ros::Publisher gimbal_control_pub_;
+    ros::Subscriber gimbal_states_sub_;
     ros::Subscriber haptics_switch_sub_;
     ros::Subscriber haptics_wrench_sub_;
     std::vector<float> target_base_thrust_;
     std::vector<double> target_gimbal_angles_;
     std::vector<double> prev_gimbal_angles_;
+    std::vector<double> gimbal_states_angles_;
     Eigen::VectorXd target_vectoring_f_;
     Eigen::VectorXd target_wrench_acc_cog_;
 
@@ -54,6 +61,7 @@ namespace aerial_robot_control
     Eigen::Vector3d haptics_torque_;
 
     void sendCmd() override;
+    void GimbalStatesCallback(sensor_msgs::JointState);
     void HapticsSwitchCallback(std_msgs::Int8 msg);
     void HapticsWrenchCallback(geometry_msgs::WrenchStamped msg);
 
