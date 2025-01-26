@@ -2,6 +2,70 @@
 
 using namespace aerial_robot_control;
 
+namespace
+{
+  double GimbalRoundPolynominal(double x, double r)
+  {
+    return (2/(r*r)) * pow(x,3) - (1/pow(r,4)) * pow(x,5);
+  }
+
+  Eigen::VectorXd GaussianEq(const Eigen::VectorXd& vars, double r, double e)
+  {
+    double a = vars(0);
+    double b = vars(1);
+
+    Eigen::VectorXd eq(2);
+    // y = r when x = r
+    eq(0) = a*r*(1-exp(-e*r*r)) + b*pow(r,3) - r;
+    // dy/dx = 1 when x = r
+    eq(1) = a*(1-exp(-e*r*r)) + 2*e*r*r*exp(-e*r*r) + 3*b*r*r - 1;
+    return eq;
+  }
+
+  Eigen::VectorXd SolveGaussian(double r, double e)
+  {
+    Eigen::VectorXd vars(2);
+    vars << 1.0, 1.0; // initial value
+    const double tol = 1e-6;
+    const int max_itr = 100;
+    int itr = 0;
+
+    while(itr < max_itr){
+      Eigen::VectorXd f = GaussianEq(vars, r, e);
+      Eigen::MatrixXd J(2,2); //Jacobian
+      double h = 1e-8;
+
+      for(int i=0; i<2;i++){
+        Eigen::VectorXd vars_plus_h = vars;
+        vars_plus_h(i) += h;
+        Eigen::VectorXd f_plus_h = GaussianEq(vars_plus_h, r, e);
+        J.col(i) = (f_plus_h-f)/h;
+      }
+
+      Eigen::VectorXd delta = J.fullPivLu().solve(-f);
+      vars += delta;
+
+      if(delta.norm() < tol){
+        break;
+      }
+      ++itr;
+    }
+
+    if(itr == max_itr){
+      std::cerr << "Gaussian solved value haven't converged" << std::endl;
+    }
+    return vars;
+  }
+
+  double GimbalRoundGaussian(double x, double r, double e)
+  {
+    Eigen::VectorXd vars = SolveGaussian(r, e);
+    double a = vars(0);
+    double b = vars(1);
+    return a*x*(1-exp(-e*x*x)) + b*pow(x,3);
+  }
+}
+
 TwinHammerController::TwinHammerController():
   PoseLinearController()
 {
@@ -20,15 +84,17 @@ void TwinHammerController::initialize(ros::NodeHandle nh, ros::NodeHandle nhp,
   target_base_thrust_.resize(motor_num_, 0.0);
   target_gimbal_angles_.resize(motor_num_, 0.01);
   prev_gimbal_angles_.resize(motor_num_, 0.0);
+  gimbal_states_angles_.resize(motor_num_, 0.0);
   target_wrench_acc_cog_ = Eigen::VectorXd::Zero(6);
+
   flight_cmd_pub_ = nh_.advertise<spinal::FourAxisCommand>("four_axes/command", 1);
   gimbal_control_pub_ = nh_.advertise<sensor_msgs::JointState>("gimbals_ctrl", 1);
+  gimbal_states_sub_ = nh_.subscribe("joint_states", 1, &TwinHammerController::GimbalStatesCallback, this);
   haptics_switch_sub_ = nh_.subscribe("haptics_switch", 1, &TwinHammerController::HapticsSwitchCallback, this);
   haptics_wrench_sub_ = nh_.subscribe("haptics_wrench", 1, &TwinHammerController::HapticsWrenchCallback, this);
 
+  target_wrench_acc_cog_ = Eigen::VectorXd::Zero(6);
   haptics_switch_ = false;
-  target_wrench_acc_cog_ = Eigen::VectorXd::Zero(6);  
-
   haptics_force_ = Eigen::Vector3d::Zero();
   haptics_torque_ = Eigen::Vector3d::Zero();
   filtered_gimbal_1_roll_ = 0.0;
@@ -41,10 +107,21 @@ void TwinHammerController::rosParamInit()
 {
   ros::NodeHandle control_nh(nh_, "controller");
   getParam<bool>(control_nh, "use_haptics", use_haptics_flag_, true);
+  getParam<bool>(control_nh, "use_polynominal", use_polynominal_, true);
+  getParam<bool>(control_nh, "use_gaussian", use_gaussian_, true);
   getParam<double>(control_nh, "gimbal_roll_delta_angle", gimbal_roll_delta_angle_, 0.1);
   getParam<double>(control_nh, "gimbal_pitch_delta_angle", gimbal_pitch_delta_angle_, 0.1);
   getParam<double>(control_nh, "gravity_acc", gravity_acc_, 1.0);
   getParam<double>(control_nh, "delay_param", delay_param_, 1.0);
+  getParam<double>(control_nh, "gimbal_round_range", gimbal_round_range_, 0.2);
+  getParam<double>(control_nh, "gaussian_exp", gaussian_exp_, 100);
+}
+
+void TwinHammerController::GimbalStatesCallback(sensor_msgs::JointState msg)
+{
+  for(int i=0; i<gimbal_states_angles_.size(); i++){
+    gimbal_states_angles_.at(i) = msg.position.at(i);
+  }
 }
 
 void TwinHammerController::HapticsSwitchCallback(std_msgs::Int8 msg)
@@ -89,7 +166,8 @@ void TwinHammerController::controlCore()
   }
   tf::Vector3 target_acc_cog = uav_rot.inverse() * target_acc_w;
   // Eigen::VectorXd target_wrench_acc_cog = Eigen::VectorXd::Zero(6);  
-  target_wrench_acc_cog_.head(3) = Eigen::Vector3d(target_acc_cog.x(),target_acc_cog.y(),target_acc_cog.z());
+  // target_wrench_acc_cog_.head(3) = Eigen::Vector3d(target_acc_cog.x(),target_acc_cog.y(),target_acc_cog.z());
+  target_wrench_acc_cog_.head(3) = Eigen::Vector3d(target_acc_w.x(),target_acc_w.y(),target_acc_w.z());
 
   double target_ang_acc_x = 0.0;
   double target_ang_acc_y = 0.0;
@@ -175,26 +253,61 @@ void TwinHammerController::controlCore()
     if(i==1){virtual_thrust_2 = f_i.norm();}
     double gimbal_i_roll = atan2(-f_i.y(), f_i.z());
     double gimbal_i_pitch = atan2(f_i.x(), -f_i.y() * sin(gimbal_i_roll) + f_i.z() * cos(gimbal_i_roll));
-    if(gimbal_i_roll > prev_gimbal_angles_.at(2*i) + gimbal_roll_delta_angle_){
-      gimbal_i_roll = prev_gimbal_angles_.at(2*i) + gimbal_roll_delta_angle_;
-    }
-    if(gimbal_i_roll < prev_gimbal_angles_.at(2*i) - gimbal_roll_delta_angle_){
-      gimbal_i_roll = prev_gimbal_angles_.at(2*i) - gimbal_roll_delta_angle_;
-    }
-    if(gimbal_i_pitch > prev_gimbal_angles_.at(2*i+1) + gimbal_pitch_delta_angle_){
-      gimbal_i_pitch = prev_gimbal_angles_.at(2*i+1) + gimbal_pitch_delta_angle_;
-    }
-    if(gimbal_i_pitch < prev_gimbal_angles_.at(2*i+1) - gimbal_pitch_delta_angle_){
-      gimbal_i_pitch = prev_gimbal_angles_.at(2*i+1) - gimbal_pitch_delta_angle_;
-    }
+    // if(gimbal_i_roll > prev_gimbal_angles_.at(2*i) + gimbal_roll_delta_angle_){
+    //   gimbal_i_roll = prev_gimbal_angles_.at(2*i) + gimbal_roll_delta_angle_;
+    // }
+    // if(gimbal_i_roll < prev_gimbal_angles_.at(2*i) - gimbal_roll_delta_angle_){
+    //   gimbal_i_roll = prev_gimbal_angles_.at(2*i) - gimbal_roll_delta_angle_;
+    // }
+    // if(gimbal_i_pitch > prev_gimbal_angles_.at(2*i+1) + gimbal_pitch_delta_angle_){
+    //   gimbal_i_pitch = prev_gimbal_angles_.at(2*i+1) + gimbal_pitch_delta_angle_;
+    // }
+    // if(gimbal_i_pitch < prev_gimbal_angles_.at(2*i+1) - gimbal_pitch_delta_angle_){
+    //   gimbal_i_pitch = prev_gimbal_angles_.at(2*i+1) - gimbal_pitch_delta_angle_;
+    // }
     if(i==0){
       filtered_gimbal_1_roll_ = (1-delay_param_) * filtered_gimbal_1_roll_ + delay_param_ * gimbal_i_roll;
-      target_gimbal_angles_.at(0) = filtered_gimbal_1_roll_;
+      double diff_gimbal_1_roll = gimbal_i_roll - gimbal_states_angles_.at(0);
+      if(abs(diff_gimbal_1_roll) < gimbal_round_range_){
+        if(use_polynominal_){
+          double poly_rounded_gimbal_1_roll = GimbalRoundPolynominal(diff_gimbal_1_roll, gimbal_round_range_);
+          target_gimbal_angles_.at(0) = poly_rounded_gimbal_1_roll;
+        }
+        else if(use_gaussian_){
+          double gaussian_rounded_gimbal_1_roll = GimbalRoundGaussian(diff_gimbal_1_roll, gimbal_round_range_, gaussian_exp_);
+          target_gimbal_angles_.at(0) = gaussian_rounded_gimbal_1_roll;
+        }
+        else{
+          target_gimbal_angles_.at(0) = filtered_gimbal_1_roll_;
+        }
+      }
+      else{
+        target_gimbal_angles_.at(0) = filtered_gimbal_1_roll_;
+      }
     }
     if(i==1){
       filtered_gimbal_2_roll_ = (1-delay_param_) * filtered_gimbal_2_roll_ + delay_param_ * gimbal_i_roll;
-      target_gimbal_angles_.at(2) = filtered_gimbal_2_roll_;
+      double diff_gimbal_2_roll = gimbal_i_roll - gimbal_states_angles_.at(2);
+      if(abs(diff_gimbal_2_roll) < gimbal_round_range_){
+        if(use_polynominal_){
+          double poly_rounded_gimbal_2_roll = GimbalRoundPolynominal(diff_gimbal_2_roll, gimbal_round_range_);
+          target_gimbal_angles_.at(2) = poly_rounded_gimbal_2_roll;
+        }
+        else if(use_gaussian_){
+          double gaussian_rounded_gimbal_2_roll = GimbalRoundGaussian(diff_gimbal_2_roll, gimbal_round_range_, gaussian_exp_);
+          target_gimbal_angles_.at(2) = gaussian_rounded_gimbal_2_roll;
+        }
+        else{
+          target_gimbal_angles_.at(2) = filtered_gimbal_2_roll_;
+        }
+      }
+      else{
+        target_gimbal_angles_.at(2) = filtered_gimbal_2_roll_;
+      }
     }
+
+    double rounded_gimbal_i_roll = GimbalRoundPolynominal(gimbal_i_roll, gimbal_round_range_);
+
     // target_gimbal_angles_.at(2*i) = gimbal_i_roll;
     target_gimbal_angles_.at(2*i+1) = gimbal_i_pitch;
     // std::cout << "gimbal" << i << "roll is " << gimbal_i_roll << std::endl;
