@@ -252,7 +252,10 @@ void TwinHammerController::controlCore()
     if(i==0){virtual_thrust_1 = f_i.norm();}
     if(i==1){virtual_thrust_2 = f_i.norm();}
     double gimbal_i_roll = atan2(-f_i.y(), f_i.z());
+    if(gimbal_i_roll > 3.1 || gimbal_i_roll < -3.1){gimbal_i_roll = 0.0;}
     double gimbal_i_pitch = atan2(f_i.x(), -f_i.y() * sin(gimbal_i_roll) + f_i.z() * cos(gimbal_i_roll));
+    if(gimbal_i_pitch > 3.1 || gimbal_i_pitch < -3.1){gimbal_i_pitch = 3.14159265;}
+    // if(i==0){std::cout << gimbal_i_roll << std::endl;}
     // if(gimbal_i_roll > prev_gimbal_angles_.at(2*i) + gimbal_roll_delta_angle_){
     //   gimbal_i_roll = prev_gimbal_angles_.at(2*i) + gimbal_roll_delta_angle_;
     // }
@@ -310,8 +313,6 @@ void TwinHammerController::controlCore()
 
     // target_gimbal_angles_.at(2*i) = gimbal_i_roll;
     target_gimbal_angles_.at(2*i+1) = gimbal_i_pitch;
-    // std::cout << "gimbal" << i << "roll is " << gimbal_i_roll << std::endl;
-    // std::cout << "gimbal" << i << "pitch is " << gimbal_i_pitch << std::endl;
     last_col += 3;
   }
   for(int i=0; i<prev_gimbal_angles_.size(); i++){
@@ -323,9 +324,6 @@ void TwinHammerController::controlCore()
   target_vec(0) = virtual_thrust_1;
   target_vec(1) = virtual_thrust_2;
   target_vec(2) = t_x;
-  // std::cout << "1 : " << virtual_thrust_1 << std::endl;
-  // std::cout << "2 : " << virtual_thrust_2 << std::endl;   
-  // std::cout << "-------------------" << std::endl;
 
   Eigen::MatrixXd q2_mat = Eigen::MatrixXd::Zero(3,motor_num_);
   for(int i=0; i<motor_num_; i++)
@@ -339,7 +337,6 @@ void TwinHammerController::controlCore()
       q2_mat(1,i) = 1;
       pitch_angle = target_gimbal_angles_.at(3);
     }
-    // std::cout << "rotor" << i << "arm length is " << rotors_origin_from_cog.at(i)(1) << std::endl;
     double rotor_moment_arm = abs(rotors_origin_from_cog.at(i)(1)) * cos(pitch_angle);
     // if(rotor_moment_arm < 0.12){
     //   rotor_moment_arm = 0.0;
