@@ -254,7 +254,7 @@ void TwinHammerController::controlCore()
     double gimbal_i_roll = atan2(-f_i.y(), f_i.z());
     if(gimbal_i_roll > 3.1 || gimbal_i_roll < -3.1){gimbal_i_roll = 0.0;}
     double gimbal_i_pitch = atan2(f_i.x(), -f_i.y() * sin(gimbal_i_roll) + f_i.z() * cos(gimbal_i_roll));
-    // if(gimbal_i_roll > 3.09 || gimbal_i_roll < -3.09){gimbal_i_roll = 3.14159265;}
+    if(gimbal_i_pitch > 3.1 || gimbal_i_pitch < -3.1){gimbal_i_pitch = 3.14159265;}
     // if(i==0){std::cout << gimbal_i_roll << std::endl;}
     // if(gimbal_i_roll > prev_gimbal_angles_.at(2*i) + gimbal_roll_delta_angle_){
     //   gimbal_i_roll = prev_gimbal_angles_.at(2*i) + gimbal_roll_delta_angle_;
