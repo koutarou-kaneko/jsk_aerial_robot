@@ -73,7 +73,7 @@
   </group>
 
   ###### joint angles from real avator ####
-  <include file="$(find hydrus)/launch/includes/dynamixel_controllers.launch" />
+  <include file="$(find avatar)/launch/includes/dynamixel_controllers.launch" />
   <group unless = "$(arg fusion)">
     <node pkg="avatar" type="real_avatar_position_control.py" name="real_avatar_position_control" output="screen">
       <param name="debug" value="$(arg debug)" />
