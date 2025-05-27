@@ -98,4 +98,9 @@
     <arg name="spawn_yaw" value="$(arg spawn_yaw)" />
   </include>
 
+  ##########  Force sensor  ##########
+  <include file="$(find cfs_sensor)/launch/cfs_sensor.launch" if="$(arg real_machine)" >
+    <arg name="type" default="CFS018CA201U" />
+  </include>
+
 </launch>
