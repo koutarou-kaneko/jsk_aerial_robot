@@ -3,6 +3,7 @@
     xmlns:xacro="http://www.ros.org/wiki/xacro" name="beetle" >
 
   <xacro:include filename="$(find beetle)/urdf/beetle_hand.urdf.xacro" />
+  <!-- <xacro:include filename="$(find beetle)/urdf/beetle.urdf.xacro" /> -->
   <xacro:include filename="$(find beetle)/urdf/common.xacro" />
 
   <xacro:beetle_center_link child1="1" child2="2" child3="3" child4="4"/>
