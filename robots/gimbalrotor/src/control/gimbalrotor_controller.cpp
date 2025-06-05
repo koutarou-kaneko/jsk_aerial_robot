@@ -24,6 +24,7 @@ namespace aerial_robot_control
     target_gimbal_angles_.resize(motor_num_, 0);
     integrated_map_inv_trans_.resize(motor_num_ * 2, 3);
     integrated_map_inv_rot_.resize(motor_num_ * 2, 3);
+    prev_time_to_set_attitude_gain_ = 0.0;
 
     GimbalrotorController::rosParamInit();
 
@@ -40,8 +41,6 @@ namespace aerial_robot_control
   void GimbalrotorController::reset()
   {
     PoseLinearController::reset();
-
-    setAttitudeGains();
   }
 
   void GimbalrotorController::rosParamInit()
@@ -54,6 +53,9 @@ namespace aerial_robot_control
 
   bool GimbalrotorController::update()
   {
+    double t = ros::Time::now().toSec();
+    if((t - prev_time_to_set_attitude_gain_)>1.0){
+      setAttitudeGains();}
     sendGimbalCommand();
     if(gimbal_calc_in_fc_){
       std_msgs::UInt8 msg;

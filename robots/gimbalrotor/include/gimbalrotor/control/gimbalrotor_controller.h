@@ -56,6 +56,7 @@ namespace aerial_robot_control
     Eigen::MatrixXd integrated_map_inv_rot_;
     double candidate_yaw_term_;
     int gimbal_dof_;
+    double prev_time_to_set_attitude_gain_;
 
     bool update() override;
     void sendCmd() override;
