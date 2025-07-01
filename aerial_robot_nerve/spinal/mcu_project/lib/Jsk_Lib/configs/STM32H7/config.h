@@ -49,8 +49,9 @@
 //2.1.3 Direct Servo Control
 #define SERVO_FLAG 1
 #define DYNAMIXEL 1
+#define KONDO 0
 //2.1.3.1 Dynamixel Servo Control without external convertor board
-#define DYNAMIXEL_BOARDLESS_CONTROL 1
+#define DYNAMIXEL_BOARDLESS_CONTROL 0
 
 //2.2 State Estimate
 //2.2.1 Attitude Estimate
@@ -85,6 +86,7 @@
 
 //2.3 Flight Control
 #define FLIGHT_CONTROL_FLAG 1
+#define DSHOT 0
 //* Do not change following code!!!
 ///////////////////////////////////
 #if !ATTITUDE_ESTIMATE_FLAG
