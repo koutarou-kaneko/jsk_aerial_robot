@@ -15,6 +15,7 @@
     <param name="joint_publish_rate" type="double" value="10" />
     <param name="trajectory_duration" type="double" value="0.1" />
     <param name="robot_ip_address" type="str" value="$(arg robotIp)"/>
+    <remap from="/joint_states" to="/$(env DOBOT_TYPE)_robot/joint_states"/>
   </node>
 
 </launch>
