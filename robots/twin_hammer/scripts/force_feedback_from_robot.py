@@ -95,7 +95,7 @@ class force_feedback_from_robot():
     wrench_world = np.dot(self.Ad_R_robot,self.filterd_robot_wrench_local)
     if self.frame == "local":
       self.robot_wrench = self.filterd_robot_wrench_local
-    elif self.frame == "world":
+    if self.frame == "world":
       self.robot_wrench = wrench_world
 
   def main(self):
@@ -111,7 +111,7 @@ class force_feedback_from_robot():
           haptics_wrench[i] = wrench_i * self.k_p
 
         """ exponential conversion """
-        elif self.convert_method == "exp":
+        if self.convert_method == "exp":
           if wrench_i>=0.0:
             haptics_wrench[i] = exponential(wrench_i, self.exp_base, self.k_exp)
           else:
@@ -129,15 +129,15 @@ class force_feedback_from_robot():
           '''
           if wrench_i>=0:
             haptics_wrench[i] = logarithm(wrench_i+1, self.log_base, self.k_log)
-          elif wrench_i<-self.range_log:
+          if wrench_i<-self.range_log:
             haptics_wrench[i] = -logarithm(-(wrench_i-1), self.log_base, self.k_log)
 
       """ force feedback from ang diff """
-      if self.force_feedback_from_robot:
-        att_diff = self.robot_att - self.device_att
-        for i in range(len(att_diff)):
-          wrench_from_pos_diff = logarithm(att_diff[i],self.log_base,self.k_att_diff)
-          haptics_wrench[i] += wrench_from_pos_diff
+      # if self.feedback_from_ang:
+      #   for i in range(len(self.robot_att)):
+      #     att_diff = self.robot_att[i] - self.device_att[i]
+      #     wrench_from_pos_diff = logarithm(att_diff,self.log_base,self.k_att_diff)
+      #     haptics_wrench[i] += wrench_from_pos_diff
 
       if self.frame == "world":
         haptics_wrench = np.dot(self.Ad_R_inv_device,haptics_wrench)
