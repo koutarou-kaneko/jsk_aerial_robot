@@ -27,17 +27,16 @@ class DobotInitializer:
                 rospy.logerr(f"ClearError failed with code {res_clear.res}")
                 return
             rospy.loginfo("ClearError succeeded")
+            rospy.sleep(1.0)
 
             res_enable = self.enable_robot_srv()
             if res_enable.res != 0:
                 rospy.logerr(f"EnableRobot failed with code {res_enable.res}")
                 return
             rospy.loginfo("EnableRobot succeeded")
+            rospy.sleep(1.0)
 
-            res_collision = self.set_collision_srv(level=0)
-            # if res_collision.res != 0:
-            #     rospy.logerr(f"SetCollisionLevel failed with code {res_collision.res}")
-            #     return
+            # res_collision = self.set_collision_srv(level=0)
             rospy.loginfo("SetCollisionLevel succeeded (level=0)")
 
             rospy.loginfo("Dobot robot initialized successfully!")
