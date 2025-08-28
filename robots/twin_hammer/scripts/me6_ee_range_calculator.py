@@ -93,6 +93,9 @@ all_positions = np.vstack([coarse_positions, fine_positions])
 # ------------------------------
 final_hull = ConvexHull(all_positions)
 
+# np.savez("me6_ee_feasible_convex.npz", all_positions=all_positions, hull_vertices=all_positions[final_hull.vertices])
+# print("凸包データを保存しました")
+
 # ------------------------------
 # 3D可視化
 # ------------------------------
