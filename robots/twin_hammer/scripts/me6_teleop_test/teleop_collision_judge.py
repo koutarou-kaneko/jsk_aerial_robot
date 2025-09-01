@@ -3,15 +3,17 @@
 import os
 import rospy
 import xacro
+import math
 import numpy as np
+import PyKDL as kdl
+from kdl_parser_py.urdf import treeFromParam
+from trac_ik_python.trac_ik import IK
+from tf.transformations import quaternion_from_euler, quaternion_multiply
 from geometry_msgs.msg import PoseStamped, WrenchStamped
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from control_msgs.msg import FollowJointTrajectoryActionGoal
-from trac_ik_python.trac_ik import IK
-from tf.transformations import quaternion_from_euler, quaternion_multiply
-import PyKDL as kdl
-from kdl_parser_py.urdf import treeFromParam
+
 
 class TeleopCollisionList:
     def __init__(self, urdf_path):
@@ -20,6 +22,8 @@ class TeleopCollisionList:
         self.delta_angle_thre = 0.7
         self.pub_rate = 5
         self.teleop_scale = 0.4
+        self.feedback_scale = 25.0
+        self.feedback_log_base = 1.45
         self.epsilon = 0.05  # [rad] joint angle thre for collision detection
         self.robot_init_joint_angles = np.array([1.57, 0.5, -2.5, 2.0, 1.57, 0.0])
         self.offset_pos = np.array([0.0,0.0,0.0])
@@ -69,7 +73,7 @@ class TeleopCollisionList:
 
         self.gazebo_pub = rospy.Publisher("/me6_robot/joint_controller/command", JointTrajectory, queue_size=1)
         self.real_pub = rospy.Publisher("/me6_robot/joint_controller/follow_joint_trajectory/goal", FollowJointTrajectoryActionGoal, queue_size=1)
-        self.debug_target_pub = rospy.Publisher("/debug_target_pos", PoseStamped, queue_size=1)
+        self.debug_target_pub = rospy.Publisher("/debug/target_pos", PoseStamped, queue_size=1)
         self.error_feedback_pub = rospy.Publisher("/twin_hammer/haptics_wrench", WrenchStamped, queue_size=1)
         rospy.Subscriber("/twin_hammer/mocap/pose", PoseStamped, self.mocap_cb)
 
@@ -137,11 +141,18 @@ class TeleopCollisionList:
     def publish_error_feedback(self, target_pos):
         if self.last_valid_ee_pos is None:
             return
-        error_vec = (target_pos - self.last_valid_ee_pos) * self.teleop_scale
+        feedback_force = [0.0, 0.0, 0.0]
+        for i in range(3):
+            error = target_pos[i] - self.last_valid_ee_pos[i]
+            if error>0:
+                log_error = math.log(error, self.feedback_log_base)
+            else:
+                log_error = math.log(-error, self.feedback_log_base)
+            feedback_force[i] = - log_error * self.feedback_scale
         wrench_msg = WrenchStamped()
-        wrench_msg.wrench.force.x = error_vec[0]
-        wrench_msg.wrench.force.y = error_vec[1]
-        wrench_msg.wrench.force.z = error_vec[2]
+        wrench_msg.wrench.force.x = feedback_force[0]
+        wrench_msg.wrench.force.y = feedback_force[1]
+        wrench_msg.wrench.force.z = feedback_force[2]
         self.error_feedback_pub.publish(wrench_msg)
 
     def main(self):

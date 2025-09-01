@@ -1,11 +1,12 @@
 <?xml version="1.0"?>
 <launch>
   <arg name="mocap_debug_mode" default="false" />
-  <arg name="force_sensor" default="false" />
+  <arg name="force_sensor" default="true" />
   <arg name="real_machine" default="true" />
-  <arg name="simulation" default="false" />
 
-  <node name="me6_teleop_from_mocap" pkg="twin_hammer" type="me6_teleop_from_mocap.py" output="screen" />
+  <include file="$(find twin_hammer)/launch/include/mocap.launch" if="$(arg mocap_debug_mode)" /> 
+
+  <node name="me6_init" pkg="twin_hammer" type="me6_init.py" output="screen" if="$(arg real_machine)" />
 
   <group if="$(arg force_sensor)">
     <include file="$(find cfs_sensor)/launch/cfs_sensor.launch">
@@ -14,6 +15,6 @@
     <node name="force_feedback_from_robot" pkg="twin_hammer" type="force_feedback_from_robot.py" output="screen" />
   </group>
 
-  <include file="$(find twin_hammer)/launch/include/mocap.launch" if="$(arg mocap_debug_mode)" /> 
+  <node name="me6_teleop" pkg="twin_hammer" type="me6_teleop.py" output="screen" />
 
 </launch>
