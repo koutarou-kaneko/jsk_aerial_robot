@@ -5,7 +5,7 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
 
 if __name__ == "__main__":
-    rospy.init_node("me6_test_send_goal")
+    rospy.init_node("me6_direct_send_joint_angles")
 
     client = actionlib.SimpleActionClient(
         "/me6_robot/joint_controller/follow_joint_trajectory",
@@ -17,8 +17,8 @@ if __name__ == "__main__":
 
     # テスト用の関節角度（ラジアン）
     joint_names = ["joint1","joint2","joint3","joint4","joint5","joint6"]
-    joint_positions = [3.14, 0.0, 0.0, 0.0, 0.0, 0.0]
-    # joint_positions = [1.57, 0.5, -2.5, 2.0, 1.57, 0.0]
+    # joint_positions = [3.14, 0.0, 0.0, 0.0, 0.0, 0.0]
+    joint_positions = [1.57, 0.5, -2.5, 2.0, 1.57, 0.0]
     # joint_positions = [1.57, -1.8, 2.2, -0.4, 1.57, 0.0]
 
     point = JointTrajectoryPoint()
