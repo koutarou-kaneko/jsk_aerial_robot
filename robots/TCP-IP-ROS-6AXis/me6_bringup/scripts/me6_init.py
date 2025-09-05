@@ -36,8 +36,8 @@ class DobotInitializer:
             rospy.loginfo("EnableRobot succeeded")
             rospy.sleep(1.0)
 
-            # res_collision = self.set_collision_srv(level=0)
-            # rospy.loginfo("SetCollisionLevel succeeded (level=0)")
+            res_collision = self.set_collision_srv(level=0)
+            rospy.loginfo("SetCollisionLevel succeeded (level=0)")
 
             rospy.loginfo("Dobot robot initialized successfully!")
 
