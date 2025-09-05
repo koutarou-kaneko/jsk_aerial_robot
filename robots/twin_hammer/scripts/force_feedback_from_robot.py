@@ -9,6 +9,7 @@ from scipy.spatial.transform import Rotation as R
 from std_msgs.msg import Int8
 from aerial_robot_msgs.msg import FlightNav
 from geometry_msgs.msg import PoseStamped, WrenchStamped
+from std_srvs.srv import Empty
 
 def exponential(x, base, k_exp):
   return pow(x,base) * k_exp
@@ -54,12 +55,18 @@ class force_feedback_from_robot():
     """ belows are dependent valuables """
     self.range_log = math.e
     self.a_log = self.k_log / (math.e * math.log(self.log_base))
-    # time.sleep(0.5)
+
+    rospy.wait_for_service("/cfs_sensor_calib")
+    calib_srv = rospy.ServiceProxy("/cfs_sensor_calib", Empty)
+    try:
+      res_calib = calib_srv()
+    except rospy.ServiceException as e:
+      rospy.logerr(f"Service call failed: {e}")
 
   def robot_mocap_cb(self,msg):
-    self.robot_att = [msg.pose.orientation.roll, msg.pose.orientation.pitch, msg.pose.orientation.yaw] 
     q = [msg.pose.orientation.x,msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w]
     rot = R.from_quat(q)
+    self.robot_att = rot.as_euler('xyz')
     R_mat = rot.as_matrix()
     self.Ad_R_robot = np.block([
     [R_mat, np.zeros((3, 3))],
@@ -67,9 +74,9 @@ class force_feedback_from_robot():
     ])
 
   def device_mocap_cb(self,msg):
-    self.device_att = [msg.pose.orientation.roll, msg.pose.orientation.pitch, msg.pose.orientation.yaw] 
     q = [msg.pose.orientation.x,msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w]
     rot = R.from_quat(q)
+    self.device_att = rot.as_euler('xyz')
     R_mat = rot.as_matrix()
     self.Ad_R_inv_device = np.block([
     [R_mat.T, np.zeros((3, 3))],
