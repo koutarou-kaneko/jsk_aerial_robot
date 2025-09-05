@@ -21,8 +21,8 @@ class TeleopCollisionList:
 
         self.delta_angle_thre = 0.7
         self.pub_rate = 5
-        self.teleop_scale = 0.4
-        self.feedback_scale = 25.0
+        self.teleop_scale = 0.5
+        self.feedback_scale = 1.0
         self.feedback_log_base = 1.45
         self.epsilon = 0.05  # [rad] joint angle thre for collision detection
         self.robot_init_joint_angles = np.array([1.57, 0.5, -2.5, 2.0, 1.57, 0.0])
@@ -188,10 +188,10 @@ class TeleopCollisionList:
                         self.publish_debug_pose(target_pos,target_quat)
                     else:
                         rospy.logwarn_throttle(1.0, "Rejected by unsafe joint list (near-collision).")
-                        self.publish_error_feedback(target_pos)
+                        # self.publish_error_feedback(target_pos)
                 else:
                     rospy.logwarn_throttle(1.0, "IK solution not found")
-                    self.publish_error_feedback(target_pos)
+                    # self.publish_error_feedback(target_pos)
 
             rate.sleep()
 
