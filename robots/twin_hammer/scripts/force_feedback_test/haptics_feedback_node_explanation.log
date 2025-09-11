@@ -1,4 +1,4 @@
-This is e-upTeX, Version 3.141592653-p3.9.1-u1.27-210218-2.6 (utf8.uptex) (TeX Live 2022/dev/Debian) (preloaded format=uplatex 2025.6.26)  7 SEP 2025 23:19
+This is e-upTeX, Version 3.141592653-p3.9.1-u1.27-210218-2.6 (utf8.uptex) (TeX Live 2022/dev/Debian) (preloaded format=uplatex 2025.6.26)  9 SEP 2025 18:35
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -474,35 +474,37 @@ LaTeX Font Info:    Font shape `JY2/hmc/bx/n' in size <5> not available
 (Font)              Font shape `JY2/hgt/m/n' tried instead on input line 24.
 LaTeX Font Info:    Font shape `JY2/hgt/m/n' will be
 (Font)              scaled to size 4.62341pt on input line 24.
-LaTeX Font Info:    Font shape `JT2/hmc/m/n' will be
-(Font)              scaled to size 6.47278pt on input line 43.
-LaTeX Font Info:    Font shape `JT2/hmc/m/n' will be
-(Font)              scaled to size 4.62341pt on input line 43.
 LaTeX Font Info:    Font shape `JT2/hgt/m/n' will be
-(Font)              scaled to size 11.09619pt on input line 56.
-LaTeX Font Info:    Font shape `JT2/hgt/m/n' will be
-(Font)              scaled to size 9.24683pt on input line 75.
+(Font)              scaled to size 11.09619pt on input line 69.
  [1
 
-] [2]
-LaTeX Font Info:    Font shape `JT2/hmc/bx/n' in size <10> not available
-(Font)              Font shape `JT2/hgt/m/n' tried instead on input line 131.
+]
 LaTeX Font Info:    Font shape `JT2/hgt/m/n' will be
-(Font)              scaled to size 9.24683pt on input line 131.
+(Font)              scaled to size 9.24683pt on input line 88.
+ [2]
+LaTeX Font Info:    Font shape `JT2/hmc/m/n' will be
+(Font)              scaled to size 6.47278pt on input line 161.
+LaTeX Font Info:    Font shape `JT2/hmc/m/n' will be
+(Font)              scaled to size 4.62341pt on input line 161.
  [3]
-(./haptics_feedback_node_explanation.aux)
+LaTeX Font Info:    Font shape `JT2/hmc/bx/n' in size <10> not available
+(Font)              Font shape `JT2/hgt/m/n' tried instead on input line 228.
+LaTeX Font Info:    Font shape `JT2/hgt/m/n' will be
+(Font)              scaled to size 9.24683pt on input line 228.
+ [4]
+[5] (./haptics_feedback_node_explanation.aux)
 Package rerunfilecheck Info: File `haptics_feedback_node_explanation.out' has n
 ot changed.
-(rerunfilecheck)             Checksum: 01278A3EEBC509B7661875E669082EE0;1531.
+(rerunfilecheck)             Checksum: 488F759322F03898C832E649B29DFE3C;2315.
  ) 
 Here is how much of TeX's memory you used:
- 11232 strings out of 478733
- 168596 string characters out of 5860893
- 487838 words of memory out of 5000000
- 29530 multiletter control sequences out of 15000+600000
+ 11236 strings out of 478733
+ 168650 string characters out of 5860893
+ 486471 words of memory out of 5000000
+ 29534 multiletter control sequences out of 15000+600000
  490036 words of font info for 124 fonts, out of 8000000 for 9000
  934 hyphenation exceptions out of 8191
- 65i,10n,67p,431b,1026s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 65i,16n,67p,431b,1026s stack positions out of 5000i,500n,10000p,200000b,80000s
 
-Output written on haptics_feedback_node_explanation.dvi (3 pages, 19976 bytes).
+Output written on haptics_feedback_node_explanation.dvi (5 pages, 33136 bytes).
 
