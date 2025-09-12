@@ -1,4 +1,4 @@
-This is e-upTeX, Version 3.141592653-p3.9.1-u1.27-210218-2.6 (utf8.uptex) (TeX Live 2022/dev/Debian) (preloaded format=uplatex 2025.6.26)  9 SEP 2025 18:35
+This is e-upTeX, Version 3.141592653-p3.9.1-u1.27-210218-2.6 (utf8.uptex) (TeX Live 2022/dev/Debian) (preloaded format=uplatex 2025.6.26)  12 SEP 2025 18:09
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -157,33 +157,20 @@ Package bm Info: No bold for \U/msa/m/n, using \pmb.
 Package bm Info: No bold for \U/msb/m/n, using \pmb.
 LaTeX Font Info:    Redeclaring math alphabet \mathbf on input line 149.
 )
-(/usr/share/texlive/texmf-dist/tex/latex/geometry/geometry.sty
-Package: geometry 2020/01/02 v5.9 Page Geometry
+(/usr/share/texlive/texmf-dist/tex/latex/siunitx/siunitx.sty
+Package: siunitx 2022-02-02 v3.0.46 A comprehensive (SI) units package
+\l__siunitx_angle_tmp_dim=\dimen169
+\l__siunitx_angle_marker_box=\box70
+\l__siunitx_angle_unit_box=\box71
+\l__siunitx_compound_count_int=\count275
 
-(/usr/share/texlive/texmf-dist/tex/generic/iftex/ifvtex.sty
-Package: ifvtex 2019/10/25 v1.7 ifvtex legacy package. Use iftex instead.
+(/usr/share/texlive/texmf-dist/tex/latex/translations/translations.sty
+Package: translations 2022/01/04 v1.11 internationalization of LaTeX2e packages
+ (CN)
 
-(/usr/share/texlive/texmf-dist/tex/generic/iftex/iftex.sty
-Package: iftex 2020/03/06 v1.0d TeX engine tests
-))
-\Gm@cnth=\count275
-\Gm@cntv=\count276
-\c@Gm@tempcnt=\count277
-\Gm@bindingoffset=\dimen169
-\Gm@wd@mp=\dimen170
-\Gm@odd@mp=\dimen171
-\Gm@even@mp=\dimen172
-\Gm@layoutwidth=\dimen173
-\Gm@layoutheight=\dimen174
-\Gm@layouthoffset=\dimen175
-\Gm@layoutvoffset=\dimen176
-\Gm@dimlist=\toks23
-)
-(/usr/share/texlive/texmf-dist/tex/latex/hyperref/hyperref.sty
-Package: hyperref 2021-06-07 v7.00m Hypertext links for LaTeX
-
-(/usr/share/texlive/texmf-dist/tex/generic/ltxcmds/ltxcmds.sty
-Package: ltxcmds 2020-05-10 v1.25 LaTeX kernel commands for general use (HO)
+(/usr/share/texlive/texmf-dist/tex/latex/etoolbox/etoolbox.sty
+Package: etoolbox 2020/10/05 v2.5k e-TeX tools for LaTeX (JAW)
+\etb@tempcnta=\count276
 )
 (/usr/share/texlive/texmf-dist/tex/generic/pdftexcmds/pdftexcmds.sty
 Package: pdftexcmds 2020-06-27 v0.33 Utility functions of pdfTeX for LuaTeX (HO
@@ -192,10 +179,82 @@ Package: pdftexcmds 2020-06-27 v0.33 Utility functions of pdfTeX for LuaTeX (HO
 (/usr/share/texlive/texmf-dist/tex/generic/infwarerr/infwarerr.sty
 Package: infwarerr 2019/12/03 v1.5 Providing info/warning/error messages (HO)
 )
+(/usr/share/texlive/texmf-dist/tex/generic/iftex/iftex.sty
+Package: iftex 2020/03/06 v1.0d TeX engine tests
+)
+(/usr/share/texlive/texmf-dist/tex/generic/ltxcmds/ltxcmds.sty
+Package: ltxcmds 2020-05-10 v1.25 LaTeX kernel commands for general use (HO)
+)
 Package pdftexcmds Info: \pdf@primitive is available.
 Package pdftexcmds Info: \pdf@ifprimitive is available.
 Package pdftexcmds Info: \pdfdraftmode not found.
+))
+\l__siunitx_number_exponent_fixed_int=\count277
+\l__siunitx_number_min_decimal_int=\count278
+\l__siunitx_number_min_integer_int=\count279
+\l__siunitx_number_round_precision_int=\count280
+\l__siunitx_number_group_minimum_int=\count281
+\l__siunitx_table_tmp_box=\box72
+\l__siunitx_table_tmp_dim=\dimen170
+\l__siunitx_table_column_width_dim=\dimen171
+\l__siunitx_table_integer_box=\box73
+\l__siunitx_table_decimal_box=\box74
+\l__siunitx_table_before_box=\box75
+\l__siunitx_table_after_box=\box76
+\l__siunitx_table_before_dim=\dimen172
+\l__siunitx_table_carry_dim=\dimen173
+\l__siunitx_unit_tmp_int=\count282
+\l__siunitx_unit_position_int=\count283
+\l__siunitx_unit_total_int=\count284
+
+(/usr/share/texlive/texmf-dist/tex/latex/l3packages/l3keys2e/l3keys2e.sty
+(/usr/share/texlive/texmf-dist/tex/latex/l3kernel/expl3.sty
+Package: expl3 2022-01-21 L3 programming layer (loader) 
+
+(/usr/share/texlive/texmf-dist/tex/latex/l3backend/l3backend-dvips.def
+File: l3backend-dvips.def 2022-01-12 L3 backend support: dvips
+\l__pdf_internal_box=\box77
+\g__pdf_backend_object_int=\count285
+\l__pdf_backend_content_box=\box78
+\l__pdf_backend_model_box=\box79
+\g__pdf_backend_annotation_int=\count286
+\g__pdf_backend_link_int=\count287
+\g__pdf_backend_link_sf_int=\count288
+))
+Package: l3keys2e 2022-01-12 LaTeX2e option processing using LaTeX3 keys
 )
+(/usr/share/texlive/texmf-dist/tex/latex/tools/array.sty
+Package: array 2021/10/04 v2.5f Tabular extension package (FMi)
+\col@sep=\dimen174
+\ar@mcellbox=\box80
+\extrarowheight=\dimen175
+\NC@list=\toks23
+\extratabsurround=\skip53
+\backup@length=\skip54
+\ar@cellbox=\box81
+))
+(/usr/share/texlive/texmf-dist/tex/latex/geometry/geometry.sty
+Package: geometry 2020/01/02 v5.9 Page Geometry
+
+(/usr/share/texlive/texmf-dist/tex/generic/iftex/ifvtex.sty
+Package: ifvtex 2019/10/25 v1.7 ifvtex legacy package. Use iftex instead.
+)
+\Gm@cnth=\count289
+\Gm@cntv=\count290
+\c@Gm@tempcnt=\count291
+\Gm@bindingoffset=\dimen176
+\Gm@wd@mp=\dimen177
+\Gm@odd@mp=\dimen178
+\Gm@even@mp=\dimen179
+\Gm@layoutwidth=\dimen180
+\Gm@layoutheight=\dimen181
+\Gm@layouthoffset=\dimen182
+\Gm@layoutvoffset=\dimen183
+\Gm@dimlist=\toks24
+)
+(/usr/share/texlive/texmf-dist/tex/latex/hyperref/hyperref.sty
+Package: hyperref 2021-06-07 v7.00m Hypertext links for LaTeX
+
 (/usr/share/texlive/texmf-dist/tex/generic/kvsetkeys/kvsetkeys.sty
 Package: kvsetkeys 2019/12/15 v1.18 Key value parser (HO)
 )
@@ -217,9 +276,9 @@ Package: auxhook 2019-12-17 v1.6 Hooks for auxiliary files (HO)
 (/usr/share/texlive/texmf-dist/tex/latex/kvoptions/kvoptions.sty
 Package: kvoptions 2020-10-07 v3.14 Key value format for package options (HO)
 )
-\@linkdim=\dimen177
-\Hy@linkcounter=\count278
-\Hy@pagecounter=\count279
+\@linkdim=\dimen184
+\Hy@linkcounter=\count292
+\Hy@pagecounter=\count293
 
 (/usr/share/texlive/texmf-dist/tex/latex/hyperref/pd1enc.def
 File: pd1enc.def 2021-06-07 v7.00m Hyperref: PDFDocEncoding definition (HO)
@@ -236,7 +295,7 @@ Package: intcalc 2019/12/15 v1.3 Expandable calculations with integers (HO)
 (/usr/share/texlive/texmf-dist/tex/generic/etexcmds/etexcmds.sty
 Package: etexcmds 2019/12/15 v1.7 Avoid name clashes with e-TeX commands (HO)
 )
-\Hy@SavedSpaceFactor=\count280
+\Hy@SavedSpaceFactor=\count294
 
 (/usr/share/texlive/texmf-dist/tex/latex/hyperref/puenc.def
 File: puenc.def 2021-06-07 v7.00m Hyperref: PDF Unicode definition (HO)
@@ -250,14 +309,14 @@ Package hyperref Info: Plain pages OFF on input line 4207.
 Package hyperref Info: Backreferencing OFF on input line 4212.
 Package hyperref Info: Implicit mode ON; LaTeX internals redefined.
 Package hyperref Info: Bookmarks ON on input line 4445.
-\c@Hy@tempcnt=\count281
+\c@Hy@tempcnt=\count295
 
 (/usr/share/texlive/texmf-dist/tex/latex/url/url.sty
 \Urlmuskip=\muskip17
 Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
 )
 LaTeX Info: Redefining \url on input line 4804.
-\XeTeXLinkMargin=\dimen178
+\XeTeXLinkMargin=\dimen185
 
 (/usr/share/texlive/texmf-dist/tex/generic/bitset/bitset.sty
 Package: bitset 2019/12/09 v1.3 Handle bit-vector datatype (HO)
@@ -266,9 +325,9 @@ Package: bitset 2019/12/09 v1.3 Handle bit-vector datatype (HO)
 Package: bigintcalc 2019/12/15 v1.5 Expandable calculations on big integers (HO
 )
 ))
-\Fld@menulength=\count282
-\Field@Width=\dimen179
-\Fld@charsize=\dimen180
+\Fld@menulength=\count296
+\Field@Width=\dimen186
+\Fld@charsize=\dimen187
 Package hyperref Info: Hyper figures OFF on input line 6076.
 Package hyperref Info: Link nesting OFF on input line 6081.
 Package hyperref Info: Hyper index ON on input line 6084.
@@ -283,9 +342,9 @@ LaTeX Info: Redefining \pageref on input line 6150.
 Package: atbegshi-ltx 2021/01/10 v1.0c Emulation of the original atbegshi
 package with kernel methods
 )
-\Hy@abspage=\count283
-\c@Item=\count284
-\c@Hfootnote=\count285
+\Hy@abspage=\count297
+\c@Item=\count298
+\c@Hfootnote=\count299
 )
 Package hyperref Info: Driver (default): hdvips.
 
@@ -294,13 +353,13 @@ File: hdvips.def 2021-06-07 v7.00m Hyperref driver for dvips
 
 (/usr/share/texlive/texmf-dist/tex/latex/hyperref/pdfmark.def
 File: pdfmark.def 2021-06-07 v7.00m Hyperref definitions for pdfmark specials
-\pdf@docset=\toks24
-\pdf@box=\box70
-\pdf@toks=\toks25
-\pdf@defaulttoks=\toks26
-\HyField@AnnotCount=\count286
-\Fld@listcount=\count287
-\c@bookmark@seq@number=\count288
+\pdf@docset=\toks25
+\pdf@box=\box82
+\pdf@toks=\toks26
+\pdf@defaulttoks=\toks27
+\HyField@AnnotCount=\count300
+\Fld@listcount=\count301
+\c@bookmark@seq@number=\count302
 
 (/usr/share/texlive/texmf-dist/tex/latex/rerunfilecheck/rerunfilecheck.sty
 Package: rerunfilecheck 2019/12/05 v1.9 Rerun checks for auxiliary files (HO)
@@ -316,48 +375,62 @@ Package: uniquecounter 2019/12/15 v1.4 Provide unlimited unique counter (HO)
 Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 2
 86.
 )
-\Hy@SectionHShift=\skip53
+\Hy@SectionHShift=\skip55
 ))
+Package translations Info: No language package found. I am going to use `englis
+h' as default language. on input line 15.
 LaTeX Font Info:    Font shape `JT2/hmc/m/n' will be
-(Font)              scaled to size 9.24683pt on input line 14.
+(Font)              scaled to size 9.24683pt on input line 15.
 LaTeX Font Info:    Font shape `JY2/hmc/m/n' will be
-(Font)              scaled to size 9.24683pt on input line 14.
+(Font)              scaled to size 9.24683pt on input line 15.
 
-(/usr/share/texlive/texmf-dist/tex/latex/l3backend/l3backend-dvips.def
-File: l3backend-dvips.def 2022-01-12 L3 backend support: dvips
-\l__pdf_internal_box=\box71
-\g__pdf_backend_object_int=\count289
-\l__pdf_backend_content_box=\box72
-\l__pdf_backend_model_box=\box73
-\g__pdf_backend_annotation_int=\count290
-\g__pdf_backend_link_int=\count291
-\g__pdf_backend_link_sf_int=\count292
-)
 (./haptics_feedback_node_explanation.aux)
 \openout1 = `haptics_feedback_node_explanation.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 14.
-LaTeX Font Info:    ... okay on input line 14.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 14.
-LaTeX Font Info:    ... okay on input line 14.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 14.
-LaTeX Font Info:    ... okay on input line 14.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 14.
-LaTeX Font Info:    ... okay on input line 14.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 14.
-LaTeX Font Info:    ... okay on input line 14.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 14.
-LaTeX Font Info:    ... okay on input line 14.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 14.
-LaTeX Font Info:    ... okay on input line 14.
-LaTeX Font Info:    Checking defaults for JY2/mc/m/n on input line 14.
-LaTeX Font Info:    ... okay on input line 14.
-LaTeX Font Info:    Checking defaults for JT2/mc/m/n on input line 14.
-LaTeX Font Info:    ... okay on input line 14.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 14.
-LaTeX Font Info:    ... okay on input line 14.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 14.
-LaTeX Font Info:    ... okay on input line 14.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for JY2/mc/m/n on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for JT2/mc/m/n on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/color.sty
+Package: color 2021/12/07 v1.3c Standard LaTeX Color (DPC)
+
+(/usr/share/texlive/texmf-dist/tex/latex/graphics-cfg/color.cfg
+File: color.cfg 2016/01/02 v1.6 sample color configuration
+)
+Package color Info: Driver file: dvips.def on input line 149.
+
+(/usr/share/texlive/texmf-dist/tex/latex/graphics-def/dvips.def
+File: dvips.def 2017/06/20 v3.1d Graphics/color driver for dvips
+)
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/dvipsnam.def
+File: dvipsnam.def 2016/06/17 v3.0m Driver-dependent file (DPC,SPQR)
+))
+(/usr/share/texlive/texmf-dist/tex/latex/translations/translations-basic-dictio
+nary-english.trsl
+File: translations-basic-dictionary-english.trsl (english translation file `tra
+nslations-basic-dictionary')
+)
+Package translations Info: loading dictionary `translations-basic-dictionary' f
+or `english'. on input line 15.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: dvips
@@ -393,7 +466,7 @@ LaTeX Font Info:    ... okay on input line 14.
 * \@reversemarginfalse
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
-Package hyperref Info: Link coloring OFF on input line 14.
+Package hyperref Info: Link coloring OFF on input line 15.
 (/usr/share/texlive/texmf-dist/tex/latex/hyperref/nameref.sty
 Package: nameref 2021-04-02 v2.47 Cross-referencing by name of section
 
@@ -403,11 +476,11 @@ Package: refcount 2019/12/15 v3.6 Data extraction from label references (HO)
 (/usr/share/texlive/texmf-dist/tex/generic/gettitlestring/gettitlestring.sty
 Package: gettitlestring 2019/12/15 v1.6 Cleanup title references (HO)
 )
-\c@section@level=\count293
+\c@section@level=\count303
 )
-LaTeX Info: Redefining \ref on input line 14.
-LaTeX Info: Redefining \pageref on input line 14.
-LaTeX Info: Redefining \nameref on input line 14.
+LaTeX Info: Redefining \ref on input line 15.
+LaTeX Info: Redefining \pageref on input line 15.
+LaTeX Info: Redefining \nameref on input line 15.
 
 (./haptics_feedback_node_explanation.out)
 (./haptics_feedback_node_explanation.out)
@@ -415,96 +488,86 @@ LaTeX Info: Redefining \nameref on input line 14.
 \openout3 = `haptics_feedback_node_explanation.out'.
 
 LaTeX Font Info:    Font shape `JT2/hmc/m/n' will be
-(Font)              scaled to size 15.9785pt on input line 16.
+(Font)              scaled to size 15.9785pt on input line 17.
 LaTeX Font Info:    Font shape `JY2/hmc/m/n' will be
-(Font)              scaled to size 15.9785pt on input line 16.
+(Font)              scaled to size 15.9785pt on input line 17.
 LaTeX Font Info:    Font shape `JT2/hmc/m/n' will be
-(Font)              scaled to size 11.09619pt on input line 16.
+(Font)              scaled to size 11.09619pt on input line 17.
 LaTeX Font Info:    Font shape `JY2/hmc/m/n' will be
-(Font)              scaled to size 11.09619pt on input line 16.
+(Font)              scaled to size 11.09619pt on input line 17.
 LaTeX Font Info:    Font shape `JY2/hmc/m/n' will be
-(Font)              scaled to size 7.39746pt on input line 16.
+(Font)              scaled to size 7.39746pt on input line 17.
 LaTeX Font Info:    Font shape `JY2/hmc/m/n' will be
-(Font)              scaled to size 5.5481pt on input line 16.
-LaTeX Font Info:    Trying to load font information for U+msa on input line 16.
+(Font)              scaled to size 5.5481pt on input line 17.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 17.
 
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 16.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 17.
 
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
 LaTeX Font Info:    Font shape `JY2/hmc/bx/n' in size <12> not available
-(Font)              Font shape `JY2/hgt/m/n' tried instead on input line 16.
+(Font)              Font shape `JY2/hgt/m/n' tried instead on input line 17.
 LaTeX Font Info:    Font shape `JY2/hgt/m/n' will be
-(Font)              scaled to size 11.09619pt on input line 16.
+(Font)              scaled to size 11.09619pt on input line 17.
 LaTeX Font Info:    Font shape `JY2/hmc/bx/n' in size <8> not available
-(Font)              Font shape `JY2/hgt/m/n' tried instead on input line 16.
+(Font)              Font shape `JY2/hgt/m/n' tried instead on input line 17.
 LaTeX Font Info:    Font shape `JY2/hgt/m/n' will be
-(Font)              scaled to size 7.39746pt on input line 16.
+(Font)              scaled to size 7.39746pt on input line 17.
 LaTeX Font Info:    Font shape `JY2/hmc/bx/n' in size <6> not available
-(Font)              Font shape `JY2/hgt/m/n' tried instead on input line 16.
+(Font)              Font shape `JY2/hgt/m/n' tried instead on input line 17.
 LaTeX Font Info:    Font shape `JY2/hgt/m/n' will be
-(Font)              scaled to size 5.5481pt on input line 16.
+(Font)              scaled to size 5.5481pt on input line 17.
 LaTeX Font Info:    Font shape `JT2/hmc/m/n' will be
-(Font)              scaled to size 13.31541pt on input line 19.
+(Font)              scaled to size 13.31541pt on input line 20.
 LaTeX Font Info:    Font shape `JY2/hmc/m/n' will be
-(Font)              scaled to size 13.31541pt on input line 19.
+(Font)              scaled to size 13.31541pt on input line 20.
 LaTeX Font Info:    Font shape `JT2/hgt/m/n' will be
-(Font)              scaled to size 13.31541pt on input line 19.
+(Font)              scaled to size 13.31541pt on input line 20.
 LaTeX Font Info:    Font shape `JY2/hgt/m/n' will be
-(Font)              scaled to size 13.31541pt on input line 19.
+(Font)              scaled to size 13.31541pt on input line 20.
 LaTeX Font Info:    Font shape `JY2/hmc/m/n' will be
-(Font)              scaled to size 6.47278pt on input line 24.
+(Font)              scaled to size 6.47278pt on input line 25.
 LaTeX Font Info:    Font shape `JY2/hmc/m/n' will be
-(Font)              scaled to size 4.62341pt on input line 24.
+(Font)              scaled to size 4.62341pt on input line 25.
 LaTeX Font Info:    Font shape `JY2/hmc/bx/n' in size <10> not available
-(Font)              Font shape `JY2/hgt/m/n' tried instead on input line 24.
+(Font)              Font shape `JY2/hgt/m/n' tried instead on input line 25.
 LaTeX Font Info:    Font shape `JY2/hgt/m/n' will be
-(Font)              scaled to size 9.24683pt on input line 24.
+(Font)              scaled to size 9.24683pt on input line 25.
 LaTeX Font Info:    Font shape `JY2/hmc/bx/n' in size <7> not available
-(Font)              Font shape `JY2/hgt/m/n' tried instead on input line 24.
+(Font)              Font shape `JY2/hgt/m/n' tried instead on input line 25.
 LaTeX Font Info:    Font shape `JY2/hgt/m/n' will be
-(Font)              scaled to size 6.47278pt on input line 24.
+(Font)              scaled to size 6.47278pt on input line 25.
 LaTeX Font Info:    Font shape `JY2/hmc/bx/n' in size <5> not available
-(Font)              Font shape `JY2/hgt/m/n' tried instead on input line 24.
+(Font)              Font shape `JY2/hgt/m/n' tried instead on input line 25.
 LaTeX Font Info:    Font shape `JY2/hgt/m/n' will be
-(Font)              scaled to size 4.62341pt on input line 24.
+(Font)              scaled to size 4.62341pt on input line 25.
 LaTeX Font Info:    Font shape `JT2/hgt/m/n' will be
-(Font)              scaled to size 11.09619pt on input line 69.
+(Font)              scaled to size 11.09619pt on input line 70.
  [1
 
 ]
 LaTeX Font Info:    Font shape `JT2/hgt/m/n' will be
-(Font)              scaled to size 9.24683pt on input line 88.
- [2]
-LaTeX Font Info:    Font shape `JT2/hmc/m/n' will be
-(Font)              scaled to size 6.47278pt on input line 161.
-LaTeX Font Info:    Font shape `JT2/hmc/m/n' will be
-(Font)              scaled to size 4.62341pt on input line 161.
- [3]
-LaTeX Font Info:    Font shape `JT2/hmc/bx/n' in size <10> not available
-(Font)              Font shape `JT2/hgt/m/n' tried instead on input line 228.
-LaTeX Font Info:    Font shape `JT2/hgt/m/n' will be
-(Font)              scaled to size 9.24683pt on input line 228.
- [4]
+(Font)              scaled to size 9.24683pt on input line 89.
+ [2] [3] [4]
 [5] (./haptics_feedback_node_explanation.aux)
 Package rerunfilecheck Info: File `haptics_feedback_node_explanation.out' has n
 ot changed.
-(rerunfilecheck)             Checksum: 488F759322F03898C832E649B29DFE3C;2315.
+(rerunfilecheck)             Checksum: 4CD1919AC9826FB658596FC936ACC00B;2164.
  ) 
 Here is how much of TeX's memory you used:
- 11236 strings out of 478733
- 168650 string characters out of 5860893
- 486471 words of memory out of 5000000
- 29534 multiletter control sequences out of 15000+600000
- 490036 words of font info for 124 fonts, out of 8000000 for 9000
+ 15190 strings out of 478733
+ 279759 string characters out of 5860893
+ 569047 words of memory out of 5000000
+ 33453 multiletter control sequences out of 15000+600000
+ 489792 words of font info for 122 fonts, out of 8000000 for 9000
  934 hyphenation exceptions out of 8191
- 65i,16n,67p,431b,1026s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 72i,16n,79p,431b,1026s stack positions out of 5000i,500n,10000p,200000b,80000s
 
-Output written on haptics_feedback_node_explanation.dvi (5 pages, 33136 bytes).
+Output written on haptics_feedback_node_explanation.dvi (5 pages, 36168 bytes).
 

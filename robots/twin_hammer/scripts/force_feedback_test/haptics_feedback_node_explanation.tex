@@ -4,6 +4,7 @@
 \usepackage{otf}
 
 \usepackage{amsmath, amssymb, bm}
+\usepackage{siunitx}
 \usepackage{geometry}
 \usepackage{hyperref}
 \geometry{margin=25mm}
@@ -22,32 +23,32 @@
 \begin{itemize}
 \item ロボットの手先が外界に接触し、システムにエネルギーが流入する。
 \begin{equation}
-P_{in}^{env}(t) = \bm{w}_{env}^T(t) \bm{v}_{robot}(t)
+P_{in,env}(t) = \bm{w}_{env}^T(t) \bm{v}_{robot}(t)
 \end{equation}
 \item デバイスがオペレータに力を提示し、手が動くことでシステムからエネルギーが流出する。
 \begin{equation}
-P_{out}^{op}(t) = \bm{w}_{fb}^T(t) \bm{v}_{hand}(t)
+P_{out,op}(t) = \bm{w}_{fb}^T(t) \bm{v}_{hand}(t)
 \end{equation}
 \item オペレータが提示力に抗い、手を動かし返すことで、システムにエネルギーが流入する。
 \begin{equation}
-P_{in}^{op}(t) = \bm{w}_{hand}^T(t) \bm{v}_{hand}(t)
+P_{in,op}(t) = \bm{w}_{hand}^T(t) \bm{v}_{hand}(t)
 \end{equation}
 \item ロボットの手先が外界に力を加えることで、システムからエネルギーが流出する。
 \begin{equation}
-P_{out}^{env}(t) = \bm{w}_{robot}^T(t) \bm{v}_{robot}(t)
+P_{out,env}(t) = \bm{w}_{robot}^T(t) \bm{v}_{robot}(t)
 \end{equation}
 \end{itemize}
 ただし$\bm{w} \in \mathbb{R}^6$はレンチ、$\bm{v} \in \mathbb{R}^6$はツイストである。
 
 予測されるエネルギー変化は
 \begin{equation}
-\Delta E^{pred} = (P_{out}^{op}(t) + P_{out}^{env}(t) - P_{in}^{env}(t) - P_{in}^{op}(t)) \Delta t
+\Delta E_{pred} = (P_{out,op}(t) + P_{out,env}(t) - P_{in,env}(t) - P_{in,op}(t)) \Delta t
 \end{equation}
 
 ここで、
 \begin{itemize}
-\item $\Delta E^{pred} > 0$: システムのエネルギーは減少 (安全)
-\item $\Delta E^{pred} < 0$: システムのエネルギーは増加 (危険)
+\item $\Delta E_{pred} > 0$: システムのエネルギーは減少 (安全)
+\item $\Delta E_{pred} < 0$: システムのエネルギーは増加 (危険)
 \end{itemize}
 
 以下でシステムから出入りするエネルギー量を求め、系のエネルギーが増加しないようなフィードバックレンチの決定法を考える。
@@ -60,7 +61,7 @@ P_{out}^{env}(t) = \bm{w}_{robot}^T(t) \bm{v}_{robot}(t)
 またステップ$i$でのロボットの手先のツイスト$\bm{v}_{robot}(i)$は、各関節の角速度からFKを解くことで計測できる。
 よってステップ$i$からステップ$i+1$の間にロボットの手先が外界から力をうけることでシステムに流入するパワーは以下のように求められる。
 \begin{equation}
-P_{in}^{env} = \bm{w}_{measured}^T(i) \bm{v}_{robot}(i)
+P_{in,env} = \bm{w}_{measured}^T(i) \bm{v}_{robot}(i)
 \end{equation}
 
 
@@ -86,8 +87,11 @@ F_i \approx \bm{\phi}_i^T \bm{\theta}_i \quad
 先の離散時間表現は最小二乗法に適しており、逐次最小二乗法(RLS)によってオンライン推定できる。
 オペレータのインピーダンス$\bm{\theta}_i = \begin{bmatrix} M_i & B_i & K_i \end{bmatrix}^T$を$\bm{\theta}_{i-1}$から推定する。
 RLSによる更新式は以下の通り(詳しくは\url{https://manabitimes.jp/math/2084}を参照)
+% \begin{equation}
+% Q_i = \frac{1}{\lambda} (Q_{i-1} - \frac{Q_{i-1} \bm{\phi}_i \bm{\phi}_i^T Q_{i-1}}{\lambda + \bm{\phi}_i^T Q_{i-1} \bm{\phi}_i})
+% \end{equation}
 \begin{equation}
-Q_i = \frac{1}{\lambda} (Q_{i-1} - \frac{Q_{i-1} \bm{\phi}_i \bm{\phi}_i^T Q_{i-1}}{\lambda + \bm{\phi}_i^T Q_{i-1} \bm{\phi}_i})
+Q_i = Q_{i-1} - \frac{Q_{i-1} \bm{\phi}_i \bm{\phi}_i^T Q_{i-1}}{1 + \bm{\phi}_i^T Q_{i-1} \bm{\phi}_i}
 \end{equation}
 \begin{equation}
 \bm{\theta}_i = \bm{\theta}_{i-1} + Q_i \bm{\phi}_i (y_i - \bm{\phi}_i^T \bm{\theta}_{i-1})
@@ -95,23 +99,23 @@ Q_i = \frac{1}{\lambda} (Q_{i-1} - \frac{Q_{i-1} \bm{\phi}_i \bm{\phi}_i^T Q_{i-
 ただし$\bm{\phi}_i = \begin{bmatrix} \ddot{x}_i & \dot{x}_i & {x}_i \end{bmatrix}^T$で、$y_i = f_{feedback}(i-1)$は前ステップにオペレータに提示したレンチ成分である。
 
 \subsection{システムから流出するエネルギーの予測}
-ロボットで計測されたレンチをスケールしたもの$\bm{w}^{nom}(i) = \bm{k} \odot \bm{w}_{robot}^{measured}(i)$をオペレータに提示した際のオペレータの即時応答速度を予測し、システムに流入するエネルギーを予測する。
+ロボットで計測されたレンチをスケールしたもの$\bm{w}_{nom}(i) = \bm{k}_{scale} \odot \bm{w}_{robot,measured}(i)$をオペレータに提示した際のオペレータの即時応答速度を予測し、システムに流入するエネルギーを予測する。
 ($\odot$はアダマール積で、各要素ごとの積である)
 
 式(\ref{operator_model_eq})よりオペレータの手の加速度は以下のように求められる。
 (位置、姿勢の各要素について)
 \begin{equation}
-\ddot{x}(i) = \frac{1}{M_i} (F^{nom}(i) - B_i \dot{x}(i) - K_i x(i))
+\ddot{x}(i) = \frac{1}{M_i} (F_{nom}(i) - B_i \dot{x}(i) - K_i x(i))
 \end{equation}
 これよりオペレータの手の応答速度は以下のように予測できる。
 \begin{equation}
-\dot{x}(i+1) \approx \dot{x}(i) + \ddot{x}(i) \Delta t = \dot{x}(i) + \frac{\Delta t}{M_i} (F^{nom}(i) - B_i \dot{x}(i) - K_i x(i))
+\dot{x}(i+1) \approx \dot{x}(i) + \ddot{x}(i) \Delta t = \dot{x}(i) + \frac{\Delta t}{M_i} (F_{nom}(i) - B_i \dot{x}(i) - K_i x(i))
 \end{equation}
-これを6次元それぞれで予測することで、レンチを提示した際のオペレータの手の応答ツイスト$\bm{v}_{hand}^{pred}$が予測できる。
+これを6次元それぞれで予測することで、レンチを提示した際のオペレータの手の応答ツイスト$\bm{v}_{hand,pred}$が予測できる。
 
 これよりシステムから流出するパワーは以下のように予測できる。
 \begin{equation}
-P_{out}^{op} = (\bm{w}^{nom}(i))^T \bm{v}_{hand}^{pred}(i+1)
+P_{out,op} = (\bm{w}_{nom}(i))^T \bm{v}_{hand,pred}(i+1)
 \end{equation}
 
 
@@ -127,7 +131,7 @@ F_{op,est}(i) = M_i \ddot{x}(i) + B_i \dot{x}(i) + K_i x(i)
 またオペレータのツイスト$\bm{v}_{op}(i)$はMocapから計測できる。
 よってオペレータからシステムに流入するパワーは以下のように表せる。
 \begin{equation}
-P_{in}^{op} = \bm{w}_{op,est}^T(i) \bm{v}_{op}(i)
+P_{in,op} = \bm{w}_{op,est}^T(i) \bm{v}_{op}(i)
 \end{equation}
 
 
@@ -136,7 +140,7 @@ P_{in}^{op} = \bm{w}_{op,est}^T(i) \bm{v}_{op}(i)
 またステップ$i$でのロボットの手先のツイスト$\bm{v}_{robot}(i)$は、各関節の角速度からFKを解くことで計測できる。
 よってステップ$i$からステップ$i+1$の間にロボットの手先が外界にレンチを及ぼすことでシステムに流入するパワーは以下のように求められる。
 \begin{equation}
-P_{out}^{env} = \bm{w}_{measured}^T(i) \bm{v}_{robot}(i) = P_{in}^{env}
+P_{out,env} = \bm{w}_{measured}^T(i) \bm{v}_{robot}(i) = P_{in,env}
 \end{equation}
 
 
@@ -144,112 +148,166 @@ P_{out}^{env} = \bm{w}_{measured}^T(i) \bm{v}_{robot}(i) = P_{in}^{env}
 以上までの議論から１サイクルでのエネルギー収支は以下のようになる。
 \begin{equation}
 \begin{split}
-\Delta E^{pred} &= (P_{out}^{op}(t) + P_{out}^{env}(t) - P_{in}^{env}(t) - P_{in}^{op}(t)) \Delta t \\
-&= ((\bm{w}^{nom}(i))^T \bm{v}_{hand}^{pred}(i+1) - \bm{w}_{op,est}^T(i) \bm{v}_{op}(i)) \Delta t
+\Delta E_{pred} &= (P_{out,op}(t) + P_{out,env}(t) - P_{in,env}(t) - P_{in,op}(t)) \Delta t \\
+&= (\bm{w}_{nom}(i)^T \bm{v}_{hand,pred}(i+1) - \bm{w}_{op,est}^T(i) \bm{v}_{op}(i)) \Delta t
 \end{split}
 \end{equation}
+また、システムが蓄えているエネルギーを$E_{tank}$、その上限を$E_{tank}^{max}$とする。
 
-\subsection{エネルギータンクによる受動性保持}
-システムの保有するエネルギーとして、$E_{tank}$を定義する。
-1章での議論の通り、$\Delta E^{pred} > 0$のときシステムからエネルギーが流出する。
-このとき$\Delta E^{pred} > E_{tank}$となると、システムに蓄えられたエネルギー以上をオペレータに流出させるために、システムが新たにエネルギーを生み出すことになり受動性を破る。
-そのため$\Delta E^{pred} <= E_{tank}$となるように流出エネルギーを減少させる必要がある。
-以下のようにフィードバックレンチを減少させる。
 
-$\Delta E^{pred} > E_{tank}$のとき
-\begin{equation}
-\alpha = \text{min} (1,\frac{E_{tank}}{\Delta E^{pred} + \epsilon}), \alpha \in [0,1)
-\end{equation}
-\begin{equation}
-\bm{w}_{cand} = \alpha \bm{w}^{nom}
-\end{equation}
+\subsection{スケーリングによる流出エネルギーの縮小}
+$\Delta E_{pred} \geq 0$のとき、システムからエネルギーが流出する予測であり、基本的にはシステムの受動性は保たれる。
 
-$0 < \Delta E^{pred} < E_{tank}$のときは蓄えられたエネルギーを流出させる。
+$0 < \Delta E^{pred} < E_{tank}$のときはシステムに蓄えられたエネルギーを流出させる。
 \begin{equation}
-E_{tank} -= \Delta E^{pred}
+E_{tank} -= \Delta E_{pred}
 \end{equation}
 このときのフィードバックレンチは
 \begin{equation}
-\bm{w}_{cand} = \bm{w}^{nom}
+\bm{w}_{feedback} = \bm{w}_{nom}
+\end{equation}
+
+$\Delta E_{pred} > E_{tank}$のとき、システムに蓄えられたエネルギー以上をオペレータに流出させるために、システムが新たにエネルギーを生み出すことになり受動性を破る。
+そのため$\Delta E_{pred} = E_{tank}$となるように流出エネルギーを減少させる必要がある。(簡単のため、下限までのエネルギー流出を許容する)
+フィードバックレンチにスケール$\alpha \in [0,1)$を乗じて、流出エネルギーを減少させる。
+このときの流出エネルギーは以下のように書き直せる。
+\begin{equation}
+E_{tank} = \Delta E_{pred} = (\alpha \bm{w}_{nom}(i)^T \bm{v}_{hand,pred}(i+1) - \bm{w}_{op,est}^T(i) \bm{v}_{op}(i)) \Delta t
+\end{equation}
+\begin{equation}
+\alpha = \frac{ \frac{E_{tank}}{\Delta t} + \bm{w}_{op,est}^T(i) \bm{v}_{op}(i)}{\bm{w}_{nom}(i)^T \bm{v}_{hand,pred}(i+1)}
+\end{equation}
+このときのフィードバックレンチは
+\begin{equation}
+\bm{w}_{feedback} =  \alpha \bm{w}_{nom}
+\end{equation}
+エネルギータンクは
+\begin{equation}
+E_{tank} = 0
+\end{equation}
+
+
+\subsection{ダンパ追加によるエネルギー散逸}
+$\Delta E_{pred} < 0$のとき、システムにエネルギーが流入する予測であり、システムの受動性が破れる可能性が高く、介入が必要である。
+
+$|\Delta E_{pred}| \leq E_{tank}^{max} - E_{tank}$のとき(流入エネルギーをエネルギータンクに収められるとき)は、システムにエネルギーを蓄える。
+\begin{equation}
+E_{tank} -= \Delta E_{pred}
+\end{equation}
+このときのフィードバックレンチは
+\begin{equation}
+\bm{w}_{feedback} = \bm{w}_{nom}
 \end{equation}
   
-
-\subsection{TDPAによる受動性保持}
-1章での議論の通り、$\Delta E^{pred} < 0$のときシステムのエネルギーは増加し、受動性が破れるおそれがあるため危険である。
-このようにシステムがエネルギーを自発的に生み出すことを避けるために、TDPA(Time Domein Passivity Approach)による受動性の保持を行う。
-PO(Passivity Observer)により、これまでシステムから外部に流出した累積エネルギー$E_{PO}$を監視する。
+$\Delta E_{pred} > E_{tank} - E_{tank}^{max}$のとき、(流入エネルギーをエネルギータンクに収めきれないとき)は、フィードバックレンチにダンパ項を加えることでエネルギーを散逸させる。
+\begin{equation}
+\bm{w}_{feedback}(i) = \bm{w}_{nom}(i) - D_{add} \bm{v}_{hand,pred}(i)
+\end{equation}
+ダンパを加えることでシステムからのエネルギー流出量は以下のように書き直せる。
 \begin{equation}
 \begin{split}
-E_{PO}(i+1) &= E_{PO}(i) + \Delta E_{PO}(i) \\ 
-&= E_{PO}(i) + (\bm{w}_{cand}^T(i) \bm{v}_{hand}^{pred}(i) - \bm{w}_{op,est}^T(i) \bm{v}_{op}(i)) \Delta t
+\frac {\Delta E_{pred}}{\Delta t} &= ((\bm{w}_{nom}(i) - D_{add} \bm{v}_{hand,pred}(i))^T \bm{v}_{hand,pred}(i+1) - \bm{w}_{op,est}^T(i) \bm{v}_{op}(i)) \\
+&= \bm{w}_{nom}^T(i) \bm{v}_{hand,pred}(i+1) - \bm{v}_{hand,pred}^T(i) D_{add} \bm{v}_{hand,pred}(i) - \bm{w}_{op,est}^T(i) \bm{v}_{op}(i)
 \end{split}
 \end{equation}
-$E_{PO} < 0$のとき、システムがエネルギーを生み出すことになるため、危険である。
-よってエネルギーを散逸させて受動性を保持するために、PC(Passivity Controller)によりフィードバックレンチにダンピングを追加する。
+このとき、$\Delta E_{pred} = E_{tank} - E_{tank}^{max}$としたい。(簡単のため、上限までのエネルギー貯蓄を許容する)
 \begin{equation}
-\bm{w}_{feedback}(i) = \bm{w}_{cand}(i) - D_{add} \bm{v}_{hand}^{pred}(i)
+\bm{v}_{hand,pred}^T(i) D_{add} \bm{v}_{hand,pred}(i) = \frac{E_{tank}^{max} - E_{tank}}{\Delta t} + \bm{w}_{nom}^T(i) \bm{v}_{hand,pred}(i+1) - \bm{w}_{op,est}^T(i) \bm{v}_{op}(i) := P_{req}
 \end{equation}
-このようにダンパーを追加することによって、システムからエネルギーを散逸させ、自発的にエネルギーを生み出すことを避ける。
-散逸したエネルギーはエネルギータンクに回収する。(エネルギータンクの上限以内)
+これを満たす$D_{add}$を求める。
 
-$D_{add} \in \mathbb{R}^{6 \times 6}$は次のように求める。
-ダンピングを入れたあとに系から流出するパワーは
+$D_{add}$は各軸についてのダンピング係数を持つ対角行列$D_{add} = diag(d_1, \ldots, d_6) (d_j > 0)$とする。
+上式は以下のように書き換えられる。($\bm{v}_{hand,pred}(i)$の各成分を$v_j$とおく)
 \begin{equation}
-\begin{split}
-\frac{\Delta E_{PO}(i)}{\Delta t} &= \bm{w}_{feedback}^T(i) \bm{v}_{hand}^{pred}(i) - \bm{w}_{op,est}^T(i) \bm{v}_{op}(i) \\
-&= (\bm{w}_{cand}(i) - D_{add} \bm{v}_{hand}^{pred}(i))^T \bm{v}_{hand}^{pred}(i) - \bm{w}_{op,est}^T(i) \bm{v}_{op}(i) \\
-&= \bm{w}_{cand}^T(i) \bm{v}_{hand}^{pred}(i) - \bm{v}_{hand}^{pred,T}(i) D_{add} \bm{v}_{hand}^{pred}(i) - \bm{w}_{op,est}^T(i) \bm{v}_{op}(i)
-\end{split}
-\end{equation}
-システムの受動性を守るための条件は、システムがエネルギーを生み出さないこと、すなわち流出エネルギーが0以上であることなので
-\begin{equation}
-E_{PO}(i+1) = E_{PO}(i) + \Delta E_{PO}(i) \geq 0
-\end{equation}
-代入して整理すると
-\begin{equation}
-\bm{v}_{hand}^{pred,T}(i) D_{add} \bm{v}_{hand}^{pred}(i) &\leq \bm{w}_{cand}^T(i) \bm{v}_{hand}^{pred}(i) - \bm{w}_{op,est}^T(i) \bm{v}_{op}(i) + \frac{E_{PO}(i)}{\Delta t} := P_{req}
-\end{equation}
-以上の関係を満たす$D_{add}$を求める。
-
-ダンピング係数$D_{add}$は各軸ごとに要素を持つ対角行列として決定する。
-\begin{equation}
-D_{add} = diag(d_1, \ldots, d_6) (d_i > 0)
+\sum_{j=1}^{6} d_j v_j^2 = P_{req}
 \end{equation}
 
+各軸ごとのパワーへの寄与からダンピング係数を決定する。
+\begin{equation}
+p_j = max(0, w_{nom,j} v_j)
+\end{equation}
+
+並進ブロック($j=1,2,3$)と回転ブロック($j=4,5,6$)に分割して考える。
+$P_{req}$のブロックごとの割当は
+\begin{equation}
+P_{req,trans} = P_{req} \cdot \frac{\sum_{j=1}^{3} max(0,p_j)}{\sum_{j=1}^{6} max(0,p_j)}
+\end{equation}
+\begin{equation}
+P_{req,rot} = P_{req} - P_{req,trans}
+\end{equation}
+
+各軸ごとの重みをパワーを元に正規化して考える。
+\begin{equation}
+\hat{q}_j = \frac{p_j}{\sum_{k \in block} p_k}
+\end{equation}
+
+この重みを元に、以下のようにダンピング係数を仮定する。
+\begin{equation}
+d_j = \kappa \frac{\hat{q}_j}{v_j^2 + \epsilon}
+\end{equation}
+$\epsilon$は、速度が小さいときにダンピング係数が課題になることを避けるための項である。
+
+\begin{equation}
+P_{req,block} = \sum_{j \in block} d_j v_j^2 = \kappa \sum_{j \in block} \hat{q}_j \frac{v_j^2}{v_j^2+\epsilon}
+\end{equation}
+したがって、
+\begin{equation}
+\kappa = \frac{P_{req,block}}{\sum_{j \in block} \hat{q}_j \frac{v_j^2}{v_j^2+\epsilon}}
+\end{equation}
+\begin{equation}
+d_j = \frac{P_{req,block}}{\sum_{j \in block} \hat{q}_j \frac{v_j^2}{v_j^2+\epsilon}} \cdot \frac{\hat{q}_j}{v_j^2 + \epsilon}
+\end{equation}
+エネルギータンクは
+\begin{equation}
+E_{tank} = E_{tank}^{max}
+\end{equation}
 
 
-
-
-\section{Implementation as ROS Node}
-ROSノードは以下の入出力を持つ：
+\section{設計時の変数調整方法}
+指定できる変数は以下のようである。
 \begin{itemize}
-\item Subscriber:
-  \begin{itemize}
-    \item /cfs/data (WrenchStamped) : ロボットの手先で計測されたレンチ
-    \item /me6\_robot/joint\_states (JointStates) : ロボットの関節角度
-    \item /twin\_hammer/mocap/pose (PoseStamped) : デバイス位置姿勢
-  \end{itemize}
-\item Publisher:
-  \begin{itemize}
-    \item /twin\_hammer/haptics\_wrench (WrenchStamped) : フィードバックレンチ
-  \end{itemize}
+\item $E_{tank}^{max}$ :
+システムが蓄えられるエネルギーの上限値。大きくすれば介入の頻度が減るが、受動性の破れを許容することになる。$\SI{10}{J}$程度。
+\item $E_{tank}(0)$ :
+システムの有するエネルギーの初期値。上限の1割程度が妥当か？
+\item $M_0, B_0, K_0$ :
+オペレータモデルの初期インピーダンス。$M_0 \approx 10^{-1} \sim 10^{0} \si{kg}$、$B_0 \approx 10^{0} \sim 10^{1} \si{Ns/m}$、$K_0 \approx 10^{1} \sim 10^{3} \si{N/m}$程度。
+\item $\bm{k}_{scale}$ :
+ロボットに取り付けられたレンチを提示する際の基本スケール。ロボットアームでは$0.3$あたりが妥当。
+\item $\epsilon$ :
+速度が小さい軸のダンピング係数の発散を防ぐ定数。$10^{-8} \sim 10^{-6}$程度。
 \end{itemize}
 
-ノード内の処理ループ：
-\begin{enumerate}
-\item オペレータのインピーダンスモデルをRLSにより逐次推定
-\item 計測レンチをスケーリングし，オペレータ応答を予測
-\item $\Delta E^{pred}$ を計算し，タンク残量と比較
-\item 受動性を守るため，必要に応じてスケーリング係数$\alpha$や追加ダンピング$B_d$を調整
-\item フィードバックレンチを生成しパブリッシュ
-\end{enumerate}
+% \section{Implementation as ROS Node}
+% ROSノードは以下の入出力を持つ：
+% \begin{itemize}
+% \item Subscriber:
+%   \begin{itemize}
+%     \item /cfs/data (WrenchStamped) : ロボットの手先で計測されたレンチ
+%     \item /me6\_robot/joint\_states (JointStates) : ロボットの関節角度
+%     \item /twin\_hammer/mocap/pose (PoseStamped) : デバイス位置姿勢
+%   \end{itemize}
+% \item Publisher:
+%   \begin{itemize}
+%     \item /twin\_hammer/haptics\_wrench (WrenchStamped) : フィードバックレンチ
+%   \end{itemize}
+% \end{itemize}
 
-\section{Tuning Parameters}
-チューニングが必要となる主要パラメータは以下：
-\begin{itemize}
-\item スケーリング係数 $\alpha$: 値を大きくすると感触は直感的だが，不安定になりやすい．小さくすると安定だが感触が弱い．
-\item ダンピング係数 $B_d$: 増加させると安定性は高まるが，操作感が重くなる．
-\item エネルギータンク初期値 $E_{tank}(0)$: 小さすぎるとすぐ介入が発生，大きすぎると不安定化を許す可能性がある．
-\end{itemize}
+% ノード内の処理ループ：
+% \begin{enumerate}
+% \item オペレータのインピーダンスモデルをRLSにより逐次推定
+% \item 計測レンチをスケーリングし，オペレータ応答を予測
+% \item $\Delta E^{pred}$ を計算し，タンク残量と比較
+% \item 受動性を守るため，必要に応じてスケーリング係数$\alpha$や追加ダンピング$B_d$を調整
+% \item フィードバックレンチを生成しパブリッシュ
+% \end{enumerate}
+
+% \section{Tuning Parameters}
+% チューニングが必要となる主要パラメータは以下：
+% \begin{itemize}
+% \item スケーリング係数 $\alpha$: 値を大きくすると感触は直感的だが，不安定になりやすい．小さくすると安定だが感触が弱い．
+% \item ダンピング係数 $B_d$: 増加させると安定性は高まるが，操作感が重くなる．
+% \item エネルギータンク初期値 $E_{tank}(0)$: 小さすぎるとすぐ介入が発生，大きすぎると不安定化を許す可能性がある．
+% \end{itemize}
 
 \end{document}
