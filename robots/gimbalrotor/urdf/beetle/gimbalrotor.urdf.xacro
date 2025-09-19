@@ -119,10 +119,10 @@
     <link name="gimbal_link${self}">
       <inertial>
         <origin xyz="0.0223521 0.0 0.00776312" rpy="0 0 0"/>
-        <mass value="0.15944"/>
+        <mass value="0.20590"/>
         <inertia
-            ixx="0.00007458" iyy="0.00007325" izz="0.00007756"
-            ixy="0.00000001" ixz="0.00000084" iyz="0.00000001"/>
+            ixx="0.00063066" iyy="0.00077683" izz="0.00091985"
+            ixy="0.00004368" ixz="-0.00015418" iyz="-0.00005247"/>
       </inertial>
       <collision>
         <origin xyz="0.0 0 0" rpy="0 0 0"/>
