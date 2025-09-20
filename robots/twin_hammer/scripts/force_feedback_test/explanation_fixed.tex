@@ -1,0 +1,205 @@
+% haptics_feedback_node_explanation_rev.tex
+\documentclass[a4paper,11pt]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{bm}
+\usepackage{siunitx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{physics}
+\usepackage{booktabs}
+\usepackage{geometry}
+\geometry{margin=25mm}
+
+\title{オペレータモデルを含むエネルギー保存則によるハプティクスフィードバック生成法 \\（修正版）}
+\author{（原稿に基づき最小修正を適用）}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{注意（符号と定義の統一）}
+本稿では式の混乱を避けるために以下の符号規約を明確にする。
+
+\begin{itemize}
+  \item $\bm{w}\in\mathbb{R}^6$ は「\emph{そのポートが\textbf{システムに対して作用するレンチ}（すなわちシステムが受け取る力）}」を表す。
+  \item $\bm{v}\in\mathbb{R}^6$ はそのポートのツイスト（並進速度・角速度）を表す（並進は m, 並進速度は m/s、回転は rad, 角速度は rad/s）。
+  \item ポートに\emph{流入}（システムが受け取る）するパワーは
+  \[
+    P_{\text{port}} \;=\; \bm{w}^\top \bm{v}.
+  \]
+  \item 以降、$P_{\text{env}}$ や $P_{\text{op}}$ などは常に「システムへ流入するパワー」を意味することとする。
+\end{itemize}
+
+上の定義により以降の式は一貫して記述される（元稿で混在していた $P_{in}/P_{out}$ 表記は廃止し、すべて「システムへ流入するパワー」で統一した）。
+
+\section{エネルギー収支（1ステップ予測）}
+ロボット（外界ポート）とデバイス（オペレータポート）を含むシステムの 1 サイクル（ステップ $i\to i+1$）での外部からの流入／流出の予測は、次のように書く。
+
+\begin{align}
+  P_{\text{env}}(i) &= \bm{w}_{\text{measured}}(i)^\top \bm{v}_{\text{robot}}(i), \\
+  P_{\text{op}}(i)  &= \bm{w}_{\text{op,est}}(i)^\top \bm{v}_{\text{op}}(i),
+\end{align}
+ここでいずれも「システムへ流入するパワー」であることに注意する。\\
+
+予測されるシステムエネルギー変化（1ステップ分、$\Delta t$）は
+\[
+  \Delta E_{\text{pred}}(i) \;=\; \big( P_{\text{env}}(i) + P_{\text{op}}(i) - P_{\text{out,sys}}(i) \big)\Delta t,
+\]
+と書けるが、実装上は「オペレータへ提示するレンチにより予測される流出分」と「オペレータが逆に行う仕事」に着目して簡潔に扱う。以降は以下の簡便形で統一する：
+
+\[
+  \Delta E_{\text{pred}}(i) = \big( \bm{w}_{\text{nom}}(i)^\top \bm{v}_{\text{hand,pred}}(i+1) - \bm{w}_{\text{op,est}}(i)^\top \bm{v}_{\text{op}}(i) \big)\Delta t.
+\]
+
+\section{エネルギータンク更新（明確化）}
+システムが内部に保持する利用可能エネルギーを $E_{\text{tank}}(i)$，その上限を $E_{\max}^{\text{tank}}$ とする。更新規則は符号をわかりやすく次の形で示す（常に「新しいタンク量 = 旧タンク量 + 系への流入量（正） - 系からの流出量（正）」の観点）：
+
+\[
+  E_{\text{tank}}(i+1) \;=\; \mathrm{clip}\big( E_{\text{tank}}(i) + \Delta E_{\text{toTank}}(i),\; 0,\; E_{\max}^{\text{tank}} \big),
+\]
+ここで $\Delta E_{\text{toTank}}(i)$ は「そのステップでタンクに蓄えられる（正）／取り出される（負）エネルギー」を意味する。実装上、\(\Delta E_{\text{toTank}}(i)= -\Delta E_{\text{pred}}(i)\) と扱う（※符号は上の定義に従って解釈すること）。\\
+
+特別な場合の取り扱い：
+\begin{itemize}
+  \item $\Delta E_{\text{pred}}(i) > 0$（予測では流出）：まず $0 < \Delta E_{\text{pred}} \le E_{\text{tank}}$ なら通常提示（$ \bm{w}_{\text{feedback}} = \bm{w}_{\text{nom}}$）でタンクを取り崩す。
+  \item $\Delta E_{\text{pred}}(i) > E_{\text{tank}}$（タンクより大きく流出する予測）：スケーリング係数 $\alpha\in[0,1]$ を用いて提示レンチを縮小し、流出をタンク以下に抑える（下節参照）。
+  \item $\Delta E_{\text{pred}}(i) < 0$（予測では流入）：まずタンクに蓄えるが，蓄えきれない場合はダンパ追加で余剰を消費する（下節参照）。
+\end{itemize}
+
+\section{スケーリング（$\alpha$）による流出抑制 --- 明確化と数値安全化}
+$\Delta E_{\text{pred}}(i) > E_{\text{tank}}(i)$ の時、提示レンチをスケールして流出を抑える。正しい代数式は次の通り：
+
+\[
+  \Delta E_{\text{pred}}(i) = \big( \alpha \,\bm{w}_{\text{nom}}(i)^\top \bm{v}_{\text{hand,pred}}(i+1) - \bm{w}_{\text{op,est}}(i)^\top \bm{v}_{\text{op}}(i) \big)\Delta t.
+\]
+
+これを $\alpha$ について解くと
+
+\[
+  \alpha = \frac{\dfrac{E_{\text{tank}}(i)}{\Delta t} + \bm{w}_{\text{op,est}}(i)^\top \bm{v}_{\text{op}}(i)}
+               {\bm{w}_{\text{nom}}(i)^\top \bm{v}_{\text{hand,pred}}(i+1)}.
+\]
+
+\paragraph{数値的注意点（必須）}
+\begin{enumerate}[label=(\alph*)]
+  \item 分母が小さい／ゼロに近い場合は直接計算しない。判定閾値 $\delta_{\text{denom}}>0$（設計変数）を用い、\\
+    \(\;|\bm{w}_{\text{nom}}^\top \bm{v}_{\text{hand,pred}}| < \delta_{\text{denom}}\Rightarrow \alpha \leftarrow 0\)（またはダンパへフォールバック）。
+  \item 計算後は常に $\alpha \leftarrow \mathrm{clip}(\alpha,0,1)$。
+  \item $\alpha$ の急激変化を避けるために1次遅れフィルタ（時定数 $\tau_\alpha$）を適用することを推奨する。
+\end{enumerate}
+
+\section{ダンパ追加によるエネルギー散逸（$D_{\text{add}}$）}
+タンクに収めきれない流入がある場合、追加ダンパ $D_{\text{add}}=\mathrm{diag}(d_j)>0$ を導入して消費する。必要消費電力 $P_{\text{req}}$ を以下で定義する（単位：W）：
+
+\[
+  P_{\text{req}} = \frac{ \max\big(0,\; |\Delta E_{\text{nom}}| - \big(E_{\max}^{\text{tank}} - E_{\text{tank}}(i)\big)\big)}{\Delta t},
+\]
+ここで $\Delta E_{\text{nom}}$ はダンパ無しで予測される流入（負値の絶対）である。\\
+
+各軸へ割当てるパワーの重み（正規化）を次で与える（数値安定化を含む）：
+\[
+  p_j = \max\big(0,\; w_{\text{nom},j}\, v_j\big),\qquad
+  \hat q_j = \frac{p_j}{\sum_k p_k + \delta_q},
+\]
+ここで $\delta_q>0$ は分母ゼロ回避の閾値。\\
+
+このとき各軸のダンピング係数は
+\[
+  d_j = \frac{P_{\text{req}}\,\hat q_j}{v_j^2 + \varepsilon_j},
+\]
+ただし実装上は必ず上限クリップ $d_j \leftarrow \min(d_j,\, d_{j,\max})$ を行う。\\
+
+\paragraph{設計上の注意}
+\begin{itemize}
+  \item $\varepsilon_j$ は速度スケールに合わせて選ぶ（例：速度スケール $v_{\text{scale}}\!=\!1\times10^{-2}$ の場合 $\varepsilon \approx v_{\text{scale}}^2 = 1\times10^{-4}$）。極端に小さい値（$10^{-8}$ 等）は実装では不安定になる場合があるため注意。
+  \item $d_{j,\max}$ はデバイスの最大力 $F_{j,\max}$ と最小速度想定 $v_{j,\min}$ より $d_{j,\max}\approx F_{j,\max}/v_{j,\min}$ を基に決め、安全余裕を取ること。
+\end{itemize}
+
+\section{オペレータインピーダンス同定（RLS）の明示}
+逐次最小二乗（RLS）でオペレータの等価インピーダンス $\theta_i=[M_i,B_i,K_i]^\top$ を推定する際、数式と観測値の定義を明確化する。
+
+\paragraph{回帰式}
+各成分について
+\[
+  F_i \approx \phi_i^\top \theta_i,\qquad
+  \phi_i = \begin{bmatrix} \ddot x_i \\ \dot x_i \\ x_i - x_{\text{ref}} \end{bmatrix},
+\]
+ただし $x$ は成分ごと（並進3, 回転3）で扱う（回転は rad 単位で表す）。
+
+\paragraph{RLS 更新（忘却因子あり）}
+\begin{align}
+  Q_i &= \frac{1}{\lambda}\left( Q_{i-1} - \frac{Q_{i-1}\phi_i\phi_i^\top Q_{i-1}}{\lambda + \phi_i^\top Q_{i-1}\phi_i} \right), \\
+  \theta_i &= \theta_{i-1} + Q_i \phi_i \big(y_i - \phi_i^\top \theta_{i-1}\big),
+\end{align}
+ここで $\lambda\in(0,1]$ は忘却係数（設計変数）であり、$Q_0$ は初期共分散（行列）である。\\
+
+\paragraph{観測値 $y_i$ の定義（重要）}
+元稿では $y_i$ を「前ステップに提示したレンチ」としているが、\textbf{実装上はデバイスで\emph{実際に発生した}力/トルク（実測）を使うべき}である。コマンド値をそのまま $y_i$ に用いるとアクチュエータ飽和や非線形の影響を同定値に取り込んでしまう。従って $y_i$ は「デバイスのセンサで計測した反力（または実出力の推定）」を用いることを明記する。
+
+\section{6次元（並進/回転）の単位と分離}
+6自由度を要素ごとに扱う場合、\emph{並進成分}と\emph{回転成分}は物理単位が異なるため次の点を必ず明記する：
+\begin{itemize}
+  \item 並進の質量 $M_{\text{trans}}$ は kg、回転の慣性 $M_{\text{rot}}$ は kg$\cdot$m$^2$ とする。
+  \item ダンピング $B_{\text{trans}}$ は Ns/m、回転は Nms/rad。
+  \item 剛性 $K_{\text{trans}}$ は N/m、回転は Nm/rad。
+  \item それぞれ別個に初期値レンジを与えること（下節で推奨オーダーを示す）。
+\end{itemize}
+
+\section{設計変数一覧（追補）と推奨オーダー}
+以下は原稿に含まれる変数に加えて、実装前に設計者が\textbf{必ず}決めておくべき変数と初期推奨オーダー（目安）である。数値は典型的ハプティクス実験を想定した目安であり、デバイス特性により調整が必要である。
+
+\begin{table}[h]
+\centering
+\begin{tabular}{l l l}
+\toprule
+変数 & 単位 & 推奨オーダー／備考 \\
+\midrule
+$\Delta t$ & s & 0.001--0.01（ハプティクスなら1~\si{ms}推奨） \\
+$E_{\max}^{\text{tank}}$ & J & 1--50（デスクトップ:1--10 J, 産業:10--50 J） \\
+$E_{\text{tank}}(0)$ & J & 0--$E_{\max}$（安全優先なら小さめ） \\
+$k_{\text{scale,trans}}$ & - & 0.2--0.5（並進） \\
+$k_{\text{scale,rot}}$ & - & 0.05--0.2（回転） \\
+$M_{0,\text{trans}}$ & kg & 0.1--5 (典型 0.5--2) \\
+$M_{0,\text{rot}}$ & kg$\cdot$m$^2$ & $10^{-4}$ -- $10^{-1}$ (典型 $10^{-3}$) \\
+$B_{0,\text{trans}}$ & Ns/m & 0.1--50 (典型 1--20) \\
+$B_{0,\text{rot}}$ & Nms/rad & $10^{-3}$ -- 1 (典型 0.01--0.5) \\
+$K_{0,\text{trans}}$ & N/m & 10--1000 (典型 50--500) \\
+$K_{0,\text{rot}}$ & Nm/rad & 0.1--100 (典型 1--20) \\
+$\lambda$ (RLS) & - & 0.98--0.9999（$\Delta t$ に依存。1~\si{ms}で0.999なら有効記憶約1s） \\
+$Q_0$ & - & 対角（大きめ）：例 diag(100,100,100)（スケール依存） \\
+$\varepsilon_j$ & (速度)$^2$ & $v_{\text{scale}}^2$（例 $v_{\text{scale}}=10^{-2}$ $\Rightarrow \varepsilon=10^{-4}$） \\
+$\delta_{\text{denom}}$ & W & small positive（例 $10^{-6}$--$10^{-3}$） \\
+$\delta_q$ & W & small positive（分母回避。例 $10^{-6}$--$10^{-3}$） \\
+$d_{j,\max}$ & Ns/m または Nms/rad & デバイスの $F_{j,\max}/v_{j,\min}$ を基に決定、さらに安全余裕を取る \\
+$F_{j,\max},\;T_{j,\max}$ & N, Nm & デバイス性能に依存（必須） \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{数値安全化・実装チェックリスト}
+実装前に必ず確認する項目を列挙する。
+\begin{enumerate}
+  \item 符号規約（本文冒頭）に基づくすべての式が一貫しているか。
+  \item $\alpha$ 計算の分母小判定（$\delta_{\text{denom}}$）とクリッピングが入っているか。
+  \item $d_j$ の $\varepsilon_j$ と $d_{j,\max}$ が適切に設定されているか。
+  \item RLS の $y_i$ を「実測力（デバイス）」に変更しているか。$Q_0,\lambda$ が定義されているか。
+  \item 並進/回転で単位が分離され、初期パラメータがそれぞれ与えられているか。
+  \item センサ／コマンドの遅延を考慮した時間整合（タイムスタンプ整列）が入っているか。
+  \item 異常値（センサ外れ値、 saturations）でのフォールバック処理を用意しているか。
+\end{enumerate}
+
+\section*{補遺：最小変更の意図}
+本修正版は元稿の構成・記述を保ちつつ，以下の最小限の修正を加えました：
+\begin{itemize}
+  \item 「パワー（エネルギー）の符号規約」を文頭に明示して式の混在を解消。
+  \item $\alpha$ の代数式を明確に括弧で示し，分母ゼロ回避とクリッピング／ローパスを付加。
+  \item RLS の更新式を「忘却因子ありの標準形」に統一し，観測 $y_i$ の定義を「実測力」に修正。
+  \item ダンパ割当てでの $\varepsilon_j$, $\delta_q$, $d_{j,\max}$ 等の数値安全化を明記。
+  \item 6次元（並進/回転）の単位分離と具体的な初期レンジの目安を追加。
+\end{itemize}
+
+\vspace{1em}
+\noindent
+（この文書は元の TeX を基に最小修正を行ったものである。参照元原稿：:contentReference[oaicite:1]{index=1}）
+
+\end{document}
