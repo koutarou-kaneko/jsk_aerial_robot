@@ -1,4 +1,4 @@
-This is e-upTeX, Version 3.141592653-p3.9.1-u1.27-210218-2.6 (utf8.uptex) (TeX Live 2022/dev/Debian) (preloaded format=uplatex 2025.6.26)  20 SEP 2025 15:53
+This is e-upTeX, Version 3.141592653-p3.9.1-u1.27-210218-2.6 (utf8.uptex) (TeX Live 2022/dev/Debian) (preloaded format=uplatex 2025.6.26)  22 SEP 2025 15:14
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -594,23 +594,20 @@ LaTeX Font Info:    Font shape `JT2/hgt/m/n' will be
 (Font)              scaled to size 11.09619pt on input line 61.
  [1
 
-] [2] [3]
-
-LaTeX Warning: `h' float specifier changed to `ht'.
-
-[4] [5] (./haptics_feedback_node_explanation.aux)
+] [2] [3] [4]
+[5] [6] (./haptics_feedback_node_explanation.aux)
 Package rerunfilecheck Info: File `haptics_feedback_node_explanation.out' has n
 ot changed.
-(rerunfilecheck)             Checksum: 286E30A7D99B2B226C2733CF2E7E6AAB;1967.
+(rerunfilecheck)             Checksum: 8698C2CA915D149F98A323D2B7680BE4;2067.
  ) 
 Here is how much of TeX's memory you used:
- 16232 strings out of 478733
- 293951 string characters out of 5860893
- 593210 words of memory out of 5000000
- 34479 multiletter control sequences out of 15000+600000
+ 16235 strings out of 478733
+ 294008 string characters out of 5860893
+ 595331 words of memory out of 5000000
+ 34482 multiletter control sequences out of 15000+600000
  490036 words of font info for 124 fonts, out of 8000000 for 9000
  934 hyphenation exceptions out of 8191
  72i,19n,79p,431b,1026s stack positions out of 5000i,500n,10000p,200000b,80000s
 
-Output written on haptics_feedback_node_explanation.dvi (5 pages, 36028 bytes).
+Output written on haptics_feedback_node_explanation.dvi (6 pages, 38888 bytes).
 

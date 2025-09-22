@@ -281,13 +281,14 @@ $\epsilon$は、速度が小さいときにダンピング係数が過大にな�
   \end{tabular}
 \end{table}
 
+
 \section{ROSノード実装の指示}
 ROSノードは以下の入出力を持つ
 \begin{itemize}
 \item Subscriber:
   \begin{itemize}
     \item /cfs/data (WrenchStamped) : ロボットの手先で計測されたレンチ
-    \item /me6\_robot/joint\_states (JointStates) : ロボットの関節角度
+    % \item /me6\_robot/joint\_states (JointStates) : ロボットの関節角度
     \item /twin\_hammer/mocap/pose (PoseStamped) : デバイス位置姿勢、すなわちオペレータの手の位置姿勢
   \end{itemize}
 \item Publisher:
@@ -295,5 +296,20 @@ ROSノードは以下の入出力を持つ
     \item /twin\_hammer/haptics\_wrench (WrenchStamped) : フィードバックレンチ
   \end{itemize}
 \end{itemize}
+
+
+\section{ノード内での処理}
+rospyで実装する。
+以下の内容をメイン関数のループ内で行う。
+\begin{enumerate}
+  \item RLSによるオペレータのインピーダンス推定
+  \item オペレータがフィードバックレンチを受けた際の手のツイストの予測
+  \item オペレータが応答するレンチの推定
+  \item 1サイクルでのエネルギー流出量の計算とエネルギータンクの更新
+  \item エネルギータンク上限を超えた場合にはフィードバックレンチのスケーリング
+  \item エネルギータンク下限を下回った場合にはフィードバックレンチにダンピングを追加
+\end{enumerate}
+また、/twin\_hammer/mocap/poseのコールバックのなかでノイズ対策の処理を行う。
+
 
 \end{document}
