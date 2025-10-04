@@ -102,6 +102,11 @@ $Q_0$は初期共分散行列である。
 \begin{equation}
   \dot{x}(i+1) \approx \dot{x}(i) + \ddot{x}(i) \Delta t = \dot{x}(i) + \frac{\Delta t}{M_i} (w_{\text{cand},j}(i) - B_i \dot{x}(i) - K_i x(i))
 \end{equation}
+予測値はモーションキャプチャでの測定値に基づくものであるため、ノイズが多く乗っている。
+このノイズ対策のため、scipyの中央値フィルタを用いる。
+\begin{equation}
+  
+\end{equation}
 
 \subsection{オペレータの応答レンチの推定}
 提示力を受けたオペレータは、それに対して押し返すように手を動かす。

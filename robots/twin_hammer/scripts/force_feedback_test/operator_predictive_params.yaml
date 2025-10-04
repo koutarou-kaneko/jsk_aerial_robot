@@ -6,12 +6,13 @@
 dt: 0.01  # s, 100 Hz
 
 # energy tank
-Etank_0: 1.0
-Etank_max: 10.0
+Etank_0: 15.0
+Etank_max: 30.0
+dE_thre : 0.005
 
 # scaling gains
-kscale_trans: 0.4
-kscale_rot: 0.08
+kscale_trans: 0.3
+kscale_rot: 0.3
 
 # RLS
 lambda_r: 0.995
@@ -27,12 +28,13 @@ B0_rot: 0.01
 K0_rot: 1.0
 
 # thresholds and constants
-P_thre: 1e-3
+P_thre: 0.001
 alpha_const: 0.1
-eps_v: 1e-6
+eps_v: 0.000001
 dconst: 1.0
 dmax: 1000.0
 
 # filters
-ema_vel: 0.8
-ema_acc: 0.8
+ema_vel: 0.9
+ema_acc: 0.9
+est_medfilt_window : 11
