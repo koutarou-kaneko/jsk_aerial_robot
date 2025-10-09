@@ -13,7 +13,7 @@ from geometry_msgs.msg import PoseStamped, WrenchStamped
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from control_msgs.msg import FollowJointTrajectoryActionGoal
-
+from std_msgs.msg import Int32
 
 class TeleopCollisionList:
     def __init__(self, urdf_path):
@@ -70,12 +70,15 @@ class TeleopCollisionList:
         self.latest_mocap_pos = None
         self.latest_mocap_quat = None
         self.last_valid_ee_pos = None
+        self.cfs_connection_state = False
 
         self.gazebo_pub = rospy.Publisher("/me6_robot/joint_controller/command", JointTrajectory, queue_size=1)
         self.real_pub = rospy.Publisher("/me6_robot/joint_controller/follow_joint_trajectory/goal", FollowJointTrajectoryActionGoal, queue_size=1)
         self.debug_target_pub = rospy.Publisher("/debug/target_pos", PoseStamped, queue_size=1)
         self.error_feedback_pub = rospy.Publisher("/twin_hammer/haptics_wrench", WrenchStamped, queue_size=1)
         rospy.Subscriber("/twin_hammer/mocap/pose", PoseStamped, self.mocap_cb)
+        rospy.Subscriber('/cfs/connection_state', Int32, self.cfs_connection_cb, queue_size=1)
+
 
     def mocap_cb(self, msg: PoseStamped):
         pos = np.array([msg.pose.position.x, msg.pose.position.y, msg.pose.position.z])
@@ -86,6 +89,10 @@ class TeleopCollisionList:
         if self.device_init_pos is None:
             self.device_init_pos = pos + self.offset_pos
             self.device_init_quat = quat
+        
+    def cfs_connection_cb(self, msg: Int32):
+        self.cfs_connection_state = msg.data
+
 
     def compute_fk(self, joint_positions):
         fk_joint_array = kdl.JntArray(len(joint_positions))
