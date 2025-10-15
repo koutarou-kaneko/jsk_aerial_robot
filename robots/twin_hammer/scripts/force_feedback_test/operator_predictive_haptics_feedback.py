@@ -1,15 +1,5 @@
 #!/usr/bin/env python3
 """
-haptics_feedback_node.py
-
-- Subscriber:
-  - /cfs/data            : geometry_msgs/WrenchStamped  (robot measured wrench)
-  - /twin_hammer/mocap/pose : geometry_msgs/PoseStamped  (mocap pose)
-  - /twin_hammer/Imu     : spinal/Imu                    (custom IMU message described by user)
-
-- Publisher:
-  - /twin_hammer/haptics_wrench : geometry_msgs/WrenchStamped
-
 Implements:
  - per-axis RLS (theta = [M, B, K]) for 6 axes (3 trans + 3 rot)
  - mocap + IMU fusion for velocity/acceleration (simple complementary / EMA filters)
@@ -26,7 +16,6 @@ import os
 from geometry_msgs.msg import WrenchStamped, PoseStamped
 from std_msgs.msg import Header, Float32MultiArray, Int32
 from spinal.msg import Imu
-# Helpers: quaternion -> euler if needed (but we use IMU angles for orientation)
 from tf.transformations import euler_from_quaternion
 from scipy.signal import medfilt
 from collections import deque
@@ -60,7 +49,6 @@ class HapticsFeedbackNode:
         self.dt = p.get('dt', 0.01)  # 100 Hz default
         self.E_tank = p.get('Etank_0', 0.0)
         self.E_tank_max = p.get('Etank_max', 5.0)
-        self.dE_thre = p.get('dE_thre', 0.1)
         self.kscale_trans = p.get('kscale_trans', 0.4)
         self.kscale_rot = p.get('kscale_rot', 0.1)
         self.lambda_r = p.get('lambda_r', 0.995)
@@ -123,8 +111,8 @@ class HapticsFeedbackNode:
         # Publisher
         self.wrench_pub = rospy.Publisher('/twin_hammer/haptics_wrench', WrenchStamped, queue_size=1)
         self.debug_handnext_pub = rospy.Publisher('/debug/handnext', Float32MultiArray, queue_size=1)
-        self.debug_wcand_pub = rospy.Publisher('/debug/wcand', Float32MultiArray, queue_size=1)
-        self.debug_energy_pub = rospy.Publisher('/debug/energy2', Float32MultiArray, queue_size=1)
+        self.debug_whand_est_pub = rospy.Publisher('/debug/whand_est', Float32MultiArray, queue_size=1)
+        self.debug_energy_pub = rospy.Publisher('/debug/energy', Float32MultiArray, queue_size=1)
         self.debug_scale_pub = rospy.Publisher('/debug/scale', Float32MultiArray, queue_size=1)
         self.debug_dadd_pub = rospy.Publisher('/debug/dadd', Float32MultiArray, queue_size=1)
         self.debug_impedance_x_pub = rospy.Publisher('/debug/impedance/x', Float32MultiArray, queue_size=1)
@@ -144,18 +132,14 @@ class HapticsFeedbackNode:
 
     # ---------- callbacks ----------
     def robot_wrench_cb(self, msg: WrenchStamped):
-        # Map geometry_msgs/Wrench -> 6-vector
         f = msg.wrench.force
         t = msg.wrench.torque
-        # self.w_robot_meas = np.array([f.x, f.y, f.z, t.x, t.y, t.z])
         self.w_robot_meas = np.array([f.z, f.x, f.y, t.z, t.x, t.y])
 
     def mocap_cb(self, msg: PoseStamped):
-        # Use position from PoseStamped
         pos = msg.pose.position
         quat = msg.pose.orientation
         self.mocap_pos = np.array([pos.x, pos.y, pos.z])
-        # convert quaternion to euler (radians)
         euler = euler_from_quaternion([quat.x, quat.y, quat.z, quat.w])
         self.mocap_orient = np.array(euler)  # roll,pitch,yaw
 
@@ -173,7 +157,6 @@ class HapticsFeedbackNode:
         self.last_mocap_time = stamp
 
     def imu_cb(self, msg: Imu):
-        # IMU message fields described by user
         self.imu_acc = np.array(msg.acc_data, dtype=float)    # linear acc (3,)
         self.imu_gyro = np.array(msg.gyro_data, dtype=float)  # angular velocity (rad/s)
         self.imu_angles = np.array(msg.angles, dtype=float)   # angles (rad)
@@ -284,10 +267,10 @@ class HapticsFeedbackNode:
             xdd_pred = (wj - B * xdot - K * x) / M
             vhand_next[axis] = xdot + xdd_pred * current_dt
         self.vhand_next_buffer.append(vhand_next.copy())
-        # if len(self.vhand_next_buffer) == self.est_medfilt_window:
-        #     vhand_stacked = np.stack(self.vhand_next_buffer, axis=0)
-        #     vhand_next = np.median(vhand_stacked, axis=0)
-        # vhand_next = medfilt(vhand_next, kernel_size=3)
+        if len(self.vhand_next_buffer) == self.est_medfilt_window:
+            vhand_stacked = np.stack(self.vhand_next_buffer, axis=0)
+            vhand_next = np.median(vhand_stacked, axis=0)
+        vhand_next = medfilt(vhand_next, kernel_size=3)
 
         # --- Estimate hand wrench at current step using measured kinematics and theta (Eq. 10) ---
         whand_est = np.zeros(6)
@@ -301,28 +284,23 @@ class HapticsFeedbackNode:
         # whand_est = medfilt(whand_est, kernel_size=3)
 
         # --- compute Pin (power into device from operator at current step) ---
-        # Pin = w_hand(i)^T v_hand(i)
         Pin = float(np.dot(whand_est, self.v_hand))
 
         # --- compute predicted energy flow for next step ---
-        # dEpred = (wcand^T vhand_next - Pin) * dt
         P_cand_vnext = float(np.dot(wcand, vhand_next))
         self.P_cand_vnext_buffer.append(P_cand_vnext)
         if len(self.P_cand_vnext_buffer) == self.est_medfilt_window:
             P_cand_vnext = np.median(self.P_cand_vnext_buffer)
         dEpred = (P_cand_vnext - Pin) * current_dt
-        # if abs(dEpred) < self.dE_thre:
-        #     dEpred = 0
-
         E_tank_next = self.E_tank - dEpred
 
-        # default: no scaling (alpha = 1), no added damping
-        alpha = 1.0
+        use_QP = False
         use_damping = False
         Dadd = np.zeros((6,6))
 
-        # --- If E_tank_next < 0 => need scaling alpha in [0,1) so E_tank_next becomes 0 ---
         if E_tank_next < 0:
+            # scaling
+            '''
             denom = (P_cand_vnext)
             if abs(denom) < self.P_thre:
                 alpha = self.alpha_const
@@ -331,8 +309,18 @@ class HapticsFeedbackNode:
             alpha = clip(alpha, 0.0, 1.0)
             E_tank_next = 0.0  # after scaling we set to 0
             rospy.loginfo_throttle(5.0, f"Energy underflow: applying scaling alpha={alpha:.3f}")
+            '''
 
-        # --- If E_tank_next > E_tank_max => add damping to dissipate energy ---
+            # QP
+            rhs = self.E_tank / current_dt + Pin
+            vTv = float(np.dot(vhand_next, vhand_next)) + 1e-9
+            vTw_cand = float(np.dot(vhand_next, wcand))
+            lam = max(0.0, (vTw_cand - rhs) / vTv)
+            w_opt = wcand - lam * vhand_next
+            E_tank_next = max(0.0, self.E_tank - current_dt * (np.dot(w_opt, vhand_next) - Pin))
+            use_QP = True
+            rospy.loginfo_throttle(1.0, f"Energy underflow -> minimal QP correction, λ={lam:.3e}, Etank_next={E_tank_next:.3f}")
+            
         if E_tank_next > self.E_tank_max:
             # compute required dissipated power Preq per eq (23)
             Preq = (self.E_tank_max - self.E_tank) / current_dt + P_cand_vnext - Pin
@@ -342,7 +330,7 @@ class HapticsFeedbackNode:
             if Preq <= 0:
                 use_damping = False
                 E_tank_next = self.E_tank_max
-                rospy.loginfo_throttle(5.0, "Energy overflow detected but Preq <= 0 -> no damping applied.")
+                rospy.loginfo_throttle(1.0, "Energy overflow detected but Preq <= 0 -> no damping applied.")
             else:
                 p_in = np.maximum(0.0, wcand * vhand_next)
                 sum_p_in = np.sum(p_in) + 1e-12
@@ -381,13 +369,15 @@ class HapticsFeedbackNode:
                 use_damping = True
                 # after damping selection, set E_tank_next to E_tank_max (we dissipate to that)
                 E_tank_next = self.E_tank_max
-                rospy.loginfo_throttle(5.0, f"Energy overflow: adding damping, Dadd diag approx = {Dadd}")
+                rospy.loginfo_throttle(1.0, f"Energy overflow: adding damping, Dadd diag approx = {Dadd}")
 
         # --- compute final feedback wrench ---
+        if use_QP:
+            wfeedback = w_opt
         if use_damping:
             wfeedback = wcand - (Dadd * vhand_next)
         else:
-            wfeedback = alpha * wcand
+            wfeedback = wcand
 
         # store last feedback command (for RLS y)
         self.last_feedback_cmd = wfeedback.copy()
@@ -422,17 +412,17 @@ class HapticsFeedbackNode:
         handnext_msg.data = [float(vhand_next[0]), float(vhand_next[1]), float(vhand_next[2]), float(vhand_next[3]), float(vhand_next[4]), float(vhand_next[5])]
         self.debug_handnext_pub.publish(handnext_msg)
 
-        wcand_msg = Float32MultiArray()
-        wcand_msg.data = [float(wcand[0]), float(wcand[1]), float(wcand[2]), float(wcand[3]), float(wcand[4]), float(wcand[5])]
-        self.debug_wcand_pub.publish(wcand_msg)
+        whand_est_msg = Float32MultiArray()
+        whand_est_msg.data = [float(whand_est[0]), float(whand_est[1]), float(whand_est[2]), float(whand_est[3]), float(whand_est[4]), float(whand_est[5])]
+        self.debug_whand_est_pub.publish(whand_est_msg)
 
         energy_msg = Float32MultiArray()
         energy_msg.data = [float(self.E_tank), float(Pin), float(P_cand_vnext), float(dEpred)]
         self.debug_energy_pub.publish(energy_msg)
 
-        scale_msg = Float32MultiArray()
-        scale_msg.data = [float(alpha)]
-        self.debug_scale_pub.publish(scale_msg)
+        # scale_msg = Float32MultiArray()
+        # scale_msg.data = [float(alpha)]
+        # self.debug_scale_pub.publish(scale_msg)
 
         dadd_msg = Float32MultiArray()
         dadd_msg.data = [float(Dadd[0,0]), float(Dadd[1,1]), float(Dadd[2,2]), float(Dadd[3,3]), float(Dadd[4,4]), float(Dadd[5,5])]

@@ -6,9 +6,8 @@
 dt: 0.01  # s, 100 Hz
 
 # energy tank
-Etank_0: 15.0
-Etank_max: 30.0
-dE_thre : 0.005
+Etank_0: 1.0
+Etank_max: 3.0
 
 # scaling gains
 kscale_trans: 0.3
@@ -37,4 +36,4 @@ dmax: 1000.0
 # filters
 ema_vel: 0.9
 ema_acc: 0.9
-est_medfilt_window : 11
+est_medfilt_window : 7
