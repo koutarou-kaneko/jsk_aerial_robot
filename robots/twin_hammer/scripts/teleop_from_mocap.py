@@ -2,6 +2,7 @@
 
 import rospy
 import time
+import math
 import tf.transformations as tf
 from std_msgs.msg import UInt8, String
 from aerial_robot_msgs.msg import FlightNav
@@ -123,9 +124,9 @@ class teleop_from_mocap():
         k = 1.5
         log_base = 1.45
         for i in range(6):
-          if feedback_wrench[i] >= 0
+          if feedback_wrench[i] >= 0:
             feedback_wrench[i] = logarithm(feedback_wrench[i]+1,log_base,k)
-          if feedback_wrench[i] < 0
+          if feedback_wrench[i] < 0:
             feedback_wrench[i] = -logarithm(-(feedback_wrench[i]-1),log_base,k)
         
         """ limitation of z and att for safety """

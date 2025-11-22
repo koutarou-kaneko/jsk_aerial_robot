@@ -13,7 +13,7 @@ NPZ_PATH = os.path.join(script_dir, "./sdf_potential.npz")
 PUBLISH_RATE = 100.0
 
 # Wrench scale factor
-WRENCH_SCALE_FACTOR = 1.0
+WRENCH_SCALE_FACTOR = 3.0
 
 # Small safety eps (to avoid division by zero)
 _EPS = 1e-12
@@ -179,7 +179,7 @@ class PotentialGradientNode:
         self.robot_pos_sub = rospy.Subscriber(mocap_topic, PoseStamped, self.robot_pos_cb)
         self.grad_pub = rospy.Publisher("/potential_gradient", Vector3, queue_size=1)
         # keep original wrench topic name (note original had a typo 'haprtics' — preserve or change as needed)
-        self.wrench_pub = rospy.Publisher("/twin_hammer/haprtics_wrench", WrenchStamped, queue_size=1)
+        self.wrench_pub = rospy.Publisher("/twin_hammer/haptics_wrench", WrenchStamped, queue_size=1)
 
     def robot_pos_cb(self, msg):
         """Store the latest mocap position for gradient computation."""
@@ -209,9 +209,9 @@ class PotentialGradientNode:
                 # publish wrench (negative gradient as force)
                 wrench_msg = WrenchStamped()
                 wrench_msg.header.stamp = rospy.Time.now()
-                wrench_msg.wrench.force.x = WRENCH_SCALE_FACTOR * float(grad[0])
-                wrench_msg.wrench.force.y = WRENCH_SCALE_FACTOR * float(grad[1])
-                wrench_msg.wrench.force.z = WRENCH_SCALE_FACTOR * float(grad[2])
+                wrench_msg.wrench.force.x = -WRENCH_SCALE_FACTOR * float(grad[0])
+                wrench_msg.wrench.force.y = -WRENCH_SCALE_FACTOR * float(grad[1])
+                wrench_msg.wrench.force.z = -WRENCH_SCALE_FACTOR * float(grad[2])
                 self.wrench_pub.publish(wrench_msg)
             rate.sleep()
 

@@ -3,7 +3,7 @@
   <arg name="robot_name" default="gimbalrotor" />
   <arg name="control_mode" default="pos" />
   <arg name="mocap_debug_mode" default="false" />
-  <arg name="force_feedback" default="true" />
+  <arg name="force_feedback" default="false" />
   <arg name="energy_tank" default="false" />
 
   <node name="teleop_from_mocap" pkg="twin_hammer" type="teleop_from_mocap.py" output="screen" >

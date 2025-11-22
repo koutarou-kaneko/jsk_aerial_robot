@@ -32,8 +32,8 @@ def dUdx(x, U):
 # ============================================================
 
 umax = 1.0
-x0 = 5.0
-x = np.linspace(0, x0, 400)
+x0 = 2.0
+x = np.linspace(0, x0, 500)
 
 # Potentials
 U_exp = pot_exp(x, umax, x0)

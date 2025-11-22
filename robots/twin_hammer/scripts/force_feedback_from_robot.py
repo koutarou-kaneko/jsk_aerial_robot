@@ -111,7 +111,7 @@ class force_feedback_from_robot():
           haptics_wrench[i] = wrench_i * self.k_p
 
         """ exponential conversion """
-        elif self.convert_method == "exp":
+        if self.convert_method == "exp":
           if wrench_i>=0.0:
             haptics_wrench[i] = exponential(wrench_i, self.exp_base, self.k_exp)
           else:

@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-generate_potential_map.py (Wendland C2 kernel版)
-
-- 壁面（四角ポリゴン群）からボクセル化 → EDT（距離場） → 潜在場（potential）
-- 潜在場の生成に Wendland C2 kernel をデフォルト採用（C2 連続、勾配安定）
-- 従来の exp/quad/inv モードもオプションで残しています（比較用）
-"""
-
 import json
 import math
 import numpy as np
@@ -34,7 +26,7 @@ BBOX_PADDING = 0.0           # [m] bbox padding
 
 # potential parameters
 # choose DECAY_MODE: "wendland", or "exp", "quad", "inv", "exp2", "rational", "powerlaw"
-DECAY_MODE = "exp2"
+DECAY_MODE = "rational"
 MAX_POTENTIAL = 1.0
 CUTOFF_DISTANCE = 2.0   # R: radius for kernel (meters). For wendland, potential=0 for d>=R.
 POT_EPS = 0.01
