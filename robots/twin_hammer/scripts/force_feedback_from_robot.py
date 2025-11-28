@@ -29,7 +29,8 @@ class force_feedback_from_robot():
     self.haptics_wrench_pub = rospy.Publisher('/twin_hammer/haptics_wrench', WrenchStamped, queue_size=1)
     self.robot_mocap_sub = rospy.Subscriber('/'+self.robot_name+'/mocap/pose', PoseStamped, self.robot_mocap_cb)
     self.device_mocap_sub = rospy.Subscriber('/twin_hammer/mocap/pose', PoseStamped, self.device_mocap_cb)
-    self.robot_wrench_sub = rospy.Subscriber('/cfs/data', WrenchStamped, self.robot_wrench_cb)
+    # self.robot_wrench_sub = rospy.Subscriber('/cfs/data', WrenchStamped, self.robot_wrench_cb)
+    self.robot_wrench_sub = rospy.Subscriber('/filtered_ftsensor', WrenchStamped, self.robot_wrench_cb)
 
     self.haptics_wrench_msg = WrenchStamped()
     self.robot_wrench = []
@@ -111,7 +112,7 @@ class force_feedback_from_robot():
           haptics_wrench[i] = wrench_i * self.k_p
 
         """ exponential conversion """
-        elif self.convert_method == "exp":
+        if self.convert_method == "exp":
           if wrench_i>=0.0:
             haptics_wrench[i] = exponential(wrench_i, self.exp_base, self.k_exp)
           else:

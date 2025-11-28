@@ -82,7 +82,7 @@ class HapticsFeedbackNode:
             self.theta[a, :] = np.array([M0_rot, B0_rot, K0_rot])
         self.Q = np.stack([self.Q0.copy() for _ in range(6)], axis=0)
 
-        self.cfs_connection_state = False
+        self.cfs_connection_state = True
         # data buffers
         self.w_robot_meas = np.zeros(6)   # incoming robot wrench (force[0:3], torque[0:3])
         self.mocap_pos = np.zeros(3)
@@ -128,10 +128,11 @@ class HapticsFeedbackNode:
         self.debug_impedance_yaw_pub = rospy.Publisher('/debug/impedance/yaw', Float32MultiArray, queue_size=1)
 
         # Subscribers
-        rospy.Subscriber('/cfs/data', WrenchStamped, self.robot_wrench_cb, queue_size=1)
+        # rospy.Subscriber('/cfs/data', WrenchStamped, self.robot_wrench_cb, queue_size=1)
+        rospy.Subscriber('/filtered_ftsensor', WrenchStamped, self.robot_wrench_cb, queue_size=1)
         rospy.Subscriber('/twin_hammer/mocap/pose', PoseStamped, self.mocap_cb, queue_size=1)
         rospy.Subscriber('/twin_hammer/Imu', Imu, self.imu_cb, queue_size=1)
-        rospy.Subscriber('/cfs/connection_state', Int32, self.cfs_connection_cb, queue_size=1)
+        # rospy.Subscriber('/cfs/connection_state', Int32, self.cfs_connection_cb, queue_size=1)
 
         rospy.loginfo("HapticsFeedbackNode initialized.")
 
@@ -173,8 +174,8 @@ class HapticsFeedbackNode:
             self.x_ref[3:6] = self.imu_angles.copy()
             # do not set linear ref here (mocap is preferred)
 
-    def cfs_connection_cb(self, msg: Int32):
-        self.cfs_connection_state = msg.data
+    # def cfs_connection_cb(self, msg: Int32):
+    #     self.cfs_connection_state = msg.data
 
     # ---------- RLS update for one axis ----------
     def rls_update_axis(self, axis, phi, y):
@@ -298,6 +299,7 @@ class HapticsFeedbackNode:
         use_QP = False
         use_damping = False
         Dadd = np.zeros((6,6))
+        QP_lambda = 0.0
 
         if E_tank_next < 0:
             # QP
@@ -311,7 +313,8 @@ class HapticsFeedbackNode:
             w_opt = wcand - QP_lambda * vhand_next
             E_tank_next = max(0.0, self.E_tank - current_dt * (np.dot(w_opt, vhand_next) - Pin))
             use_QP = True
-            rospy.loginfo_throttle(1.0, f"Energy underflow -> minimal QP correction, λ={QP_lambda:.3e}, Etank_next={E_tank_next:.3f}")
+            # rospy.loginfo_throttle(1.0, f"Energy underflow -> minimal QP correction, λ={QP_lambda:.3e}, Etank_next={E_tank_next:.3f}")
+            rospy.loginfo_throttle(1.0, f"Energy underflow -> minimal QP correction")
             
         if E_tank_next > self.E_tank_max:
             Preq = (self.E_tank - self.E_tank_max) / current_dt - P_cand_vnext + Pin
@@ -362,7 +365,8 @@ class HapticsFeedbackNode:
                 use_damping = True
                 # after damping selection, set E_tank_next to E_tank_max (we dissipate to that)
                 E_tank_next = self.E_tank_max
-                rospy.loginfo_throttle(1.0, f"Energy overflow: adding damping, Dadd diag approx = {Dadd}")
+                # rospy.loginfo_throttle(1.0, f"Energy overflow: adding damping, Dadd diag approx = {Dadd}")
+                rospy.loginfo_throttle(1.0, f"Energy overflow: adding damping")
 
         # --- compute final feedback wrench ---
         if use_QP:
@@ -420,10 +424,9 @@ class HapticsFeedbackNode:
         energy_msg.data = [float(self.E_tank), float(Pin), float(P_cand_vnext), float(dEpred)]
         self.debug_energy_pub.publish(energy_msg)
 
-        if use_QP:
-            lambda_msg = Float32MultiArray()
-            lambda_msg.data = [float(QP_lambda)]
-            self.debug_lambda_pub.publish(lambda_msg)
+        lambda_msg = Float32MultiArray()
+        lambda_msg.data = [float(QP_lambda)]
+        self.debug_lambda_pub.publish(lambda_msg)
 
         dadd_msg = Float32MultiArray()
         dadd_msg.data = [float(Dadd[0,0]), float(Dadd[1,1]), float(Dadd[2,2]), float(Dadd[3,3]), float(Dadd[4,4]), float(Dadd[5,5])]
