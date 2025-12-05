@@ -202,11 +202,15 @@ class teleop_haptics_integration():
         k_force = 1.5
         k_torque = 1.0
         log_base = 1.45
-        for i in range(6):
+        for i in range(3):
           if feedback_wrench[i] >= 0:
             feedback_wrench[i] = logarithm(feedback_wrench[i]+1, log_base, k_force)
           else:
-            feedback_wrench[i] = -logarithm(-(feedback_wrench[i]-1), log_base, k_torque)
+            feedback_wrench[i] = -logarithm(-(feedback_wrench[i]-1), log_base, k_force)
+          if feedback_wrench[i+3] >= 0:
+            feedback_wrench[i+3] = logarithm(feedback_wrench[i+3]+1, log_base, k_torque)
+          else:
+            feedback_wrench[i+3] = -logarithm(-(feedback_wrench[i+3]-1), log_base, k_torque)
 
         """ calc feedback wrench from force sensor """
         haptics_wrench = [0.0]*6
