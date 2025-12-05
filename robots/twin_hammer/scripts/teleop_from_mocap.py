@@ -25,8 +25,10 @@ class teleop_from_mocap():
     self.pos_scale = rospy.get_param("~pos_scale", 1.0)
     self.vel_scale = rospy.get_param("~vel_scale", 0.3)
     self.ang_vel_scale = rospy.get_param("~ang_vel_scale", 0.08)
-    self.feedback_force_scale = rospy.get_param("~feedback_force_scale", 10.0)
-    self.feedback_torque_scale = rospy.get_param("~feedback_torque_scale", 1.0)
+    self.feedback_force_scale = rospy.get_param("~feedback_force_scale", 5.0)
+    self.feedback_torque_scale = rospy.get_param("~feedback_torque_scale", 0.8)
+    self.velmode_pos_thre = rospy.get_param("~velmode_pos_thre", 0.2)
+    self.velmode_att_thre = rospy.get_param("~velmode_att_thre", 0.2)
 
     self.nav_pub = rospy.Publisher('/'+self.robot_name+'/uav/nav', FlightNav, queue_size=1)
     # self.att_pub = rospy.Publisher('/'+self.robot_name+'/final_target_baselink_rot', DesireCoord, queue_size=1)
@@ -50,14 +52,17 @@ class teleop_from_mocap():
 
     self.hovering = False
     self.landing = False
-    self.device_pos = None
-    self.device_att = None
-    self.robot_pos = None
-    self.robot_att = None
-    self.device_init_pos = None
-    self.device_init_att = None
-    self.robot_init_pos = None
-    self.robot_init_att = None
+    self.device_pos = [None]*3
+    self.device_att = [None]*3
+    self.robot_pos = [None]*3
+    self.robot_att = [None]*3
+    self.device_init_pos = [None]*3
+    self.device_init_att = [None]*3
+    self.robot_init_pos = [None]*3
+    self.robot_init_att = [None]*3
+    self.robot_vel_mode_fix_pos = [None]*3
+    self.robot_vel_mode_fix_att = [None]*3
+
     self.device_initialize_flag = False
     self.robot_initialize_flag = False
     self.wait_flag = False
@@ -100,34 +105,48 @@ class teleop_from_mocap():
     target_vel = [0.0,0.0,0.0]
     target_ang_vel = [0.0,0.0,0.0]
     feedback_wrench = [0.0,0.0,0.0,0.0,0.0,0.0]
+    log_base = 1.45
 
     r = rospy.Rate(40)
     while not rospy.is_shutdown():
 
-      if self.device_init_pos == None or not self.hovering:
+      if self.device_init_pos is None or not self.hovering:
         self.device_initialize_flag == False
-      if self.robot_init_pos == None or not self.hovering:
+      if self.robot_init_pos is None or not self.hovering:
         self.robot_initialize_flag == False
 
       if self.device_initialize_flag and self.robot_initialize_flag:
         for i in range(3):
-          target_pos[i] = (self.device_pos[i] - self.device_init_pos[i] + self.robot_init_pos[i]) * self.pos_scale
+          device_pos_diff = self.device_pos[i] - self.device_init_pos[i]
+          device_att_diff = self.device_att[i] - self.device_init_att[i]
+          target_pos[i] = (self.robot_init_pos[i] + device_pos_diff) * self.pos_scale
           target_att[i] = self.device_att[i]
-          # target_vel[i] = (self.device_pos[i] - self.device_init_pos[i]) * self.vel_scale
-          target_vel[i] = self.robot_pos[i] + (self.device_pos[i] - self.device_init_pos[i]) * self.vel_scale
-          # target_ang_vel[i] = (self.device_att[i] - self.device_init_att[i]) * self.ang_vel_scale
-          target_ang_vel[i] = self.robot_att[i] + (self.device_att[i] - self.device_init_att[i]) * self.ang_vel_scale
-          feedback_wrench[i] = - (self.device_pos[i] - self.device_init_pos[i]) * self.feedback_force_scale
-          feedback_wrench[i+3] = (self.device_att[i] - self.device_init_att[i]) * self.feedback_torque_scale
-          # feedback_wrench[i+3] = - self.device_att[i]
+          target_vel[i] = self.robot_pos[i] + device_pos_diff * self.vel_scale
+          target_ang_vel[i] = self.robot_att[i] + device_att_diff * self.ang_vel_scale
 
-        k = 1.5
-        log_base = 1.45
-        for i in range(6):
-          if feedback_wrench[i] >= 0:
-            feedback_wrench[i] = logarithm(feedback_wrench[i]+1,log_base,k)
-          if feedback_wrench[i] < 0:
-            feedback_wrench[i] = -logarithm(-(feedback_wrench[i]-1),log_base,k)
+          """ position fix for vel mode """
+          if abs(device_pos_diff) < self.velmode_pos_thre:
+            if self.robot_vel_mode_fix_pos[i] == None:
+              self.robot_vel_mode_fix_pos[i] = self.robot_pos[i]
+            target_vel[i] = self.robot_vel_mode_fix_pos[i]
+          else:
+            self.robot_vel_mode_fix_pos[i] = None
+          if abs(device_att_diff) < self.velmode_att_thre:
+            if self.robot_vel_mode_fix_att[i] == None:
+              self.robot_vel_mode_fix_att[i] = self.robot_att[i]
+            target_ang_vel[i] = self.robot_vel_mode_fix_att[i]
+          else:
+            self.robot_vel_mode_fix_att[i] = None
+
+          """ convert feedback wrench with log """
+          if device_pos_diff >= 0:
+            feedback_wrench[i] = -logarithm(device_pos_diff+1, log_base, self.feedback_force_scale)
+          else:
+            feedback_wrench[i] = logarithm(-device_pos_diff+1, log_base, self.feedback_force_scale)
+          if device_att_diff >= 0:
+            feedback_wrench[i+3] = -logarithm(device_att_diff+1, log_base, self.feedback_torque_scale)
+          else:
+            feedback_wrench[i+3] = logarithm(-device_att_diff+1, log_base, self.feedback_torque_scale)
         
         """ limitation of z and att for safety """
         if self.robot_pos[2] > 1.2:
