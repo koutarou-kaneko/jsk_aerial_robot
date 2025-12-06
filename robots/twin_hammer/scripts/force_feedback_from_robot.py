@@ -26,7 +26,7 @@ class force_feedback_from_robot():
     self.feedback_from_ang = rospy.get_param("~feedback_from_ang", "False")
 
     # self.haptics_switch_pub = rospy.Publisher('/twin_hammer/haptics_switch', Int8, queue_size=1)
-    self.haptics_wrench_pub = rospy.Publisher('/twin_hammer/haptics_wrench', WrenchStamped, queue_size=1)
+    self.wrench_pub = rospy.Publisher('/twin_hammer/feedback_from_robot', WrenchStamped, queue_size=1)
     self.robot_mocap_sub = rospy.Subscriber('/'+self.robot_name+'/mocap/pose', PoseStamped, self.robot_mocap_cb)
     self.device_mocap_sub = rospy.Subscriber('/twin_hammer/mocap/pose', PoseStamped, self.device_mocap_cb)
     self.robot_wrench_sub = rospy.Subscriber('/cfs/data', WrenchStamped, self.robot_wrench_cb)
@@ -160,7 +160,7 @@ class force_feedback_from_robot():
       self.haptics_wrench_msg.wrench.torque.x = haptics_wrench[3]
       self.haptics_wrench_msg.wrench.torque.y = haptics_wrench[4]
       self.haptics_wrench_msg.wrench.torque.z = haptics_wrench[5]
-      self.haptics_wrench_pub.publish(self.haptics_wrench_msg)
+      self.wrench_pub.publish(self.haptics_wrench_msg)
 
       r.sleep()
 
