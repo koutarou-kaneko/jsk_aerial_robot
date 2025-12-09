@@ -21,7 +21,7 @@ class force_feedback_from_robot():
   def __init__(self):
 
     self.robot_name = rospy.get_param("~robot_name", "gimbalrotor")
-    self.convert_method = rospy.get_param("~convert_method", "log") # "prop" or "exp" or "log"
+    self.convert_method = rospy.get_param("~convert_method", "prop") # "prop" or "exp" or "log"
     self.frame = rospy.get_param("~frame", "local") # "local" or "world"
     self.feedback_from_ang = rospy.get_param("~feedback_from_ang", "False")
 
@@ -47,7 +47,7 @@ class force_feedback_from_robot():
       [np.zeros((3,3)), np.identity(3)]
     ])
     self.moment_arm = np.array([-(0.044 + 0.025), 0, 0])
-    self.k_p = 1.0
+    self.k_p = 2.0
     self.exp_base = 1.45
     self.log_base = 1.45
     self.k_exp = 0.4
@@ -58,9 +58,10 @@ class force_feedback_from_robot():
     # time.sleep(0.5)
 
   def robot_mocap_cb(self,msg):
-    self.robot_att = [msg.pose.orientation.roll, msg.pose.orientation.pitch, msg.pose.orientation.yaw] 
+    # self.robot_att = [msg.pose.orientation.roll, msg.pose.orientation.pitch, msg.pose.orientation.yaw] 
     q = [msg.pose.orientation.x,msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w]
     rot = R.from_quat(q)
+    self.robot_att = rot.as_euler
     R_mat = rot.as_matrix()
     self.Ad_R_robot = np.block([
     [R_mat, np.zeros((3, 3))],
@@ -68,9 +69,10 @@ class force_feedback_from_robot():
     ])
 
   def device_mocap_cb(self,msg):
-    self.device_att = [msg.pose.orientation.roll, msg.pose.orientation.pitch, msg.pose.orientation.yaw] 
+    # self.device_att = [msg.pose.orientation.roll, msg.pose.orientation.pitch, msg.pose.orientation.yaw] 
     q = [msg.pose.orientation.x,msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w]
     rot = R.from_quat(q)
+    self.device_att = rot.as_euler
     R_mat = rot.as_matrix()
     self.Ad_R_inv_device = np.block([
     [R_mat.T, np.zeros((3, 3))],
@@ -134,14 +136,14 @@ class force_feedback_from_robot():
             haptics_wrench[i] = -logarithm(-(wrench_i-1), self.log_base, self.k_log)
 
       """ force feedback from ang diff """
-      if self.force_feedback_from_robot:
-        att_diff = self.robot_att - self.device_att
-        for i in range(len(att_diff)):
-          wrench_from_pos_diff = logarithm(att_diff[i],self.log_base,self.k_att_diff)
-          haptics_wrench[i] += wrench_from_pos_diff
+      # if self.feedback_from_ang:
+      #   att_diff = self.robot_att - self.device_att
+      #   for i in range(len(att_diff)):
+      #     wrench_from_pos_diff = logarithm(att_diff[i],self.log_base,self.k_att_diff)
+      #     haptics_wrench[i] += wrench_from_pos_diff
 
-      if self.frame == "world":
-        haptics_wrench = np.dot(self.Ad_R_inv_device,haptics_wrench)
+      # if self.frame == "world":
+      #   haptics_wrench = np.dot(self.Ad_R_inv_device,haptics_wrench)
 
       force_limit = 10
       torque_limit = 1.5
