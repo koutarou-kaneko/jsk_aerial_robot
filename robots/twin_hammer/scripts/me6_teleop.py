@@ -21,11 +21,11 @@ class TeleopCollisionList:
 
         self.delta_angle_thre = 0.7
         self.pub_rate = 5
-        self.teleop_scale = 0.5
+        self.teleop_scale = 1.0
         self.feedback_scale = 1.0
         self.feedback_log_base = 1.45
         self.epsilon = 0.05  # [rad] joint angle thre for collision detection
-        self.robot_init_joint_angles = np.array([1.57, 0.5, -2.5, 2.0, 1.57, 0.0])
+        self.robot_init_joint_angles = np.array([1.57, -2.3, 2.5, -0.2, 1.57, 0.0])
         self.offset_pos = np.array([0.0,0.0,0.0])
         self.offset_quat = quaternion_from_euler(0, np.pi/2, 0)
         self.joint_names = ["joint1","joint2","joint3","joint4","joint5","joint6"]
@@ -176,6 +176,7 @@ class TeleopCollisionList:
 
             if self.latest_mocap_pos is not None and self.robot_pos_init_flag:
                 delta_pos = (self.latest_mocap_pos - self.device_init_pos) * self.teleop_scale
+                delta_pos[0] = (self.latest_mocap_pos[0] - self.device_init_pos[0]) * 0.5
                 target_pos = self.center_pos + delta_pos
                 target_quat = quaternion_multiply(self.latest_mocap_quat, self.offset_quat)
 

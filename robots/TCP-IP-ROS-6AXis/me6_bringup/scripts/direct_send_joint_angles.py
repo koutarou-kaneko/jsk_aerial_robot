@@ -17,8 +17,10 @@ if __name__ == "__main__":
 
     # テスト用の関節角度（ラジアン）
     joint_names = ["joint1","joint2","joint3","joint4","joint5","joint6"]
-    joint_positions = [3.14, 0.7, -0.7, -1.57, 1.57, 1.57] # for force sensor safety
+    # joint_positions = [3.14, 0.7, -0.7, -1.57, 1.57, 1.57] # for force sensor safety
     # joint_positions = [1.57, 0.5, -2.5, 2.0, 1.57, 0.0] # for teleop initial point
+    joint_positions = [1.57, -2.3, 2.5, -0.2, 1.57, 0.0]
+    joint_positions = [1.57, 0.3, 2.5, -0.5, 1.57, 0.0]
 
     point = JointTrajectoryPoint()
     point.positions = joint_positions

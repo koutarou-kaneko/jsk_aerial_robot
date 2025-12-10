@@ -22,7 +22,7 @@ class force_feedback_from_robot():
   def __init__(self):
 
     self.robot_name = rospy.get_param("~robot_name", "gimbalrotor")
-    self.convert_method = rospy.get_param("~convert_method", "exp") # "prop" or "exp" or "log"
+    self.convert_method = rospy.get_param("~convert_method", "prop") # "prop" or "exp" or "log"
     self.frame = rospy.get_param("~frame", "local") # "local" or "world"
     self.feedback_from_ang = rospy.get_param("~feedback_from_ang", "False")
 
@@ -47,7 +47,7 @@ class force_feedback_from_robot():
       [np.zeros((3,3)), np.identity(3)]
     ])
     self.moment_arm = np.array([-(0.044 + 0.025), 0, 0])
-    self.k_p = 0.3
+    self.k_p = 0.5
     self.exp_base = 1.45
     self.log_base = 1.45
     self.k_exp = 0.2
@@ -149,7 +149,7 @@ class force_feedback_from_robot():
       if self.frame == "world":
         haptics_wrench = np.dot(self.Ad_R_inv_device,haptics_wrench)
 
-      force_limit = 12
+      force_limit = 15
       torque_limit = 1.5
       for i in range(3):
         if haptics_wrench[i] > force_limit:

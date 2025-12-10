@@ -6,9 +6,9 @@
 
   <include file="$(find twin_hammer)/launch/include/mocap.launch" if="$(arg mocap_debug_mode)" /> 
 
-  <include file="$(find cfs_sensor)/launch/cfs_sensor.launch">
+  <!-- <include file="$(find cfs_sensor)/launch/cfs_sensor.launch">
     <arg name="type" value="PFS055YA501U6"/>
-  </include>
+  </include> -->
 
   <group if="$(arg force_feedback)">
     <node name="force_feedback_from_robot" pkg="twin_hammer" type="force_feedback_from_robot.py" output="screen" unless="$(arg energy_tank)" />

@@ -6,12 +6,12 @@
 dt: 0.01  # s, 100 Hz
 
 # energy tank
-Etank_0: 3.0
-Etank_max: 5.0
+Etank_0: 1.5
+Etank_max: 3.0
 
 # scaling gains
-kscale_trans: 0.3
-kscale_rot: 0.3
+kscale_trans: 0.5
+kscale_rot: 0.5
 
 # feedback wrench limit
 force_limit: 15

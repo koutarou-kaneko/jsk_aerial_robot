@@ -19,6 +19,7 @@ from spinal.msg import Imu
 from tf.transformations import euler_from_quaternion
 from scipy.signal import medfilt
 from collections import deque
+from std_srvs.srv import Empty
 
 # ---------- Utility functions ----------
 def clip(x, a, b):
@@ -82,7 +83,7 @@ class HapticsFeedbackNode:
             self.theta[a, :] = np.array([M0_rot, B0_rot, K0_rot])
         self.Q = np.stack([self.Q0.copy() for _ in range(6)], axis=0)
 
-        self.cfs_connection_state = False
+        # self.cfs_connection_state = False
         # data buffers
         self.w_robot_meas = np.zeros(6)   # incoming robot wrench (force[0:3], torque[0:3])
         self.mocap_pos = np.zeros(3)
@@ -131,7 +132,15 @@ class HapticsFeedbackNode:
         rospy.Subscriber('/cfs/data', WrenchStamped, self.robot_wrench_cb, queue_size=1)
         rospy.Subscriber('/twin_hammer/mocap/pose', PoseStamped, self.mocap_cb, queue_size=1)
         rospy.Subscriber('/twin_hammer/Imu', Imu, self.imu_cb, queue_size=1)
-        rospy.Subscriber('/cfs/connection_state', Int32, self.cfs_connection_cb, queue_size=1)
+        # rospy.Subscriber('/cfs/connection_state', Int32, self.cfs_connection_cb, queue_size=1)
+
+        rospy.wait_for_service("/cfs_sensor_calib")
+        calib_srv = rospy.ServiceProxy("/cfs_sensor_calib", Empty)
+        try:
+            res_calib = calib_srv()
+        except rospy.ServiceException as e:
+            rospy.logerr(f"force sensor calibration service call failed: {e}")
+
 
         rospy.loginfo("HapticsFeedbackNode initialized.")
 
@@ -173,8 +182,8 @@ class HapticsFeedbackNode:
             self.x_ref[3:6] = self.imu_angles.copy()
             # do not set linear ref here (mocap is preferred)
 
-    def cfs_connection_cb(self, msg: Int32):
-        self.cfs_connection_state = msg.data
+    # def cfs_connection_cb(self, msg: Int32):
+    #     self.cfs_connection_state = msg.data
 
     # ---------- RLS update for one axis ----------
     def rls_update_axis(self, axis, phi, y):
@@ -391,20 +400,20 @@ class HapticsFeedbackNode:
         msg = WrenchStamped()
         msg.header = Header()
         msg.header.stamp = rospy.Time.now()
-        if self.cfs_connection_state:
-            msg.wrench.force.x = float(wfeedback[0])
-            msg.wrench.force.y = float(wfeedback[1])
-            msg.wrench.force.z = float(wfeedback[2])
-            msg.wrench.torque.x = float(wfeedback[3])
-            msg.wrench.torque.y = float(wfeedback[4])
-            msg.wrench.torque.z = float(wfeedback[5])
-        else:
-            msg.wrench.force.x = float(0.0)
-            msg.wrench.force.y = float(0.0)
-            msg.wrench.force.z = float(0.0)
-            msg.wrench.torque.x = float(0.0)
-            msg.wrench.torque.y = float(0.0)
-            msg.wrench.torque.z = float(0.0)
+        # if self.cfs_connection_state:
+        msg.wrench.force.x = float(wfeedback[0])
+        msg.wrench.force.y = float(wfeedback[1])
+        msg.wrench.force.z = float(wfeedback[2])
+        msg.wrench.torque.x = float(wfeedback[3])
+        msg.wrench.torque.y = float(wfeedback[4])
+        msg.wrench.torque.z = float(wfeedback[5])
+        # else:
+        #     msg.wrench.force.x = float(0.0)
+        #     msg.wrench.force.y = float(0.0)
+        #     msg.wrench.force.z = float(0.0)
+        #     msg.wrench.torque.x = float(0.0)
+        #     msg.wrench.torque.y = float(0.0)
+        #     msg.wrench.torque.z = float(0.0)
         self.wrench_pub.publish(msg)
 
         # publish for debug
@@ -456,6 +465,7 @@ class HapticsFeedbackNode:
 
     def run(self):
         rate = rospy.Rate(1.0 / self.dt)  # intended loop frequency (e.g., dt=0.01 -> 100Hz)
+        rospy.sleep(2.0)
         rospy.loginfo("HapticsFeedbackNode running main loop.")
         while not rospy.is_shutdown():
             try:
