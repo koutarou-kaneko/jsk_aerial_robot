@@ -1,0 +1,31 @@
+# ===============================
+# Device parameters
+# ===============================
+
+# ---- Geometry ----
+geometry:
+  # rotor positions in handle frame {C}
+  # NOTE: values are placeholders
+  p1: [ 0.5, 0.212, 0.0 ]
+  p2: [ -0.5, 0.212, 0.0 ]
+  p3: [ 0.5, -0.212, 0.0 ]
+  p4: [ -0.5, -0.212, 0.0 ]
+
+# ---- Thrust limits (per EDF) ----
+thrust:
+  min: 0.0        # [N]
+  max: 19.2       # [N]
+
+# ---- Deflection angle limits (shared by both modules) ----
+# rotation order: roll (x-axis), pitch (y-axis)
+deflection:
+  theta_min_deg: -180.0   # roll  [deg]
+  theta_max_deg:  180.0
+  phi_min_deg:   -180.0   # pitch [deg]
+  phi_max_deg:    180.0
+
+# ---- Gravity compensation ----
+gravity:
+  mass: 3.1        # [kg]
+  g: 9.80665       # [m/s^2]
+  direction_C: [0.0, 0.0, -1.0]   # gravity acts along -z in {C}

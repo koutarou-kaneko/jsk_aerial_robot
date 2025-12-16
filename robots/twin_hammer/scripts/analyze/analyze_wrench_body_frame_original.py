@@ -19,8 +19,8 @@ import scienceplots
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from analyze_allocation import get_alloc_mtx_tilt_qd
-from analyze_allocation import p1_b
+from analyze_allocation_original import get_alloc_mtx_tilt_qd
+from analyze_allocation_original import p1_b
 
 # ------------------------------------------------------------------------
 # CONSTANTS

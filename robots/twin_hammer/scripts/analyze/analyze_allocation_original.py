@@ -15,7 +15,7 @@ import scienceplots
 # read parameters from yaml
 rospack = rospkg.RosPack()
 
-physical_param_path = os.path.join(rospack.get_path("twin_hammer"), "config", "PhysParam.yaml")
+physical_param_path = os.path.join(rospack.get_path("twin_hammer"), "config", "PhysParam_original.yaml")
 with open(physical_param_path, "r") as f:
     physical_param_dict = yaml.load(f, Loader=yaml.FullLoader)
 physical_params = physical_param_dict["physical"]
