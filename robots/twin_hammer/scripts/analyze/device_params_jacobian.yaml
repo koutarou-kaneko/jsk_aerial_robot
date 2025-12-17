@@ -1,0 +1,27 @@
+geometry:
+  p1: [ 0.5, 0.212, 0.0 ]
+  p2: [ -0.5, 0.212, 0.0 ]
+  p3: [ 0.5, -0.212, 0.0 ]
+  p4: [ -0.5, -0.212, 0.0 ]
+
+thrust:
+  min: 0.0
+  max: 19.2
+
+deflection:
+  theta_min_deg: -180.0
+  theta_max_deg:  180.0
+  phi_min_deg:   -180.0
+  phi_max_deg:    180.0
+  theta_rate_deg: 200.0   # 解析では未使用（拡張用）
+  phi_rate_deg:   200.0
+
+gravity:
+  mass: 3.1
+  g: 9.81
+  direction_C: [0, 0, -1]
+
+jacobian:
+  diff_eps:
+    thrust: 1e-4
+    angle_rad: 1e-4
