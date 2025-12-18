@@ -1,0 +1,45 @@
+# 発揮するレンチ成分（複数指定可）
+# true にした成分のみが制御対象
+active_components:
+  fx: false
+  fy: false
+  fz: false
+  tx: false
+  ty: false
+  tz: true
+
+# 各成分の増加量
+increment:
+  fx: 0.5
+  fy: 0.5
+  fz: 0.5
+  tx: 0.3
+  ty: 0.3
+  tz: 0.3
+
+# 各成分の最小値
+min:
+  fx: 1.0
+  fy: 1.0
+  fz: 1.0
+  tx: 0.1
+  ty: 0.1
+  tz: 0.1
+
+# 各成分の最大値
+max:
+  fx: 3.0
+  fy: 3.0
+  fz: 3.0
+  tx: 1.6
+  ty: 1.6
+  tz: 1.6
+
+# 次に成分を増加させるまでの時間 [s]
+update_interval: 5.0
+
+# publish 周期 [Hz]
+publish_rate: 100
+
+# frame_id
+frame_id: base_link
