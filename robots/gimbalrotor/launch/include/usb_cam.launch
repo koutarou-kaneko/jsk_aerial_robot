@@ -8,12 +8,12 @@
     
   <!-- USB camera -->
     <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen" >
-      <param name="video_device" value="/dev/video4" />
+      <param name="video_device" value="/dev/video_global_shutter" />
       <param name="image_width" value="$(arg image_width)" />
       <param name="image_height" value="$(arg image_height)" />
       <param name="pixel_format" value="yuyv" />
       <param name="color_format" value="yuv422p" />
-      <param name="framerate" value="30"/>
+      <param name="framerate" value="10"/>
       <param name="camera_frame_id" value="usb_cam" />
       <param name="io_method" value="mmap"/>
       <param name="camera_info_url" value="file://$(find gimbalrotor)/config/ost.yaml" />
