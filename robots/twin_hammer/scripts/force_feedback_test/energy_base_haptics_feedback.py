@@ -20,6 +20,8 @@ from tf.transformations import euler_from_quaternion
 from scipy.signal import medfilt
 from collections import deque
 from std_srvs.srv import Empty
+from scipy.spatial.transform import Rotation as R
+
 
 # ---------- Utility functions ----------
 def clip(x, a, b):
@@ -108,6 +110,10 @@ class HapticsFeedbackNode:
         self.x_ref = np.zeros(6)
         self.is_xref_set = False
 
+        # device local frame reference (world -> local)
+        self.R_world_to_device0 = None   # 3x3 rotation matrix
+        self.R_device_to_world0 = None   # 3x3 rotation matrix
+
         # last time stamps
         self.last_mocap_time = None
         self.last_imu_time = None
@@ -153,20 +159,39 @@ class HapticsFeedbackNode:
     def mocap_cb(self, msg: PoseStamped):
         pos = msg.pose.position
         quat = msg.pose.orientation
-        self.mocap_pos = np.array([pos.x, pos.y, pos.z])
+        # self.mocap_pos = np.array([pos.x, pos.y, pos.z])
+        p_world = np.array([pos.x, pos.y, pos.z])
         euler = euler_from_quaternion([quat.x, quat.y, quat.z, quat.w])
-        self.mocap_orient = np.array(euler)  # roll,pitch,yaw
+        # self.mocap_orient = np.array(euler)  # roll,pitch,yaw
+        rpy_world = np.array(euler)  # roll,pitch,yaw
 
         stamp = msg.header.stamp
         if not self.is_xref_set:
             # set reference at first mocap pose
-            self.x_ref[0:3] = self.mocap_pos.copy()
-            self.x_ref[3:6] = self.mocap_orient.copy()
+            # self.x_ref[0:3] = self.mocap_pos.copy()
+            # self.x_ref[3:6] = self.mocap_orient.copy()
+            # set device local frame at first mocap pose
+            self.p0_world = p_world.copy()
+            R0 = R.from_euler('xyz', rpy_world).as_matrix()
+            self.R_world_to_device0 = R0.T  # inverse rotation
+            self.R_device_to_world0 = R0
+
+            self.x_ref[:] = 0.0  # local frame origin
             self.is_xref_set = True
 
         # update x_hand (6-d)
-        self.x_hand[0:3] = self.mocap_pos
-        self.x_hand[3:6] = self.mocap_orient
+        # self.x_hand[0:3] = self.mocap_pos
+        # self.x_hand[3:6] = self.mocap_orient
+        # --- world -> device local ---
+        dp_world = p_world - self.p0_world
+        dp_local = self.R_world_to_device0 @ dp_world
+
+        R_world = R.from_euler('xyz', rpy_world).as_matrix()
+        R_rel = self.R_world_to_device0 @ R_world
+        rpy_local = R.from_matrix(R_rel).as_euler('xyz')
+
+        self.x_hand[0:3] = dp_local
+        self.x_hand[3:6] = rpy_local
 
         self.last_mocap_time = stamp
 
@@ -261,8 +286,17 @@ class HapticsFeedbackNode:
 
         # --- Predict v_hand at next step using wcand (scaled measured robot wrench) ---
         wcand = np.zeros(6)
-        wcand[0:3] = self.kscale_trans * self.w_robot_meas[0:3]
-        wcand[3:6] = self.kscale_rot * self.w_robot_meas[3:6]
+        # wcand[0:3] = self.kscale_trans * self.w_robot_meas[0:3]
+        # wcand[3:6] = self.kscale_rot * self.w_robot_meas[3:6]
+        if self.R_world_to_device0 is not None:
+            f_local = self.R_world_to_device0 @ self.w_robot_meas[0:3]
+            t_local = self.R_world_to_device0 @ self.w_robot_meas[3:6]
+        else:
+            f_local = self.w_robot_meas[0:3]
+            t_local = self.w_robot_meas[3:6]
+
+        wcand[0:3] = self.kscale_trans * f_local
+        wcand[3:6] = self.kscale_rot * t_local
 
         # compute predicted acceleration per axis using current theta (M,B,K)
         vhand_next = np.zeros(6)
@@ -380,6 +414,18 @@ class HapticsFeedbackNode:
             wfeedback = wcand + np.dot(Dadd, vhand_next)
         else:
             wfeedback = wcand
+
+        # --- device local -> world ---
+        # if self.R_device_to_world0 is not None:
+        #     f_world = self.R_device_to_world0 @ wfeedback[0:3]
+        #     t_world = self.R_device_to_world0 @ wfeedback[3:6]
+        # else:
+        #     f_world = wfeedback[0:3]
+        #     t_world = wfeedback[3:6]
+
+        # for i in range(3):
+        #     wfeedback[i] = f_world[i]
+        #     wfeedback[i+3] = t_world[i]
 
         # limitation
         wrench_diff = wfeedback - self.last_feedback_cmd
