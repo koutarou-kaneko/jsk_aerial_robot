@@ -8,7 +8,7 @@
   <arg name="force_feedback" default="false" />
   <arg name="energy_tank" default="false" />
 
-  <node name="teleop_from_mocap" pkg="twin_hammer" type="teleop_from_mocap.py" output="screen" >
+  <node name="teleop_from_mocap" pkg="twin_hammer" type="teleop_from_mocap_fpv.py" output="screen" >
     <param name="robot_name" value="$(arg robot_name)" />
     <param name="control_mode" value="$(arg control_mode)" />
   </node>
