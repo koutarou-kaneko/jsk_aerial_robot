@@ -3,6 +3,8 @@
 import os
 import numpy as np
 import rospy
+import tf.transformations as tf
+import math
 from geometry_msgs.msg import PoseStamped, Vector3, WrenchStamped
 
 # Path to the potential map (.npz) relative to this script
@@ -13,7 +15,7 @@ NPZ_PATH = os.path.join(script_dir, "./sdf_potential.npz")
 PUBLISH_RATE = 100.0
 
 # Wrench scale factor
-WRENCH_SCALE_FACTOR = 5.0
+WRENCH_SCALE_FACTOR = 5.5
 
 # Small safety eps (to avoid division by zero)
 _EPS = 1e-12
@@ -151,6 +153,32 @@ def gradient_at_point(xs, ys, zs, potential, point, delta=None):
 
     return np.array([dv_dx, dv_dy, dv_dz], dtype=float)
 
+def unwrap_angle(prev, current):
+  """
+  prev, current: rad
+  return: unwrapped current
+  """
+  if prev is None:
+    return current
+  diff = current - prev
+  while diff > math.pi:
+    diff -= 2.0 * math.pi
+  while diff < -math.pi:
+    diff += 2.0 * math.pi
+  return prev + diff
+
+def rotate_xy_world_to_device(dx, dy, yaw_rel):
+    """
+    World XY -> device-local XY
+    yaw_rel : device yaw relative to initial yaw [rad]
+    """
+    c = math.cos(-yaw_rel)
+    s = math.sin(-yaw_rel)
+    x_local = c * dx - s * dy
+    y_local = s * dx + c * dy
+    return x_local, y_local
+
+
 
 class PotentialGradientNode:
     def __init__(self):
@@ -174,9 +202,12 @@ class PotentialGradientNode:
         # self.potential = gaussian_filter(self.potential, sigma=0.5)
 
         self.latest_point = None
+        self.device_init_yaw = None
+        self.device_yaw_unwrapped = None
         mocap_topic = "/" + self.robot_name + "/mocap/pose"
         rospy.loginfo("Subscribing to mocap pose: %s", mocap_topic)
         self.robot_pos_sub = rospy.Subscriber(mocap_topic, PoseStamped, self.robot_pos_cb)
+        self.device_pos_sub = rospy.Subscriber("/twin_hammer/mocap/pose", PoseStamped, self.device_pos_cb)
         self.grad_pub = rospy.Publisher("/potential_gradient", Vector3, queue_size=1)
         # keep original wrench topic name (note original had a typo 'haprtics' — preserve or change as needed)
         self.wrench_pub = rospy.Publisher("/twin_hammer/feedback_from_obstacle", WrenchStamped, queue_size=1)
@@ -188,6 +219,13 @@ class PotentialGradientNode:
             msg.pose.position.y,
             msg.pose.position.z
         ])
+
+    def device_pos_cb(self, msg):
+        device_orientation_q = [msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w]
+        roll, pitch, yaw = tf.euler_from_quaternion(device_orientation_q)
+        self.device_yaw_unwrapped = unwrap_angle(self.device_yaw_unwrapped, yaw)
+        if self.device_init_yaw == None:
+            self.device_init_yaw = self.device_yaw_unwrapped
 
     def run(self):
         """Main loop: compute and publish gradient."""
@@ -207,12 +245,33 @@ class PotentialGradientNode:
                 self.grad_pub.publish(grad_msg)
 
                 # publish wrench (negative gradient as force)
+                # wrench_msg = WrenchStamped()
+                # wrench_msg.header.stamp = rospy.Time.now()
+                # wrench_msg.wrench.force.x = -WRENCH_SCALE_FACTOR * float(grad[0])
+                # wrench_msg.wrench.force.y = -WRENCH_SCALE_FACTOR * float(grad[1])
+                # wrench_msg.wrench.force.z = -WRENCH_SCALE_FACTOR * float(grad[2])
+                # self.wrench_pub.publish(wrench_msg)
+                # world force (negative gradient)
+                fx_w = float(grad[0])
+                fy_w = float(grad[1])
+                fz_w = float(grad[2])
+
+                # yaw relative to device initial yaw
+                if self.device_yaw_unwrapped is not None and self.device_init_yaw is not None:
+                    yaw_rel = self.device_yaw_unwrapped - self.device_init_yaw
+                else:
+                    yaw_rel = 0.0
+
+                # rotate force into device-local frame (yaw only)
+                fx_d, fy_d = rotate_xy_world_to_device(fx_w, fy_w, yaw_rel)
+
                 wrench_msg = WrenchStamped()
                 wrench_msg.header.stamp = rospy.Time.now()
-                wrench_msg.wrench.force.x = -WRENCH_SCALE_FACTOR * float(grad[0])
-                wrench_msg.wrench.force.y = -WRENCH_SCALE_FACTOR * float(grad[1])
-                wrench_msg.wrench.force.z = -WRENCH_SCALE_FACTOR * float(grad[2])
+                wrench_msg.wrench.force.x = -WRENCH_SCALE_FACTOR * fx_d
+                wrench_msg.wrench.force.y = -WRENCH_SCALE_FACTOR * fy_d
+                wrench_msg.wrench.force.z = -WRENCH_SCALE_FACTOR * fz_w  # z is unchanged
                 self.wrench_pub.publish(wrench_msg)
+
             rate.sleep()
 
 
