@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
   <arg name="mocap_debug_mode" default="false" />
-  <arg name="force_feedback" default="true" />
+  <arg name="force_feedback" default="false" />
   <arg name="energy_tank" default="false" />
 
   <include file="$(find twin_hammer)/launch/include/mocap.launch" if="$(arg mocap_debug_mode)" /> 

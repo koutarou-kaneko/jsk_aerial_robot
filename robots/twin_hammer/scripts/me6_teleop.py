@@ -67,6 +67,7 @@ class TeleopCollisionList:
         self.center_pos, self.center_quat = self.compute_fk(self.robot_init_joint_angles)
         self.device_init_pos = None
         self.device_init_quat = None
+        self.device_init_yaw = None
         self.latest_mocap_pos = None
         self.latest_mocap_quat = None
         self.last_valid_ee_pos = None
@@ -89,10 +90,23 @@ class TeleopCollisionList:
         if self.device_init_pos is None:
             self.device_init_pos = pos + self.offset_pos
             self.device_init_quat = quat
+            self.device_init_yaw = self.quat_to_yaw(quat)
         
     def cfs_connection_cb(self, msg: Int32):
         self.cfs_connection_state = msg.data
 
+    def quat_to_yaw(self, quat):
+        """quat: [x, y, z, w]"""
+        _, _, yaw = tf.euler_from_quaternion(quat)
+        return yaw
+
+    def rotate_xy_by_yaw(self, vec, yaw):
+        """Rotate XY vector by yaw (rad), Z unchanged"""
+        c = math.cos(yaw)
+        s = math.sin(yaw)
+        x = c * vec[0] + s * vec[1]
+        y = -s * vec[0] + c * vec[1]
+        return np.array([x, y, vec[2]])
 
     def compute_fk(self, joint_positions):
         fk_joint_array = kdl.JntArray(len(joint_positions))
@@ -175,9 +189,16 @@ class TeleopCollisionList:
                 rospy.loginfo("robot position initialized!!")
 
             if self.latest_mocap_pos is not None and self.robot_pos_init_flag:
-                delta_pos = (self.latest_mocap_pos - self.device_init_pos) * self.teleop_scale
-                delta_pos[0] = (self.latest_mocap_pos[0] - self.device_init_pos[0]) * 0.5
-                target_pos = self.center_pos + delta_pos
+                delta_pos_world = self.latest_mocap_pos - self.device_init_pos
+                delta_pos_local = self.rotate_xy_by_yaw(
+                    delta_pos_world, -self.device_init_yaw)
+                target_delta_pos = delta_pos_local * self.teleop_scale
+                target_delta_pos[0] = delta_pos_local[0] * 0.5
+                target_pos = self.center_pos + target_delta_pos
+
+                # delta_pos = (self.latest_mocap_pos - self.device_init_pos) * self.teleop_scale
+                # delta_pos[0] = (self.latest_mocap_pos[0] - self.device_init_pos[0]) * 0.5
+                # target_pos = self.center_pos + delta_pos
                 target_quat = quaternion_multiply(self.latest_mocap_quat, self.offset_quat)
 
                 sol = self.ik_solver.get_ik(
