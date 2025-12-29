@@ -511,7 +511,7 @@ class HapticsFeedbackNode:
 
     def run(self):
         rate = rospy.Rate(1.0 / self.dt)  # intended loop frequency (e.g., dt=0.01 -> 100Hz)
-        rospy.sleep(2.0)
+        rospy.sleep(3.0)
         rospy.loginfo("HapticsFeedbackNode running main loop.")
         while not rospy.is_shutdown():
             try:
