@@ -9,7 +9,7 @@ import signal
 import copy
 from std_msgs.msg import UInt8,Int8,Empty
 import tf.transformations as tf
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Vector3Stamped
 from aerial_robot_msgs.msg import FlightNav
 from spinal.msg import DesireCoord
 
@@ -30,7 +30,8 @@ class mocap_control():
     self.loop = rospy.get_param("~loop", False)
     self.duration = rospy.get_param("~duration", 8)
     self.nav_pub = rospy.Publisher('/'+self.robot_name+'/uav/nav', FlightNav, queue_size=1)
-    self.att_control_pub = rospy.Publisher('/'+self.robot_name+'/final_target_baselink_rot', DesireCoord, queue_size=1)
+    # self.att_control_pub = rospy.Publisher('/'+self.robot_name+'/final_target_baselink_rot', DesireCoord, queue_size=1)
+    self.att_control_pub = rospy.Publisher('/'+self.robot_name+'/final_target_baselink_rpy', Vector3Stamped, queue_size=1)
     self.mocap_sub = rospy.Subscriber(topic_name, PoseStamped, self.mocapCb)
     self.flight_state_sub = rospy.Subscriber('/'+self.robot_name+'/flight_state', UInt8, self.flight_stateCb)
     self.land_sub = rospy.Subscriber('/'+self.robot_name+'/teleop_command/land', Empty, self.landCb)
@@ -60,7 +61,8 @@ class mocap_control():
     self.flight_nav.pos_z_nav_mode = FlightNav.POS_VEL_MODE
     if self.yaw:
       self.flight_nav.yaw_nav_mode = FlightNav.POS_VEL_MODE
-    self.desire_att = DesireCoord()
+    # self.desire_att = DesireCoord()
+    self.desire_att = Vector3Stamped()
 
     signal.signal(signal.SIGINT, self.stopRequest)
 
@@ -126,8 +128,10 @@ class mocap_control():
         self.flight_nav.target_pos_y = (self.mocap_pos.y - self.mocap_init_pos.y + self.robot_init_pos.y) * self.pos_scaling + 0.3
         self.flight_nav.target_pos_z = (self.mocap_pos.z - self.mocap_init_pos.z + self.robot_init_pos.z)
         self.flight_nav.target_yaw = self.mocap_euler[2]
-        self.desire_att.roll = self.mocap_euler[0]
-        self.desire_att.pitch = self.mocap_euler[1]
+        # self.desire_att.roll = self.mocap_euler[0]
+        # self.desire_att.pitch = self.mocap_euler[1]
+        self.desire_att.vector.x = self.mocap_euler[0]
+        self.desire_att.vector.y = self.mocap_euler[1]
 
         if self.hand_force_flag==True:
           if self.attaching_init_flag == False:

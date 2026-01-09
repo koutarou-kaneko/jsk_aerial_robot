@@ -42,7 +42,7 @@
       <node pkg="mocap_optitrack" type="mocap_node" name="avatar_mocap_node" respawn="false" >
         <rosparam subst_value="true">
           rigid_bodies:
-              '6':
+              '7':
                 pose: avatar/pose
                 pose2d: avatar/ground_pose
                 child_frame_id: baselink
@@ -67,7 +67,7 @@
     </group>
 
     <group unless = "$(arg real_machine)">
-      <include file="$(find aerial_robot_base)/launch/external_module/mocap.launch" />
+      <include file="$(find avatar)/launch/includes/mocap.launch" />
       <!--
       <node pkg="avatar" type="real_avatar_mocap_control.py" name="real_avatar_mocap_control" output="screen" >
         <param name="real_machine" value="$(arg real_machine)" />
