@@ -16,6 +16,20 @@ def exponential(x, base, k_exp):
 def logarithm(x, base, k_log):
   return math.log(x,base) * k_log
 
+def unwrap_angle(prev, current):
+  """
+  prev, current: rad
+  return: unwrapped current
+  """
+  if prev is None:
+    return current
+  diff = current - prev
+  while diff > math.pi:
+    diff -= 2.0 * math.pi
+  while diff < -math.pi:
+    diff += 2.0 * math.pi
+  return prev + diff
+
 def rotate_xy_world_to_body(dx, dy, yaw):
   c = math.cos(-yaw)
   s = math.sin(-yaw)
@@ -39,16 +53,16 @@ class teleop_from_mocap():
     self.control_mode = rospy.get_param("~control_mode", "pos") # "pos" or "vel"
     self.pos_scale = rospy.get_param("~pos_scale", 1.0) # 1.0
     self.vel_scale = rospy.get_param("~vel_scale", 0.3) # 0.3
-    self.ang_vel_scale = rospy.get_param("~ang_vel_scale", 0.1)
+    self.ang_vel_scale = rospy.get_param("~ang_vel_scale", 0.15)
     self.feedback_force_scale = rospy.get_param("~feedback_force_scale", 5.0)
     self.feedback_torque_scale = rospy.get_param("~feedback_torque_scale", 0.8)
-    self.velmode_pos_thre = rospy.get_param("~velmode_pos_thre", 0.2)
-    self.velmode_att_thre = rospy.get_param("~velmode_att_thre", 0.5)
+    self.velmode_pos_thre = rospy.get_param("~velmode_pos_thre", 0.25)
+    self.velmode_att_thre = rospy.get_param("~velmode_att_thre", 0.25)
 
     self.nav_pub = rospy.Publisher('/'+self.robot_name+'/uav/nav', FlightNav, queue_size=1)
     # self.att_pub = rospy.Publisher('/'+self.robot_name+'/final_target_baselink_rot', DesireCoord, queue_size=1)
     self.att_pub = rospy.Publisher('/'+self.robot_name+'/final_target_baselink_rpy', Vector3Stamped, queue_size=1)
-    self.feedback_pub = rospy.Publisher('/twin_hammer/haptics_wrench', WrenchStamped, queue_size=1)
+    self.feedback_pub = rospy.Publisher('/twin_hammer/feedback_from_device', WrenchStamped, queue_size=1)
     self.flight_state_sub = rospy.Subscriber('/'+self.robot_name+'/flight_state', UInt8, self.flight_state_cb)
     self.device_pos_sub = rospy.Subscriber('/twin_hammer/mocap/pose', PoseStamped, self.device_pos_cb)
     self.robot_pos_sub = rospy.Subscriber('/'+self.robot_name+'/mocap/pose', PoseStamped, self.robot_pos_cb)
@@ -85,6 +99,11 @@ class teleop_from_mocap():
     self.robot_initialize_flag = False
     self.wait_flag = False
 
+    self.device_yaw_unwrapped = None
+    self.robot_yaw_unwrapped = None
+    self.device_init_yaw_unwrapped = None
+    self.robot_init_yaw_unwrapped = None
+
   def flight_state_cb(self,msg):
     if msg.data == 5:
       self.hovering = True
@@ -94,19 +113,29 @@ class teleop_from_mocap():
   def device_pos_cb(self,msg):
     self.device_pos = [msg.pose.position.x, msg.pose.position.y, msg.pose.position.z]
     device_orientation_q = [msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w]
-    self.device_att = tf.euler_from_quaternion(device_orientation_q)
+    # self.device_att = tf.euler_from_quaternion(device_orientation_q)
+    roll, pitch, yaw = tf.euler_from_quaternion(device_orientation_q)
+    self.device_yaw_unwrapped = unwrap_angle(self.device_yaw_unwrapped, yaw)
+    self.device_att = [roll, pitch, self.device_yaw_unwrapped]
     if self.device_initialize_flag == False:
       self.device_init_pos = self.device_pos
+      # self.device_init_att = self.device_att
       self.device_init_att = self.device_att
+      self.device_init_yaw_unwrapped = self.device_yaw_unwrapped
       self.device_initialize_flag = True
 
   def robot_pos_cb(self,msg):
     self.robot_pos = [msg.pose.position.x, msg.pose.position.y, msg.pose.position.z]
     robot_orientation_q = [msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w]
-    self.robot_att = tf.euler_from_quaternion(robot_orientation_q)
+    # self.robot_att = tf.euler_from_quaternion(robot_orientation_q)
+    roll, pitch, yaw = tf.euler_from_quaternion(robot_orientation_q)
+    self.robot_yaw_unwrapped = unwrap_angle(self.robot_yaw_unwrapped, yaw)
+    self.robot_att = [roll, pitch, self.robot_yaw_unwrapped]
     if self.robot_initialize_flag == False:
       self.robot_init_pos = self.robot_pos
+      # self.robot_init_att = self.robot_att
       self.robot_init_att = self.robot_att
+      self.robot_init_yaw_unwrapped = self.robot_yaw_unwrapped
       self.robot_initialize_flag = True
 
   def teleop_mode_cb(self,msg):
@@ -139,14 +168,19 @@ class teleop_from_mocap():
         device_dx_world = self.device_pos[0] - self.device_init_pos[0]
         device_dy_world = self.device_pos[1] - self.device_init_pos[1]
         device_dz_world = self.device_pos[2] - self.device_init_pos[2]
-        device_dyaw = self.device_att[2] - self.device_init_att[2]
+        # device_dyaw = self.device_att[2] - self.device_init_att[2]
+        device_dyaw = self.device_yaw_unwrapped - self.device_init_yaw_unwrapped
+        # device_dx_local, device_dy_local = rotate_xy_world_to_body(
+        #   device_dx_world, device_dy_world, self.device_init_att[2])
         device_dx_local, device_dy_local = rotate_xy_world_to_body(
-          device_dx_world, device_dy_world, self.device_init_att[2])
+          device_dx_world, device_dy_world, self.device_init_yaw_unwrapped)
 
         robot_dx_local = device_dx_local * self.pos_scale
         robot_dy_local = device_dy_local * self.pos_scale
+        # robot_dx_world, robot_dy_world = rotate_xy_body_to_world(
+        #   robot_dx_local, robot_dy_local, self.robot_init_att[2])
         robot_dx_world, robot_dy_world = rotate_xy_body_to_world(
-          robot_dx_local, robot_dy_local, self.robot_init_att[2])
+          robot_dx_local, robot_dy_local, self.robot_init_yaw_unwrapped)
         target_pos[0] = self.robot_init_pos[0] + robot_dx_world
         target_pos[1] = self.robot_init_pos[1] + robot_dy_world
         target_pos[2] = self.robot_init_pos[2] + device_dz_world * self.pos_scale
@@ -171,8 +205,10 @@ class teleop_from_mocap():
           self.robot_local_fix_att[2] = None
           target_ang_vel[2] = self.robot_att[2] + robot_vyaw
 
+        # robot_vx_world, robot_vy_world = rotate_xy_body_to_world(
+        #   robot_vx_local, robot_vy_local, self.robot_att[2])
         robot_vx_world, robot_vy_world = rotate_xy_body_to_world(
-          robot_vx_local, robot_vy_local, self.robot_att[2])
+          robot_vx_local, robot_vy_local, self.robot_yaw_unwrapped)
         target_vel[0] = self.robot_pos[0] + robot_vx_world
         target_vel[1] = self.robot_pos[1] + robot_vy_world
 
@@ -188,10 +224,11 @@ class teleop_from_mocap():
           feedback_wrench_yaw = -logarithm(device_dyaw+1, log_base, self.feedback_torque_scale)
         else:
           feedback_wrench_yaw = logarithm(-device_dyaw+1, log_base, self.feedback_torque_scale)
+        # feedback_wrench[0], feedback_wrench[1] = rotate_xy_body_to_world(
+        #   feedback_wrench_x_local, feedback_wrench_y_local, self.device_att[2])
         feedback_wrench[0], feedback_wrench[1] = rotate_xy_body_to_world(
-          feedback_wrench_x_local, feedback_wrench_y_local, self.device_att[2])
+          feedback_wrench_x_local, feedback_wrench_y_local, self.device_yaw_unwrapped)
         feedback_wrench[5] = feedback_wrench_yaw
-
 
 
         """ limitation of z and att for safety """

@@ -119,7 +119,7 @@ class HapticsFeedbackNode:
         self.last_loop_time = rospy.Time.now()
 
         # Publisher
-        self.wrench_pub = rospy.Publisher('/twin_hammer/haptics_wrench', WrenchStamped, queue_size=1)
+        self.wrench_pub = rospy.Publisher('/twin_hammer/feedback_from_robot', WrenchStamped, queue_size=1)
         # for debug
         self.debug_handnext_pub = rospy.Publisher('/debug/handnext', Float32MultiArray, queue_size=1)
         self.debug_whand_est_pub = rospy.Publisher('/debug/whand_est', Float32MultiArray, queue_size=1)
