@@ -13,7 +13,7 @@
 
 #ifdef SIMULATION
 #include <sensor_msgs/JointState.h>
-AttitudeController::AttitudeController(): DELTA_T(0), prev_time_(-1), sim_voltage_(0), gimbal_dof_(0), rotor_coef_(1)
+AttitudeController::AttitudeController(): DELTA_T(0), prev_time_(-1), sim_voltage_(0)
 {
 }
 
@@ -212,21 +212,6 @@ void AttitudeController::pwmsControl(void)
       pwms_pub_.publish(&pwms_msg_);
     }
 
-  /* nerve comm type */
-#if NERVE_COMM
-  for(int i = 0; i < motor_number_; i++) {
-#if MOTOR_TEST
-
-    if (i == (HAL_GetTick() / 2000) % motor_number_)
-      Spine::setMotorPwm(200, i);
-    else
-      Spine::setMotorPwm(0, i);
-#else
-    Spine::setMotorPwm(target_pwm_[i] * 2000 - 1000, i);
-#endif
-  }
-#endif
-
   if(dshot_)
     {
       /* direct pwm type */
@@ -322,18 +307,18 @@ void AttitudeController::update(void)
       rot.to_euler(&angles.x, &angles.y, &angles.z);
 
       /* failsafe 3: too large tile angle */
-//       if(!force_landing_flag_  && (fabs(angles[X]) > MAX_TILT_ANGLE || fabs(angles[Y]) > MAX_TILT_ANGLE))
-//         {
-// #ifdef SIMULATION
-//           ROS_ERROR("failsafe: the roll pitch angles are too large, roll: %f (%f), pitch: %f (%f)",
-//                     angles[X], MAX_TILT_ANGLE, angles[Y], MAX_TILT_ANGLE);
-// #else
-//           nh_->logerror("failsafe: the roll pitch angles are too large");
-// #endif
-//           setForceLandingFlag(true);
-//           error_angle_i_[X] = 0;
-//           error_angle_i_[Y] = 0;
-//         }
+      if(!force_landing_flag_  && (fabs(angles[X]) > MAX_TILT_ANGLE || fabs(angles[Y]) > MAX_TILT_ANGLE))
+        {
+#ifdef SIMULATION
+          ROS_ERROR("failsafe: the roll pitch angles are too large, roll: %f (%f), pitch: %f (%f)",
+                    angles[X], MAX_TILT_ANGLE, angles[Y], MAX_TILT_ANGLE);
+#else
+          nh_->logerror("failsafe: the roll pitch angles are too large");
+#endif
+          setForceLandingFlag(true);
+          error_angle_i_[X] = 0;
+          error_angle_i_[Y] = 0;
+        }
 
       /* Force Landing Flag */
       if(force_landing_flag_)
