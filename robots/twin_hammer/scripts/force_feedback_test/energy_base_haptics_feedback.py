@@ -19,6 +19,7 @@ from spinal.msg import Imu
 from tf.transformations import euler_from_quaternion
 from scipy.signal import medfilt
 from collections import deque
+from std_srvs.srv import Empty
 from scipy.spatial.transform import Rotation as R
 
 
@@ -139,6 +140,14 @@ class HapticsFeedbackNode:
         rospy.Subscriber('/twin_hammer/mocap/pose', PoseStamped, self.mocap_cb, queue_size=1)
         rospy.Subscriber('/twin_hammer/Imu', Imu, self.imu_cb, queue_size=1)
         # rospy.Subscriber('/cfs/connection_state', Int32, self.cfs_connection_cb, queue_size=1)
+
+        rospy.wait_for_service("/cfs_sensor_calib")
+        calib_srv = rospy.ServiceProxy("/cfs_sensor_calib", Empty)
+        try:
+            res_calib = calib_srv()
+        except rospy.ServiceException as e:
+            rospy.logerr(f"force sensor calibration service call failed: {e}")
+
 
         rospy.loginfo("HapticsFeedbackNode initialized.")
 
@@ -505,6 +514,7 @@ class HapticsFeedbackNode:
 
     def run(self):
         rate = rospy.Rate(1.0 / self.dt)  # intended loop frequency (e.g., dt=0.01 -> 100Hz)
+        rospy.sleep(3.0)
         rospy.loginfo("HapticsFeedbackNode running main loop.")
         while not rospy.is_shutdown():
             try:

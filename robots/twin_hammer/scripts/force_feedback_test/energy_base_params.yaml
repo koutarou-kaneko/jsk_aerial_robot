@@ -5,6 +5,8 @@
 # timing
 dt: 0.01  # s, 100 Hz
 
+##########
+# for gimbalrotor
 # energy tank
 Etank_0: 1.0
 Etank_max: 2.0
@@ -18,6 +20,21 @@ force_limit: 15
 force_diff_limit: 0.1
 torque_limit: 3
 torque_diff_thre: 0.01
+
+# for me6 
+Etank_0: 0.5
+Etank_max: 1.0
+
+# scaling gains
+kscale_trans: 0.5
+kscale_rot: 0.5
+
+# feedback wrench limit
+force_limit: 15
+force_diff_limit: 0.5
+torque_limit: 3
+torque_diff_thre: 0.1
+##########
 
 # RLS
 lambda_r: 0.995

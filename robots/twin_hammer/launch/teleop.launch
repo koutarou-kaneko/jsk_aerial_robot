@@ -15,7 +15,11 @@
     <param name="control_mode" value="$(arg control_mode)" />
   </node>
 
-  <node name="lpf_for_FTsensor" pkg="twin_hammer" type="lpf_for_FTsensor.py" output="screen" />
+  <group if="$(arg force_feedback)">
+    <node name="lpf_for_FTsensor" pkg="twin_hammer" type="lpf_for_FTsensor.py" output="screen" />
+    <node name="force_feedback_from_robot" pkg="twin_hammer" type="force_feedback_from_robot_fpv.py" output="screen" unless="$(arg energy_tank)" />
+    <node name="energy_base_haptics_feedback" pkg="twin_hammer" type="energy_base_haptics_feedback.py" output="screen" if="$(arg energy_tank)" />
+  </group>
 
   <group if="$(arg force_feedback)">
     <!-- <node name="force_feedback_from_robot" pkg="twin_hammer" type="force_feedback_from_robot_fpv.py" output="screen" unless="$(arg energy_tank)" /> -->

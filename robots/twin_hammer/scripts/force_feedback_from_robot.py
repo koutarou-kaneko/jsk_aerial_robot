@@ -9,6 +9,7 @@ from scipy.spatial.transform import Rotation as R
 from std_msgs.msg import Int8
 from aerial_robot_msgs.msg import FlightNav
 from geometry_msgs.msg import PoseStamped, WrenchStamped
+from std_srvs.srv import Empty
 
 def exponential(x, base, k_exp):
   return pow(x,base) * k_exp
@@ -47,21 +48,34 @@ class force_feedback_from_robot():
       [np.zeros((3,3)), np.identity(3)]
     ])
     self.moment_arm = np.array([-(0.044 + 0.025), 0, 0])
+    # for gimbalrotor
     self.k_p = 2.0
     self.exp_base = 1.45
     self.log_base = 1.45
     self.k_exp = 0.4
     self.k_log = 1.0
+    # for me6
+    self.k_p = 0.5
+    self.exp_base = 1.45
+    self.log_base = 1.45
+    self.k_exp = 0.2
+    self.k_log = 0.8
     """ belows are dependent valuables """
     self.range_log = math.e
     self.a_log = self.k_log / (math.e * math.log(self.log_base))
-    # time.sleep(0.5)
+
+    rospy.wait_for_service("/cfs_sensor_calib")
+    calib_srv = rospy.ServiceProxy("/cfs_sensor_calib", Empty)
+    try:
+      res_calib = calib_srv()
+    except rospy.ServiceException as e:
+      rospy.logerr(f"force sensor calibration service call failed: {e}")
 
   def robot_mocap_cb(self,msg):
     # self.robot_att = [msg.pose.orientation.roll, msg.pose.orientation.pitch, msg.pose.orientation.yaw] 
     q = [msg.pose.orientation.x,msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w]
     rot = R.from_quat(q)
-    self.robot_att = rot.as_euler
+    self.robot_att = rot.as_euler('xyz')
     R_mat = rot.as_matrix()
     self.Ad_R_robot = np.block([
     [R_mat, np.zeros((3, 3))],
@@ -72,7 +86,7 @@ class force_feedback_from_robot():
     # self.device_att = [msg.pose.orientation.roll, msg.pose.orientation.pitch, msg.pose.orientation.yaw] 
     q = [msg.pose.orientation.x,msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w]
     rot = R.from_quat(q)
-    self.device_att = rot.as_euler
+    self.device_att = rot.as_euler('xyz')
     R_mat = rot.as_matrix()
     self.Ad_R_inv_device = np.block([
     [R_mat.T, np.zeros((3, 3))],
@@ -98,7 +112,7 @@ class force_feedback_from_robot():
     wrench_world = np.dot(self.Ad_R_robot,self.filterd_robot_wrench_local)
     if self.frame == "local":
       self.robot_wrench = self.filterd_robot_wrench_local
-    elif self.frame == "world":
+    if self.frame == "world":
       self.robot_wrench = wrench_world
 
   def main(self):
@@ -132,7 +146,7 @@ class force_feedback_from_robot():
           '''
           if wrench_i>=0:
             haptics_wrench[i] = logarithm(wrench_i+1, self.log_base, self.k_log)
-          elif wrench_i<-self.range_log:
+          if wrench_i<-self.range_log:
             haptics_wrench[i] = -logarithm(-(wrench_i-1), self.log_base, self.k_log)
 
       """ force feedback from ang diff """
@@ -145,7 +159,7 @@ class force_feedback_from_robot():
       # if self.frame == "world":
       #   haptics_wrench = np.dot(self.Ad_R_inv_device,haptics_wrench)
 
-      force_limit = 10
+      force_limit = 15
       torque_limit = 1.5
       for i in range(3):
         if haptics_wrench[i] > force_limit:

@@ -4,7 +4,7 @@
 
   <node name="force_node" pkg="cfs_sensor" type="cfs_node" output="screen" >
     <rosparam file="$(find cfs_sensor)/config/$(arg force_sensor).yaml" command="load" />
-    <param name="cfs_default_device_name" value="/dev/ttyACM0" />
+    <param name="cfs_default_device_name" value="/dev/cfs_sensor" />
   </node>
 
   <node name="lpf_FTsensor" pkg="twin_hammer" type="lpf_for_FTsensor.py" output="screen" />
