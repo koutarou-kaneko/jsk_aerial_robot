@@ -247,7 +247,7 @@ class TeleopCollisionList:
 
 if __name__ == "__main__":
    script_dir = os.path.dirname(os.path.realpath(__file__))
-   urdf_path = os.path.join(script_dir, "../../TCP-IP-ROS-6AXis/dobot_gazebo/urdf/me6_robot.xacro")
+   urdf_path = os.path.join(script_dir, "../../../TCP-IP-ROS-6AXis/dobot_gazebo/urdf/me6_robot.xacro")
    node = TeleopCollisionList(urdf_path)
    node.main()
 

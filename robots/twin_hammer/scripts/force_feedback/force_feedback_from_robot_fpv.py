@@ -31,11 +31,9 @@ class force_feedback_from_robot():
     self.convert_method = rospy.get_param("~convert_method", "prop") # "prop" or "exp" or "log"
     self.feedback_from_ang = rospy.get_param("~feedback_from_ang", "False")
 
-    # self.haptics_switch_pub = rospy.Publisher('/twin_hammer/haptics_switch', Int8, queue_size=1)
     self.haptics_wrench_pub = rospy.Publisher('/twin_hammer/feedback_from_robot', WrenchStamped, queue_size=1)
     self.robot_mocap_sub = rospy.Subscriber('/'+self.robot_name+'/mocap/pose', PoseStamped, self.robot_mocap_cb)
     self.device_mocap_sub = rospy.Subscriber('/twin_hammer/mocap/pose', PoseStamped, self.device_mocap_cb)
-    # self.robot_wrench_sub = rospy.Subscriber('/cfs/data', WrenchStamped, self.robot_wrench_cb)
     self.robot_wrench_sub = rospy.Subscriber('/filtered_ftsensor', WrenchStamped, self.robot_wrench_cb)
 
     self.haptics_wrench_msg = WrenchStamped()
@@ -62,7 +60,6 @@ class force_feedback_from_robot():
     """ belows are dependent valuables """
     self.range_log = math.e
     self.a_log = self.k_log / (math.e * math.log(self.log_base))
-    # time.sleep(0.5)
 
   def robot_mocap_cb(self,msg):
     # self.robot_att = [msg.pose.orientation.roll, msg.pose.orientation.pitch, msg.pose.orientation.yaw] 
