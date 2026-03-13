@@ -115,6 +115,6 @@
   </include> -->
 
   ########## gimbal servo initialize #########
-  <node pkg="twin_hammer" type="init_gimbal_angle.py" name="init_gimbal_angle" output="screen" if="$(eval not arg('simulation') and arg('real_machine') )" />
+  <node pkg="twin_hammer" type="init_gimbal_angles.py" name="init_gimbal_angles" output="screen" if="$(eval not arg('simulation') and arg('real_machine') )" />
 
 </launch>

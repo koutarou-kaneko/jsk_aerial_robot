@@ -12,7 +12,7 @@ class init_gimbal_angle():
     self.pub = rospy.Publisher('/twin_hammer/gimbals_ctrl', JointState, queue_size=1)
     self.start_sub = rospy.Subscriber('/twin_hammer/start', Empty, self.start_cb)
     self.takeoff_sub = rospy.Subscriber('/twin_hammer/takeoff', Empty, self.takeoff_cb)
-    self.land_sub = rospy.SubscribeListener('/twin_hammer/land', Empty, self.land_cb)
+    self.land_sub = rospy.Subscriber('/twin_hammer/land', Empty, self.land_cb)
     self.init_flag = False
   
   def start_cb(self,msg):
