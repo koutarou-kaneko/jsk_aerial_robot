@@ -9,7 +9,6 @@
   <arg name="sim_estimate_mode"  default= "2" />
   <arg name="headless" default="True" />
   <arg name="optimize" default="False" />
-  <arg name="dummy_weight" default="False" />
   <arg name="use_mocap" default="True" />
   <arg name="worldtype" default="$(find aerial_robot_simulation)/gazebo_model/world/empty.world" />
   <arg name="launch_gazebo" default="True" />
@@ -22,6 +21,7 @@
   <arg name="robot_ns" value="twin_hammer" />
   <arg name="config_dir" default="$(find twin_hammer)/config" />
   <arg name="mujoco" default="False" />
+  <arg name="flight" default="False" />
 
   ###########  Parameters  ###########
   <group ns="$(arg robot_ns)">
@@ -47,8 +47,8 @@
 
     ###########  Control  ###########
     <rosparam file="$(arg config_dir)/control/TwinHammerOptimizer.yaml" command="load" if="$(arg optimize)" />
-    <rosparam file="$(arg config_dir)/control/TwinHammerControl.yaml" command="load" unless="$(arg optimize)" />
-    <!-- <rosparam file="$(arg config_dir)/control/TwinHammerControlTest.yaml" command="load" unless="$(arg optimize)" /> -->
+    <rosparam file="$(arg config_dir)/control/TwinHammerControl.yaml" command="load" if="$(eval not arg('optimize') and not arg('flight'))" />
+    <rosparam file="$(arg config_dir)/control/TwinHammerControlforFlight.yaml" command="load" if="$(eval not arg('optimize') and arg('flight'))" />
 
     ###########  Sensor Fusion  ###########
     <rosparam file="$(arg config_dir)/StateEstimation.yaml" command="load" />
@@ -71,12 +71,12 @@
   <arg name="description_mode" value="gazebo" if="$(arg simulation)" />
   <include file="$(find aerial_robot_model)/launch/aerial_robot_model.launch" >
     <arg name="headless" value="$(arg headless)" />
-    <arg name="robot_model" value="$(find twin_hammer)/urdf/device_with_dummy_weight.$(arg description_mode).xacro" if="$(eval not arg('direct_model') and arg('dummy_weight'))"/>
-    <arg name="robot_model" value="$(find twin_hammer)/urdf/device.$(arg description_mode).xacro" if="$(eval not arg('direct_model') and not arg('dummy_weight'))"/>
+    <arg name="robot_model" value="$(find twin_hammer)/urdf/device_with_dummy_weight.$(arg description_mode).xacro" if="$(eval not arg('direct_model') and not arg('flight'))"/>
+    <arg name="robot_model" value="$(find twin_hammer)/urdf/device.$(arg description_mode).xacro" if="$(eval not arg('direct_model') and arg('flight'))"/>
     <arg name="robot_model" value="$(arg direct_model_name)" if="$(arg direct_model)"/>
     <arg name="robot_ns" value="$(arg robot_ns)" />
-    <arg name="rviz_config" value="$(arg config_dir)/rviz_config_dummy_weight" if="$(arg dummy_weight)"/>
-    <arg name="rviz_config" value="$(arg config_dir)/rviz_config" unless="$(arg dummy_weight)"/>
+    <arg name="rviz_config" value="$(arg config_dir)/rviz_config_dummy_weight" unless="$(arg flight)"/>
+    <arg name="rviz_config" value="$(arg config_dir)/rviz_config" if="$(arg flight)"/>
     <arg name="rviz_init_pose" value="$(arg config_dir)/RvizInit.yaml" />
     <arg name="need_joint_state" value="false" if ="$(eval arg('simulation') or arg('real_machine'))"/>
   </include>

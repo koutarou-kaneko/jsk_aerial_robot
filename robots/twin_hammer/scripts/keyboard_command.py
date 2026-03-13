@@ -21,6 +21,12 @@ l:  land
 f:  force landing
 h:  halt (force stop motor)
 
+     q           w           e           [
+(turn left)  (forward)  (turn right)  (move up)
+
+     a           s           d           ]
+(move left)  (backward) (move right) (move down)
+
 To haptics feedback:
 1. press number key
 2. press direction
@@ -120,46 +126,46 @@ if __name__=="__main__":
                         # if key == 'x':
                         #         motion_start_pub.publish()
                         #         msg = "send task-start command"
-                        # if key == 'w':
-                        #         nav_msg.pos_xy_nav_mode = FlightNav.VEL_MODE
-                        #         nav_msg.target_vel_x = xy_vel
-                        #         nav_pub.publish(nav_msg)
-                        #         msg = "send +x vel command"
-                        # if key == 's':
-                        #         nav_msg.pos_xy_nav_mode = FlightNav.VEL_MODE
-                        #         nav_msg.target_vel_x = -xy_vel
-                        #         nav_pub.publish(nav_msg)
-                        #         msg = "send -x vel command"
-                        # if key == 'a':
-                        #         nav_msg.pos_xy_nav_mode = FlightNav.VEL_MODE
-                        #         nav_msg.target_vel_y = xy_vel
-                        #         nav_pub.publish(nav_msg)
-                        #         msg = "send +y vel command"
-                        # if key == 'd':
-                        #         nav_msg.pos_xy_nav_mode = FlightNav.VEL_MODE
-                        #         nav_msg.target_vel_y = -xy_vel
-                        #         nav_pub.publish(nav_msg)
-                        #         msg = "send -y vel command"
-                        # if key == 'q':
-                        #         nav_msg.yaw_nav_mode = FlightNav.VEL_MODE
-                        #         nav_msg.target_omega_z = yaw_vel
-                        #         nav_pub.publish(nav_msg)
-                        #         msg = "send +yaw vel command"
-                        # if key == 'e':
-                        #         nav_msg.yaw_nav_mode = FlightNav.VEL_MODE
-                        #         nav_msg.target_omega_z = -yaw_vel
-                        #         msg = "send -yaw vel command"
-                        #         nav_pub.publish(nav_msg)
-                        # if key == '[':
-                        #         nav_msg.pos_z_nav_mode = FlightNav.VEL_MODE
-                        #         nav_msg.target_vel_z = z_vel
-                        #         nav_pub.publish(nav_msg)
-                        #         msg = "send +z vel command"
-                        # if key == ']':
-                        #         nav_msg.pos_z_nav_mode = FlightNav.VEL_MODE
-                        #         nav_msg.target_vel_z = -z_vel
-                        #         nav_pub.publish(nav_msg)
-                        #         msg = "send -z vel command"
+                        if key == 'w':
+                                nav_msg.pos_xy_nav_mode = FlightNav.VEL_MODE
+                                nav_msg.target_vel_x = xy_vel
+                                nav_pub.publish(nav_msg)
+                                msg = "send +x vel command"
+                        if key == 's':
+                                nav_msg.pos_xy_nav_mode = FlightNav.VEL_MODE
+                                nav_msg.target_vel_x = -xy_vel
+                                nav_pub.publish(nav_msg)
+                                msg = "send -x vel command"
+                        if key == 'a':
+                                nav_msg.pos_xy_nav_mode = FlightNav.VEL_MODE
+                                nav_msg.target_vel_y = xy_vel
+                                nav_pub.publish(nav_msg)
+                                msg = "send +y vel command"
+                        if key == 'd':
+                                nav_msg.pos_xy_nav_mode = FlightNav.VEL_MODE
+                                nav_msg.target_vel_y = -xy_vel
+                                nav_pub.publish(nav_msg)
+                                msg = "send -y vel command"
+                        if key == 'q':
+                                nav_msg.yaw_nav_mode = FlightNav.VEL_MODE
+                                nav_msg.target_omega_z = yaw_vel
+                                nav_pub.publish(nav_msg)
+                                msg = "send +yaw vel command"
+                        if key == 'e':
+                                nav_msg.yaw_nav_mode = FlightNav.VEL_MODE
+                                nav_msg.target_omega_z = -yaw_vel
+                                msg = "send -yaw vel command"
+                                nav_pub.publish(nav_msg)
+                        if key == '[':
+                                nav_msg.pos_z_nav_mode = FlightNav.VEL_MODE
+                                nav_msg.target_vel_z = z_vel
+                                nav_pub.publish(nav_msg)
+                                msg = "send +z vel command"
+                        if key == ']':
+                                nav_msg.pos_z_nav_mode = FlightNav.VEL_MODE
+                                nav_msg.target_vel_z = -z_vel
+                                nav_pub.publish(nav_msg)
+                                msg = "send -z vel command"
 
                         if key == 'm':
                                 haptics_switch_msg.data = 1
